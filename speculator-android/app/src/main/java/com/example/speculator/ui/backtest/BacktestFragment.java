@@ -28,6 +28,7 @@ import engine.PriceData.Ticker;
 import engine.PriceData.TimeSeries;
 import com.example.speculator.R;
 import engine.Util;
+import engine.drawInstructors.BoundPlotter;
 import engine.drawInstructors.LinePlotter;
 import com.example.speculator.databinding.FragmentBacktestBinding;
 import com.github.mikephil.charting.charts.LineChart;
@@ -74,7 +75,7 @@ public class BacktestFragment extends Fragment {
         this.selectedDateTime = ZonedDateTime.now();
         this.chart = root.findViewById(R.id.backtest_chart);
         this.chart.setData(new LineData());
-        plotter = new LinePlotter<>(new MPDrawer(chart));
+        plotter = new BoundPlotter<>(new MPDrawer(chart));
         this.dateView = root.findViewById(R.id.dateBtn);
         this.timeView = root.findViewById(R.id.timeBtn);
         this.datePicker = root.findViewById(R.id.calendarView);

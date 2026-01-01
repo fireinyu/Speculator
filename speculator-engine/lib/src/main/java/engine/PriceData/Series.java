@@ -1,9 +1,13 @@
 package engine.PriceData;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import javax.xml.crypto.Data;
 
 public class Series <T extends Number> {
 
@@ -55,5 +59,17 @@ public class Series <T extends Number> {
                 .map(Datapoint::new)
                 .collect(Collectors.toList()))
         );
+    }
+
+    public int getMinIndex() {
+        return IntStream.range(0, this.size())
+                .mapToObj(Integer::valueOf)
+                .min(Comparator.comparing(i -> this.data.get(i).doubleValue())).orElse(-1);
+    }
+
+    public int getMaxIndex() {
+        return IntStream.range(0, this.size())
+                .mapToObj(Integer::valueOf)
+                .max(Comparator.comparing(i -> this.data.get(i).doubleValue())).orElse(-1);
     }
 }

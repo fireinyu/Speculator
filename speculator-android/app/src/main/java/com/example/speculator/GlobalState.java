@@ -34,7 +34,7 @@ public class GlobalState {
      * 11. fix http3 connection leaking <DONE>
      * 12. make repo public (separate from python part) <DONE>
      * 13. update & push pyWorkflow template
-     * 14. min-max bound plotter
+     * 14. min-max bound plotter <DONE>
      * 15. change serialisation to be platform-agnostic <DONE>
      * 16. Select 1 of multiple plotters
      * 17. isolate engine code <DONE>
