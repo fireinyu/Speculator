@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/nav_predict">
+
+    <fragment
+        android:id="@+id/nav_backtest"
+        android:name="com.example.speculator.ui.backtest.BacktestFragment"
+        android:label="Back-test"
+        tools:layout="@layout/fragment_backtest" />
+
+    <fragment
+        android:id="@+id/nav_predict"
+        android:name="com.example.speculator.ui.predict.PredictFragment"
+        android:label="Predict"
+        tools:layout="@layout/fragment_predict" />
+
+    <fragment
+        android:id="@+id/nav_simulate"
+        android:name="com.example.speculator.ui.simulate.SimulateFragment"
+        android:label="Simulate"
+        tools:layout="@layout/fragment_simulate" />
+
+    <fragment
+        android:id="@+id/nav_deploy"
+        android:name="com.example.speculator.ui.deploy.DeployFragment"
+        android:label="Deploy"
+        tools:layout="@layout/fragment_deploy" />
+
+    <fragment
+        android:id="@+id/nav_models_agents"
+        android:name="com.example.speculator.ui.models_agents.ModelsAgentsFragment"
+        android:label="Models &amp; Agents"
+        tools:layout="@layout/fragment_models_agents" />
+
+    <fragment
+        android:id="@+id/nav_api"
+        android:name="com.example.speculator.ui.api.ApiFragment"
+        android:label="API Manager"
+        tools:layout="@layout/fragment_api" />
+</navigation>

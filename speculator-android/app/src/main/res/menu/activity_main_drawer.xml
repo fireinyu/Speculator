@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_predict"
+            android:icon="@drawable/ic_menu_gallery"
+            android:title="Predict" />
+        <item
+            android:id="@+id/nav_backtest"
+            android:icon="@drawable/ic_menu_camera"
+            android:title="Back-test" />
+        <item
+            android:id="@+id/nav_simulate"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Simulate" />
+        <item
+            android:id="@+id/nav_deploy"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Deploy" />
+        <item
+            android:id="@+id/nav_models_agents"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="Models &amp; Agents" />
+        <item
+            android:id="@+id/nav_api"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="API Manager" />
+    </group>
+</menu>
