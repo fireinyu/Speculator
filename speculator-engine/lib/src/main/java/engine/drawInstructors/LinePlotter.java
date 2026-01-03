@@ -21,14 +21,19 @@ public class LinePlotter <V extends Number> extends DrawInstructor<V> {
             DrawInstruction.Color.GREEN
     );
     private ZonedDateTime anchor;
-    public LinePlotter (InstructedDrawer drawer) {
-        this(drawer, ZonedDateTime.now());
+    public LinePlotter () {
+        this(ZonedDateTime.now());
     }
 
-    public LinePlotter (InstructedDrawer drawer, ZonedDateTime anchor) {
-        super(drawer);
+    public LinePlotter (ZonedDateTime anchor) {
         this.anchor = anchor;
     }
+
+    @Override
+    public String toString() {
+        return "basic line";
+    }
+
     List<DrawInstruction.Point> makeUnformattedFeatures(TimeSeries<?> features) {
         // shape: ticker/1 -> feature
         // before normalisation

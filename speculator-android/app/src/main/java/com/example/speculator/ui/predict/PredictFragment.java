@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import engine.components.Plotter;
 import engine.components.Snapshottable;
 import engine.PriceData.TickerState;
 import com.example.speculator.GlobalState;
@@ -40,7 +41,7 @@ public class PredictFragment extends Fragment {
     private View root;
 
     private LineChart chart;
-    private LinePlotter<Float> plotter;
+    private Plotter<Float> plotter;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -53,8 +54,7 @@ public class PredictFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.chart = root.findViewById(R.id.predict_chart);
-
-        plotter = new LinePlotter<>(new MPDrawer(chart));
+        plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
 
         root.findViewById(R.id.predict_pull).setOnClickListener(this::pull);
         root.findViewById(R.id.predict_predict).setOnClickListener(this::predict);
@@ -84,6 +84,7 @@ public class PredictFragment extends Fragment {
     public void pull(View view) {
         this.disableNewPlots();
         this.plotter.unplot();
+        this.plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
         this.predict(
                 GlobalState.Predict.selectedTickers,
                 List.of(ModelPredictor.identity(
@@ -97,6 +98,7 @@ public class PredictFragment extends Fragment {
     public void predict(List<Ticker> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {
         this.disableNewPlots();
         this.plotter.unplot();
+        this.plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
         CompletableFuture<? extends List<? extends List<? extends List<? extends TickerState<Float>>>>> allTickerStatesCF = CompletableFuture.supplyAsync(() -> {
             // ticker -> predictor -> interval -> tickerState
             return tickers.stream().map(ticker -> {

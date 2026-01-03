@@ -12,8 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.example.speculator.Builder;
-import com.example.speculator.Field;
+import com.example.speculator.dynamicUI.Builder;
+import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
 import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentApiBinding;

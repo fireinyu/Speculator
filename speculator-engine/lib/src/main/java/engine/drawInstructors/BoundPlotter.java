@@ -12,12 +12,17 @@ import engine.components.InstructedDrawer;
 
 public class BoundPlotter <V extends Number> extends LinePlotter<V>{
 
-    public BoundPlotter(InstructedDrawer drawer) {
-        super(drawer);
+    public BoundPlotter() {
+        super();
     }
 
-    public BoundPlotter(InstructedDrawer drawer, ZonedDateTime anchor) {
-        super(drawer, anchor);
+    public BoundPlotter(ZonedDateTime anchor) {
+        super(anchor);
+    }
+
+    @Override
+    public String toString() {
+        return "bounding quad";
     }
 
     @Override

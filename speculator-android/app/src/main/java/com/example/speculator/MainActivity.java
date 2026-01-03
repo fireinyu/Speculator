@@ -4,13 +4,21 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ScrollView;
 
+import engine.PriceData.Ticker;
+import engine.components.DrawInstructor;
 import engine.upstreams.Oanda;
+
+import com.example.speculator.dynamicUI.MultiObjectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.navigation.NavigationView;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -20,17 +28,24 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.speculator.databinding.ActivityMainBinding;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
     private ActivityMainBinding binding;
-    private ScrollView tickerScroll;
+
+    private ConstraintLayout popupDrawer;
     private ChipGroup tickerSelector;
+    private RadioGroup plotterSelector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        GlobalState.init(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
@@ -47,23 +62,24 @@ public class MainActivity extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
-        tickerScroll = findViewById(R.id.tickerScroll);
+        popupDrawer = findViewById(R.id.popupDrawer);
         tickerSelector = findViewById(R.id.tickerSelector);
-
-        GlobalState.init(this);
+        plotterSelector = findViewById(R.id.plotterSelector);
         Oanda.authenticate(GlobalState.Authentication.Oanda.accNo, GlobalState.Authentication.Oanda.apiKey);
         findViewById(R.id.tickerBar).setOnClickListener(bar -> {
             Log.d("debug_tickers", "hi");
-            if (tickerScroll.getVisibility() == View.GONE) {
-                tickerScroll.setVisibility(View.VISIBLE);
+            if (popupDrawer.getVisibility() == View.GONE) {
+                popupDrawer.setVisibility(View.VISIBLE);
             } else {
-                tickerScroll.setVisibility(View.GONE);
+                popupDrawer.setVisibility(View.GONE);
             }
         });
+
         ChipGroup.LayoutParams btnParams = new ChipGroup.LayoutParams(
                 ChipGroup.LayoutParams.MATCH_PARENT,
                 ChipGroup.LayoutParams.WRAP_CONTENT
         );
+
         GlobalState.Predict.tickers.forEach(
                 ticker -> {
                     Chip btn = new Chip(this);
@@ -85,6 +101,22 @@ public class MainActivity extends AppCompatActivity {
                     tickerSelector.addView(btn);
                 }
         );
+        Map<Integer, DrawInstructor<Float>> instructorIds = new HashMap<>();
+        GlobalState.Predict.instructors.forEach(
+                instructor -> {
+                    RadioButton btn = new RadioButton(this);
+                    btn.setText(instructor.toString());
+                    btn.setId(View.generateViewId());
+                    btn.setLayoutParams(btnParams);
+                    if (instructor.equals(GlobalState.Predict.selectedInstructor)) {
+                        btn.setChecked(true);
+                    }
+                    plotterSelector.addView(btn);
+                    instructorIds.put(btn.getId(), instructor);
+                }
+        );
+        Log.d("debug_plot", "" + plotterSelector.getChildCount());
+        plotterSelector.setOnCheckedChangeListener((v, idx) -> GlobalState.Predict.selectedInstructor = instructorIds.get(idx));
     }
 
     @Override

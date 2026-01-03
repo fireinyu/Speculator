@@ -18,22 +18,63 @@
         app:layout_constraintTop_toTopOf="parent"
         app:navGraph="@navigation/mobile_navigation" />
 
-    <ScrollView
-        android:id="@+id/tickerScroll"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/popupDrawer"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:background="#D11818"
+        android:layout_height="0dp"
         android:elevation="2dp"
         android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@+id/guideline12"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/tickerSelector"
-            android:layout_width="match_parent"
+        <ScrollView
+            android:id="@+id/plotterScroll"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@+id/guideline11"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <RadioGroup
+                android:id="@+id/plotterSelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </ScrollView>
+
+        <ScrollView
+            android:id="@+id/tickerScroll"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="#D11818"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/guideline11"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/tickerSelector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+            </com.google.android.material.chip.ChipGroup>
+        </ScrollView>
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guideline11"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical">
-        </com.google.android.material.chip.ChipGroup>
-    </ScrollView>
+            android:orientation="vertical"
+            app:layout_constraintGuide_percent="0.5" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.Guideline
+        android:id="@+id/guideline12"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        app:layout_constraintGuide_percent="0.41" />
 </androidx.constraintlayout.widget.ConstraintLayout>

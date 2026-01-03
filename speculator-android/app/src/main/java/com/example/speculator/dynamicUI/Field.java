@@ -1,9 +1,7 @@
-package com.example.speculator;
+package com.example.speculator.dynamicUI;
 
 import android.content.Context;
 import android.view.View;
-
-import java.util.function.Function;
 
 public abstract class Field <T> {
     private View source;

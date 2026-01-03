@@ -17,14 +17,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import com.example.speculator.Builder;
-import com.example.speculator.Field;
+import com.example.speculator.dynamicUI.Builder;
+import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
 import engine.Instances.ModelPredictors;
 import engine.components.ModelPredictor;
 import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentModelsAgentsBinding;
 import engine.modelPredictors.NN16842;
+
+import com.example.speculator.dynamicUI.SingleSelectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -73,6 +75,7 @@ public class ModelsAgentsFragment extends Fragment {
         ModelPredictors.bases.forEach(
                 (name, base) -> {
                     RadioButton btn = new RadioButton(this.getActivity());
+                    btn.setId(View.generateViewId());
                     btn.setText(name);
                     btn.setLayoutParams(btnParams);
                     builderSelector.addView(btn);

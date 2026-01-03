@@ -1,10 +1,13 @@
 package com.example.speculator;
 
 import android.content.Context;
+import android.util.Log;
 import android.util.Pair;
 
+import engine.Instances.DrawInstructors;
 import engine.Instances.ModelPredictors;
 import engine.Instances.UpstreamAdapters;
+import engine.components.DrawInstructor;
 import engine.components.ModelPredictor;
 import engine.PriceData.Ticker;
 
@@ -36,9 +39,15 @@ public class GlobalState {
      * 13. update & push pyWorkflow template
      * 14. min-max bound plotter <DONE>
      * 15. change serialisation to be platform-agnostic <DONE>
-     * 16. Select 1 of multiple plotters
+     * 16. Select 1 of multiple plotters <DONE>
      * 17. isolate engine code <DONE>
      * 18. migrate LinePlotter to Instructor <DONE>
+     * 19. ObjectMenu save and load state(refactoring)
+     * 20. migrate group selectors to ObjectMenu
+     * 20a. tickers
+     * 20b. plotters
+     * 20c. modelBuilders
+     * 20d. models
      */ 
     static Path appStorageRoot;
 
@@ -60,12 +69,15 @@ public class GlobalState {
     }
 
     public static class Predict {
-        public static Path storageRoot = GlobalState.appStorageRoot.resolve("models");
+        public static Path storageRoot;
         public static Map<String, LocalStateMap<ModelPredictor<Float, Float>>> predictors;
         public static List<Pair<Pair<String, String>, ModelPredictor<Float, Float>>> selectedPredictors;
         public static List<Ticker> tickers;
         public static List<Ticker> selectedTickers;
+        public static List<DrawInstructor<Float>> instructors;
+        public static DrawInstructor<Float> selectedInstructor;
         public static void init(Context context) {
+            Predict.storageRoot = GlobalState.appStorageRoot.resolve("models");
             Map<String, ModelPredictor<Float, Float>> bases = ModelPredictors.bases;
             Predict.predictors = new HashMap<>();
             Predict.selectedPredictors = new ArrayList<>();
@@ -77,10 +89,12 @@ public class GlobalState {
             }
             Predict.tickers = UpstreamAdapters.getTickers();
             Predict.selectedTickers = new ArrayList<>();
+
+            Predict.instructors = DrawInstructors.list;
+            Predict.selectedInstructor = Predict.instructors.get(0);
+            Log.d("debug_plot", "" + GlobalState.Predict.selectedInstructor);
             // remove before flight
         }
-
-
-
     }
+
 }
