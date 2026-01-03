@@ -53,6 +53,7 @@ public class GlobalState {
      * 20b. plotters <DONE>
      * 20c. modelBuilders
      * 20d. models
+     * 21. refactor model storage into list / LocalObject
      */ 
     static Path appStorageRoot;
 

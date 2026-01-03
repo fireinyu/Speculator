@@ -4,25 +4,19 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Optional;
 
-public class LocalStateMachine <T extends StateMachine<T>> {
+public class LocalStateMachine <T extends StateMachine<T>> extends LocalObject<SavedStateMachine<T>>{
     //TODO
-    private LocalObject<HashMap<String, String>> localState;
-    private T base;
 
-    public LocalStateMachine(T template, Path root, String... tags) {
-        this.localState = new LocalObject<>(root, tags);
-        this.base = template.base();
+    public LocalStateMachine(Path root, String... tags) {
+        super(root, tags);
     }
 
-    public Optional<T> get() {
-        return this.localState.get().map(hMap -> this.base.load(hMap));
+    public Optional<T> getObject() {
+        return super.get().map(SavedStateMachine::get);
     }
 
-    public void put(T item) {
-        this.localState.put(new HashMap<>(item.save()));
-    }
-
-    public void delete() {
-        this.localState.delete();
+    @SuppressWarnings("unchecked")
+    public void putObject(T object) {
+        super.put(new SavedStateMachine<>((StateLoader<T>) object.getLoader(), object.save()));
     }
 }

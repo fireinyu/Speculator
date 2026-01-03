@@ -15,7 +15,7 @@ public interface StateMachine<R> {
         \ASSERT obj.base().load(obj.save()) \EQUALS obj
 
      */
-    R base();
+    StateLoader<? extends StateMachine<R>> getLoader();
     /*identity state
      */
     Map<String, String> save();
