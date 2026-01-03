@@ -54,7 +54,7 @@ public class PredictFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.chart = root.findViewById(R.id.predict_chart);
-        plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
+        plotter = GlobalState.Predict.instructors.get().get(0).makePlotter(new MPDrawer(chart));
 
         root.findViewById(R.id.predict_pull).setOnClickListener(this::pull);
         root.findViewById(R.id.predict_predict).setOnClickListener(this::predict);
@@ -84,9 +84,9 @@ public class PredictFragment extends Fragment {
     public void pull(View view) {
         this.disableNewPlots();
         this.plotter.unplot();
-        this.plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
+        this.plotter = GlobalState.Predict.instructors.get().get(0).makePlotter(new MPDrawer(chart));
         this.predict(
-                GlobalState.Predict.selectedTickers,
+                GlobalState.Predict.tickers.get(),
                 List.of(ModelPredictor.identity(
                         List.of(Duration.ofMinutes(1)),
                         List.of(500)
@@ -98,7 +98,7 @@ public class PredictFragment extends Fragment {
     public void predict(List<Ticker> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {
         this.disableNewPlots();
         this.plotter.unplot();
-        this.plotter = GlobalState.Predict.selectedInstructor.makePlotter(new MPDrawer(chart));
+        this.plotter = GlobalState.Predict.instructors.get().get(0).makePlotter(new MPDrawer(chart));
         CompletableFuture<? extends List<? extends List<? extends List<? extends TickerState<Float>>>>> allTickerStatesCF = CompletableFuture.supplyAsync(() -> {
             // ticker -> predictor -> interval -> tickerState
             return tickers.stream().map(ticker -> {
@@ -168,9 +168,9 @@ public class PredictFragment extends Fragment {
     }
 
     public void predict(View view) {
-        List<Ticker> tickers = GlobalState.Predict.selectedTickers;
+        List<Ticker> tickers = GlobalState.Predict.tickers.get();
         List<? extends ModelPredictor<Float, Float>> predictors;
-        if (GlobalState.Predict.selectedTickers.size() > 1) {
+        if (GlobalState.Predict.tickers.get().size() > 1) {
             predictors = List.of(GlobalState.Predict.selectedPredictors.get(0).second);
         } else {
             predictors = GlobalState.Predict.selectedPredictors.stream()

@@ -8,17 +8,14 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 
-import engine.PriceData.Ticker;
 import engine.components.DrawInstructor;
 import engine.upstreams.Oanda;
 
-import com.example.speculator.dynamicUI.MultiObjectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
@@ -29,9 +26,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.speculator.databinding.ActivityMainBinding;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -39,8 +34,9 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
 
     private ConstraintLayout popupDrawer;
-    private ChipGroup tickerSelector;
-    private RadioGroup plotterSelector;
+
+    private ScrollView tickerScroll;
+    private ScrollView instructorScroll;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,8 +59,8 @@ public class MainActivity extends AppCompatActivity {
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
         NavigationUI.setupWithNavController(navigationView, navController);
         popupDrawer = findViewById(R.id.popupDrawer);
-        tickerSelector = findViewById(R.id.tickerSelector);
-        plotterSelector = findViewById(R.id.plotterSelector);
+        tickerScroll = findViewById(R.id.tickerScroll);
+        instructorScroll = findViewById(R.id.plotterScroll);
         Oanda.authenticate(GlobalState.Authentication.Oanda.accNo, GlobalState.Authentication.Oanda.apiKey);
         findViewById(R.id.tickerBar).setOnClickListener(bar -> {
             Log.d("debug_tickers", "hi");
@@ -80,43 +76,14 @@ public class MainActivity extends AppCompatActivity {
                 ChipGroup.LayoutParams.WRAP_CONTENT
         );
 
-        GlobalState.Predict.tickers.forEach(
-                ticker -> {
-                    Chip btn = new Chip(this);
-                    btn.setCheckable(true);
-                    btn.setText(ticker.getName());
-                    btn.setLayoutParams(btnParams);
-                    if (GlobalState.Predict.selectedTickers.stream().anyMatch(ticker::equals)) {
-                        btn.setChecked(true);
-                    }
-                    btn.setOnCheckedChangeListener(
-                            (b, checked) -> {
-                                if (checked) {
-                                    GlobalState.Predict.selectedTickers.add(ticker);
-                                } else {
-                                    GlobalState.Predict.selectedTickers.removeIf(ticker::equals);
-                                }
-                            }
-                    );
-                    tickerSelector.addView(btn);
-                }
-        );
-        Map<Integer, DrawInstructor<Float>> instructorIds = new HashMap<>();
-        GlobalState.Predict.instructors.forEach(
-                instructor -> {
-                    RadioButton btn = new RadioButton(this);
-                    btn.setText(instructor.toString());
-                    btn.setId(View.generateViewId());
-                    btn.setLayoutParams(btnParams);
-                    if (instructor.equals(GlobalState.Predict.selectedInstructor)) {
-                        btn.setChecked(true);
-                    }
-                    plotterSelector.addView(btn);
-                    instructorIds.put(btn.getId(), instructor);
-                }
-        );
-        Log.d("debug_plot", "" + plotterSelector.getChildCount());
-        plotterSelector.setOnCheckedChangeListener((v, idx) -> GlobalState.Predict.selectedInstructor = instructorIds.get(idx));
+        View tickerSelector = GlobalState.Predict.tickers.getView();
+        tickerSelector.setLayoutParams(btnParams);
+        tickerScroll.addView(tickerSelector);
+
+        View instructorSelector = GlobalState.Predict.instructors.getView();
+        instructorSelector.setLayoutParams(btnParams);
+        instructorScroll.addView(instructorSelector);
+
     }
 
     @Override

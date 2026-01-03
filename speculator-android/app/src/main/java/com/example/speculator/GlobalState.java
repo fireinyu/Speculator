@@ -4,6 +4,10 @@ import android.content.Context;
 import android.util.Log;
 import android.util.Pair;
 
+import com.example.speculator.dynamicUI.ObjectMenu;
+
+import org.apache.commons.math3.analysis.function.Constant;
+
 import engine.Instances.DrawInstructors;
 import engine.Instances.ModelPredictors;
 import engine.Instances.UpstreamAdapters;
@@ -16,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import engine.Serialisation.LocalObject;
 import engine.Serialisation.LocalStateMap;
@@ -42,10 +47,10 @@ public class GlobalState {
      * 16. Select 1 of multiple plotters <DONE>
      * 17. isolate engine code <DONE>
      * 18. migrate LinePlotter to Instructor <DONE>
-     * 19. ObjectMenu save and load state(refactoring)
+     * 19. ObjectMenu save and load state(refactoring) <DONE>
      * 20. migrate group selectors to ObjectMenu
-     * 20a. tickers
-     * 20b. plotters
+     * 20a. tickers <DONE>
+     * 20b. plotters <DONE>
      * 20c. modelBuilders
      * 20d. models
      */ 
@@ -72,10 +77,8 @@ public class GlobalState {
         public static Path storageRoot;
         public static Map<String, LocalStateMap<ModelPredictor<Float, Float>>> predictors;
         public static List<Pair<Pair<String, String>, ModelPredictor<Float, Float>>> selectedPredictors;
-        public static List<Ticker> tickers;
-        public static List<Ticker> selectedTickers;
-        public static List<DrawInstructor<Float>> instructors;
-        public static DrawInstructor<Float> selectedInstructor;
+        public static ObjectMenu<Ticker> tickers;
+        public static ObjectMenu<DrawInstructor<Float>> instructors;
         public static void init(Context context) {
             Predict.storageRoot = GlobalState.appStorageRoot.resolve("models");
             Map<String, ModelPredictor<Float, Float>> bases = ModelPredictors.bases;
@@ -87,12 +90,8 @@ public class GlobalState {
                         new LocalStateMap<>(bases.get(baseName), Predict.storageRoot.resolve(baseName))
                 );
             }
-            Predict.tickers = UpstreamAdapters.getTickers();
-            Predict.selectedTickers = new ArrayList<>();
-
-            Predict.instructors = DrawInstructors.list;
-            Predict.selectedInstructor = Predict.instructors.get(0);
-            Log.d("debug_plot", "" + GlobalState.Predict.selectedInstructor);
+            Predict.tickers = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
+            Predict.instructors = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});
             // remove before flight
         }
     }

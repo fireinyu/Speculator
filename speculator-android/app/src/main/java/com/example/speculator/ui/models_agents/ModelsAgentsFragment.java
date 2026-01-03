@@ -26,7 +26,6 @@ import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentModelsAgentsBinding;
 import engine.modelPredictors.NN16842;
 
-import com.example.speculator.dynamicUI.SingleSelectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 

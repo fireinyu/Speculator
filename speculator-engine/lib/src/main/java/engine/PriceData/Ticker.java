@@ -38,9 +38,12 @@ public abstract class Ticker {
 
     public abstract List<Class<? extends Upstream>> getPreferredUpstreams();
 
+    @Override
+    public String toString() {
+        return this.name;
+    }
     private static class MapTicker extends Ticker{
 
-        private String name;
         private Map<Class<? extends Upstream>, String> aliases;
         private List<Class<? extends Upstream>> preferredUpstreams;
 
