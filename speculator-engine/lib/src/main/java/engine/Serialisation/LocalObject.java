@@ -39,7 +39,7 @@ public class LocalObject <T extends Serializable> {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
-            throw new RuntimeException("no records yet");
+            return Optional.empty();
         }
     }
 

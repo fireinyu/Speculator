@@ -5,6 +5,7 @@ package engine.components;
 import engine.PriceData.Candle;
 import engine.PriceData.OffsetSeries;
 import engine.PriceData.TimeSeries;
+import engine.Serialisation.StateLoader;
 import engine.Util;
 
 import java.time.Duration;
@@ -96,8 +97,18 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         }
 
         @Override
-        public ModelPredictor<V, R> base() {
-            return this;
+        public StateLoader<? extends StateMachine<ModelPredictor<V, R>>> getLoader() {
+            return new StateLoader<>() {
+                @Override
+                public Identity<V, R> load(Map<String, String> state) {
+                    return new Identity<>(List.of(), List.of());
+                }
+
+                @Override
+                public String toString(Map<String, String> state) {
+                    return "identity";
+                }
+            };
         }
 
         @Override
@@ -105,10 +116,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             return Collections.emptyMap();
         }
 
-        @Override
-        public ModelPredictor<V, R> load(Map<String, String> source) {
-            return this;
-        }
+
     }
 
 }

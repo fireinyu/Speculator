@@ -19,6 +19,5 @@ public interface StateMachine<R> {
     /*identity state
      */
     Map<String, String> save();
-    R load(Map<String, String> source);
 
 }

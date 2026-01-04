@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import engine.Serialisation.SavedStateMachine;
 import engine.components.Snapshottable;
 import engine.PriceData.TickerState;
 import com.example.speculator.GlobalState;
@@ -28,8 +29,7 @@ import engine.PriceData.Ticker;
 import engine.PriceData.TimeSeries;
 import com.example.speculator.R;
 import engine.Util;
-import engine.drawInstructors.BoundPlotter;
-import engine.drawInstructors.LinePlotter;
+
 import com.example.speculator.databinding.FragmentBacktestBinding;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.LineData;
@@ -75,7 +75,7 @@ public class BacktestFragment extends Fragment {
         this.selectedDateTime = ZonedDateTime.now();
         this.chart = root.findViewById(R.id.backtest_chart);
         this.chart.setData(new LineData());
-        plotter = GlobalState.Predict.instructors.get().get(0).makePlotter((new MPDrawer(chart)));
+        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
         this.dateView = root.findViewById(R.id.dateBtn);
         this.timeView = root.findViewById(R.id.timeBtn);
         this.datePicker = root.findViewById(R.id.calendarView);
@@ -143,10 +143,10 @@ public class BacktestFragment extends Fragment {
     public void pull(View view) {
         this.disableNewPlots();
         this.plotter.unplot();
-        plotter = GlobalState.Predict.instructors.get().get(0).makePlotter((new MPDrawer(chart)));
+        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
 
         this.predict(
-                GlobalState.Predict.tickers.get(),
+                GlobalState.Predict.tickerMenu.get(),
                 List.of(ModelPredictor.identity(
                         List.of(Duration.ofMinutes(1)),
                         List.of(500)
@@ -158,7 +158,7 @@ public class BacktestFragment extends Fragment {
     public void predict(List<Ticker> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {
         this.disableNewPlots();
         this.plotter.unplot();
-        plotter = GlobalState.Predict.instructors.get().get(0).makePlotter((new MPDrawer(chart)));
+        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
 
         CompletableFuture<? extends List<? extends List<? extends List<? extends TickerState<Float>>>>> allTickerStatesCF = CompletableFuture.supplyAsync(() -> {
             // ticker -> predictor -> interval -> tickerState
@@ -253,13 +253,13 @@ public class BacktestFragment extends Fragment {
     }
 
     public void predict(View view) {
-        List<Ticker> tickers = GlobalState.Predict.tickers.get();
+        List<Ticker> tickers = GlobalState.Predict.tickerMenu.get();
         List<? extends ModelPredictor<Float, Float>> predictors;
-        if (GlobalState.Predict.tickers.get().size() > 1) {
-            predictors = List.of(GlobalState.Predict.selectedPredictors.get(0).second);
+        if (GlobalState.Predict.tickerMenu.get().size() > 1) {
+            predictors = List.of(GlobalState.Predict.selectedPredictors.get(0).get());
         } else {
             predictors = GlobalState.Predict.selectedPredictors.stream()
-                    .map(pair -> pair.second)
+                    .map(SavedStateMachine::get)
                     .collect(Collectors.toList());
         }
         this.predict(tickers, predictors, this.selectedDateTime);

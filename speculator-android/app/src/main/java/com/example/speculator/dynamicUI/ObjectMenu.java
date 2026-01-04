@@ -13,6 +13,7 @@ import com.google.android.material.chip.ChipGroup;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -52,22 +53,27 @@ public class ObjectMenu <T> {
         this.maxSelect = maxSelect;
         this.callback = callback;
         this.form = new ChipGroup(context);
-        this.form.setOnCheckedStateChangeListener((v, id) -> {
-            boolean toCallback = enableCallback;
-            if (this.options.stream().filter(Option::selected).count() > this.maxSelect) {
-                enableCallback = false;
-                Option<T> toRemove = this.selectQueue.poll();
-                toRemove.clear();
-                enableCallback = true;
-            }
-            if (toCallback) {
-                callback.accept(this.get());
-            }
-        });
         this.update();
     }
 
+    private void onCheckChange() {
+        Log.d("debug_select", "" + selectQueue.size());
+        boolean toCallback = enableCallback;
+        if (this.selectQueue.size() > this.maxSelect) {
+            enableCallback = false;
+            Option<T> toRemove = this.selectQueue.poll();
+            toRemove.clear();
+            enableCallback = true;
+        }
+        if (toCallback) {
+            callback.accept(this.get());
+        }
+    }
+
     public View getView() {
+        Optional.ofNullable(this.form.getParent())
+                .map(parent -> (ViewGroup) parent)
+                .ifPresent(parent -> parent.removeView(this.form));
         return this.form;
     }
 
@@ -76,24 +82,20 @@ public class ObjectMenu <T> {
     }
 
     public void add(int idx, T item) {
-        Option<T> option = new Option<>(this.context, item, false, this.selectQueue);
+        Option<T> option = new Option<>(this.context, item, false, this);
         this.options.add(idx, option);
         this.form.addView(option.getView(), idx);
     }
 
     public void add(T item) {
-        Option<T> option = new Option<>(this.context, item, false, this.selectQueue);
+        Option<T> option = new Option<>(this.context, item, false, this);
         this.options.add(option);
         this.form.addView(option.getView());
     }
 
-    public void remove(int idx) {
-        this.form.removeViewAt(idx);
-        this.options.remove(idx);
-    }
-
     public void removeSelected() {
         this.options.removeIf(option -> this.selectQueue.stream().anyMatch(option::equals));
+        this.selectQueue.clear();
         this.update();
     }
 
@@ -103,7 +105,7 @@ public class ObjectMenu <T> {
     }
 
     private void addSelected(T item) {
-        Option<T> option = new Option<>(this.context, item, true, this.selectQueue);
+        Option<T> option = new Option<>(this.context, item, true, this);
         this.options.add(option);
         this.form.addView(option.getView());
     }
@@ -112,7 +114,7 @@ public class ObjectMenu <T> {
         private V item;
         private Chip btn;
 
-        private Option(Context context, V item, boolean selected, LinkedList<Option<V>> queue) {
+        private Option(Context context, V item, boolean selected, ObjectMenu<V> menu) {
             this.item = item;
             this.btn = new Chip(context);
             this.btn.setCheckable(true);
@@ -120,10 +122,11 @@ public class ObjectMenu <T> {
             Log.d("debug_tickers", "" + item);
             this.btn.setOnCheckedChangeListener((v, checked) -> {
                 if (checked) {
-                    queue.add(this);
+                    menu.selectQueue.add(this);
                 } else {
-                    queue.removeIf(this::equals);
+                    menu.selectQueue.removeIf(this::equals);
                 }
+                menu.onCheckChange();
             });
             this.btn.setChecked(selected);
             this.btn.setLayoutParams(new ViewGroup.LayoutParams(ChipGroup.LayoutParams.MATCH_PARENT, ChipGroup.LayoutParams.WRAP_CONTENT));

@@ -1,6 +1,8 @@
 package engine.modelPredictors;
 
 
+import engine.Serialisation.StateLoader;
+import engine.Serialisation.StateMachine;
 import engine.components.FeatureExtractor;
 import engine.components.ModelPredictor;
 import engine.PriceData.OffsetCandle;
@@ -117,7 +119,8 @@ public class NN16842 extends ModelPredictor<Float, Float> {
 
     }
 
-    public NN16842() {
+    private String greeting;
+    public NN16842(String greeting) {
         super(
                 new _Extractor(),
                 new _Model(),
@@ -126,21 +129,35 @@ public class NN16842 extends ModelPredictor<Float, Float> {
                 List.of(4, 2)
         );
         ((_Model)model)._init(getClass().getResourceAsStream("/m_16842.pt"));
+        this.greeting = greeting;
     }
-
-    @Override
-    public ModelPredictor<Float, Float> base() {
-        return new NN16842();
-    }
-
     @Override
     public Map<String, String> save() {
-        return Collections.emptyMap();
+        return Map.of(
+                "greeting", this.greeting
+        );
+    }
+
+    private static class Loader implements StateLoader<ModelPredictor<Float, Float>> {
+        @Override
+        public NN16842 load(Map<String, String> state) {
+            return new NN16842(state.get("greeting"));
+        }
+
+        @Override
+        public String toString(Map<String, String> state) {
+            return state.get("greeting");
+        }
+
+        @Override
+        public String toString() {
+            return "NN16842";
+        }
     }
 
     @Override
-    public ModelPredictor<Float, Float> load(Map<String, String> source) {
-        NN16842 res = new NN16842();
-        return res;
+    public StateLoader<? extends StateMachine<ModelPredictor<Float, Float>>> getLoader() {
+        return new Loader();
     }
+
 }

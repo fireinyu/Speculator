@@ -10,6 +10,7 @@ import engine.PriceData.State;
 public class SavedStateMachine <T extends StateMachine<T>> implements Serializable {
     private StateLoader<T> loader;
     private HashMap<String, String> state;
+    private transient T object;
 
     public SavedStateMachine(StateLoader<T> loader, Map<String, String> state) {
         this.loader = loader;
@@ -17,6 +18,28 @@ public class SavedStateMachine <T extends StateMachine<T>> implements Serializab
     }
 
     public T get() {
-        return this.loader.load(this.state);
+        if (this.object == null) {
+            this.object = this.loader.load(this.state);
+
+        }
+        return this.object;
+    }
+
+    @Override
+    public String toString() {
+        return this.loader.toString(this.state);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof SavedStateMachine) {
+            SavedStateMachine other = (SavedStateMachine) obj;
+            return
+                    this.loader.toString().equals(other.loader.toString())
+                    && this.state.equals(other.state)
+                    ;
+        } else {
+            return false;
+        }
     }
 }

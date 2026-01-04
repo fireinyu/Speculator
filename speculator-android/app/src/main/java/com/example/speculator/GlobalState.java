@@ -1,29 +1,22 @@
 package com.example.speculator;
 
 import android.content.Context;
-import android.util.Log;
-import android.util.Pair;
 
 import com.example.speculator.dynamicUI.ObjectMenu;
 
-import org.apache.commons.math3.analysis.function.Constant;
-
 import engine.Instances.DrawInstructors;
-import engine.Instances.ModelPredictors;
 import engine.Instances.UpstreamAdapters;
+import engine.Serialisation.LocalList;
+import engine.Serialisation.SavedStateMachine;
 import engine.components.DrawInstructor;
 import engine.components.ModelPredictor;
 import engine.PriceData.Ticker;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
 
 import engine.Serialisation.LocalObject;
-import engine.Serialisation.LocalStateMap;
 
 public class GlobalState {
     /* TODO LIST
@@ -48,12 +41,9 @@ public class GlobalState {
      * 17. isolate engine code <DONE>
      * 18. migrate LinePlotter to Instructor <DONE>
      * 19. ObjectMenu save and load state(refactoring) <DONE>
-     * 20. migrate group selectors to ObjectMenu
-     * 20a. tickers <DONE>
-     * 20b. plotters <DONE>
-     * 20c. modelBuilders
-     * 20d. models
-     * 21. refactor model storage into list / LocalObject
+     * 20. migrate group selectors to ObjectMenu <DONE>
+     * 21. refactor model storage into list / LocalObject <DONE>
+     * 22. refactor upstream and state
      */ 
     static Path appStorageRoot;
 
@@ -76,23 +66,23 @@ public class GlobalState {
 
     public static class Predict {
         public static Path storageRoot;
-        public static Map<String, LocalStateMap<ModelPredictor<Float, Float>>> predictors;
-        public static List<Pair<Pair<String, String>, ModelPredictor<Float, Float>>> selectedPredictors;
-        public static ObjectMenu<Ticker> tickers;
-        public static ObjectMenu<DrawInstructor<Float>> instructors;
+        public static LocalList<SavedStateMachine<ModelPredictor<Float, Float>>> predictors;
+        public static List<SavedStateMachine<ModelPredictor<Float, Float>>> selectedPredictors;
+        public static ObjectMenu<SavedStateMachine<ModelPredictor<Float, Float>>> predictorMenu;
+        public static ObjectMenu<Ticker> tickerMenu;
+        public static ObjectMenu<DrawInstructor<Float>> instructorMenu;
         public static void init(Context context) {
             Predict.storageRoot = GlobalState.appStorageRoot.resolve("models");
-            Map<String, ModelPredictor<Float, Float>> bases = ModelPredictors.bases;
-            Predict.predictors = new HashMap<>();
+            Predict.predictors = new LocalList<>(Predict.storageRoot);
             Predict.selectedPredictors = new ArrayList<>();
-            for (String baseName : bases.keySet()) {
-                Predict.predictors.put(
-                        baseName,
-                        new LocalStateMap<>(bases.get(baseName), Predict.storageRoot.resolve(baseName))
-                );
-            }
-            Predict.tickers = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
-            Predict.instructors = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});
+            Predict.predictorMenu = ObjectMenu.of(
+                    context,
+                    GlobalState.Predict.predictors.get(),
+                    3,
+                    smList -> GlobalState.Predict.selectedPredictors = new ArrayList<>(smList)
+            );
+            Predict.tickerMenu = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
+            Predict.instructorMenu = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});
             // remove before flight
         }
     }

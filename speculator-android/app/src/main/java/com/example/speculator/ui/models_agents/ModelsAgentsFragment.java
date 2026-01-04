@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -20,12 +21,16 @@ import androidx.fragment.app.Fragment;
 import com.example.speculator.dynamicUI.Builder;
 import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
-import engine.Instances.ModelPredictors;
+import engine.Instances.ModelLoaders;
+import engine.Serialisation.SavedStateMachine;
+import engine.Serialisation.StateLoader;
+import engine.Serialisation.StateMachine;
 import engine.components.ModelPredictor;
 import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentModelsAgentsBinding;
 import engine.modelPredictors.NN16842;
 
+import com.example.speculator.dynamicUI.ObjectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -42,8 +47,9 @@ public class ModelsAgentsFragment extends Fragment {
 
     private LinearLayout allBuilders;
 
-    private ChipGroup modelSelector;
-
+    private ScrollView loaderScroll;
+    private ScrollView modelScroll;
+    private ObjectMenu<SavedStateMachine<ModelPredictor<Float, Float>>> modelMenu;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -56,7 +62,6 @@ public class ModelsAgentsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        this.refreshModels();
         Log.d("testing","hi");
     }
 
@@ -70,32 +75,36 @@ public class ModelsAgentsFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         // model builders selector
-        RadioGroup builderSelector = this.root.findViewById(R.id.base_select);
-        ModelPredictors.bases.forEach(
-                (name, base) -> {
-                    RadioButton btn = new RadioButton(this.getActivity());
-                    btn.setId(View.generateViewId());
-                    btn.setText(name);
-                    btn.setLayoutParams(btnParams);
-                    builderSelector.addView(btn);
+        this.loaderScroll = this.root.findViewById(R.id.loader_select);
+        ObjectMenu<StateLoader<ModelPredictor<Float, Float>>> loaderMenu = ObjectMenu.of(
+                this.getContext(),
+                ModelLoaders.list,
+                1,
+                loaders -> {
+                    if (loaders.size() > 0){
+                        this.makeBuilders(loaders.get(0));
+                    }
                 }
         );
-        builderSelector.setOnCheckedChangeListener(
-                (selector, id) -> this.makeBuilders(ModelPredictors.bases.get(((RadioButton)selector.findViewById(id)).getText().toString()))
-        );
+        View loaderForm = loaderMenu.getView();
+        loaderForm.setLayoutParams(btnParams);
+        this.loaderScroll.addView(loaderForm);
+
         // model selector
-        this.modelSelector = this.root.findViewById(R.id.model_select);
-        this.refreshModels();
+        this.modelScroll = this.root.findViewById(R.id.model_select);
+        this.modelMenu = GlobalState.Predict.predictorMenu;
+        View modelForm = this.modelMenu.getView();
+        modelForm.setLayoutParams(btnParams);
+        this.modelScroll.addView(modelForm);
 
         // model delete button
         Button modelDeleteBtn = root.findViewById(R.id.delete_model);
          modelDeleteBtn.setOnClickListener(
                  btn -> {
-                     GlobalState.Predict.selectedPredictors.forEach(pair ->
-                             GlobalState.Predict.predictors.get(pair.first.first).remove(pair.first.second)
-                     );
+                     Log.d("debug_remove", ""+this.modelMenu.get().size());
+                     this.modelMenu.get().forEach(GlobalState.Predict.predictors::remove);
+                     this.modelMenu.removeSelected();
                      GlobalState.Predict.selectedPredictors = new ArrayList<>();
-                     this.refreshModels();
                     }
          );
 
@@ -107,46 +116,13 @@ public class ModelsAgentsFragment extends Fragment {
         binding = null;
     }
 
-    private void refreshModels () {
-        ChipGroup.LayoutParams btnParams = new ChipGroup.LayoutParams(
-                ChipGroup.LayoutParams.MATCH_PARENT,
-                ChipGroup.LayoutParams.WRAP_CONTENT
-        );
-        this.modelSelector.removeAllViews();
-        GlobalState.Predict.predictors.forEach(
-                (baseName, models) -> {
-                    models.keySet().forEach(name -> {
-                        Chip btn = new Chip(this.getActivity());
-                        btn.setCheckable(true);
-                        btn.setText(name);
-                        btn.setLayoutParams(btnParams);
-                        if (GlobalState.Predict.selectedPredictors.stream().map(pair -> pair.first).anyMatch(pair -> pair.equals(Pair.create(baseName, name)))) {
-                            btn.setChecked(true);
-                        }
-                        btn.setOnCheckedChangeListener(
-                                (b, checked) -> {
-                                    ModelPredictor<Float, Float> model = models.get(name).orElse(null);
-                                    Log.d("testing", model.toString());
-                                    if (checked) {
-                                        GlobalState.Predict.selectedPredictors.add(Pair.create(Pair.create(baseName, name), model));
-                                    } else {
-                                        GlobalState.Predict.selectedPredictors = GlobalState.Predict.selectedPredictors.stream().filter(pair -> !pair.first.equals(Pair.create(baseName, name))).collect(Collectors.toList());
-                                    }
-                                }
-                        );
-                        modelSelector.addView(btn);
-                    });
-                }
-        );
-    }
-
-    private void makeBuilders(ModelPredictor<Float, Float> base) {
+    private void makeBuilders(StateLoader<ModelPredictor<Float, Float>> loader) {
         this.allBuilders.removeAllViews();
         LinearLayout.LayoutParams formParams = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        new Builders().dict.get(base).forEach(builder -> {
+        new Builders().dict.get(loader).forEach(builder -> {
             ViewGroup form = builder.makeForm(this.getActivity());
             form.setLayoutParams(formParams);
             this.allBuilders.addView(form);
@@ -179,18 +155,21 @@ public class ModelsAgentsFragment extends Fragment {
 
             @Override
             public NN16842 build(Context context) {
-                NN16842 model = (NN16842) ModelPredictors.bases.get("NN16842-S5-M1").load(Map.of(
+                NN16842 model = (NN16842) ModelLoaders.list.get(0).load(Map.of(
                         "greeting", this.greeting.get()
                 ));
-                GlobalState.Predict.predictors.get("NN16842-S5-M1").put(greeting.get(), model);
-                ModelsAgentsFragment.this.refreshModels();
+                SavedStateMachine<ModelPredictor<Float, Float>> item = new SavedStateMachine<>(ModelLoaders.list.get(0), Map.of(
+                        "greeting", this.greeting.get()
+                ));
+                GlobalState.Predict.predictors.add(item);
+                ModelsAgentsFragment.this.modelMenu.add(item);
                 return model;
             }
         }
 
-        private Map<? extends ModelPredictor<Float, Float>, List<? extends Builder<? extends ModelPredictor<Float, Float>>>> dict = Map.of(
+        private Map<? extends StateLoader<ModelPredictor<Float, Float>>, List<? extends Builder<? extends ModelPredictor<Float, Float>>>> dict = Map.of(
                 //CONFIG
-                ModelPredictors.bases.get("NN16842-S5-M1"), List.of(
+                ModelLoaders.list.get(0), List.of(
                         new nnBuilder()
                 )
         );

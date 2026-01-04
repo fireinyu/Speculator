@@ -4,14 +4,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
 import android.widget.ScrollView;
 
-import engine.components.DrawInstructor;
 import engine.upstreams.Oanda;
 
-import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.navigation.NavigationView;
 
@@ -24,9 +20,6 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.speculator.databinding.ActivityMainBinding;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -76,11 +69,11 @@ public class MainActivity extends AppCompatActivity {
                 ChipGroup.LayoutParams.WRAP_CONTENT
         );
 
-        View tickerSelector = GlobalState.Predict.tickers.getView();
+        View tickerSelector = GlobalState.Predict.tickerMenu.getView();
         tickerSelector.setLayoutParams(btnParams);
         tickerScroll.addView(tickerSelector);
 
-        View instructorSelector = GlobalState.Predict.instructors.getView();
+        View instructorSelector = GlobalState.Predict.instructorMenu.getView();
         instructorSelector.setLayoutParams(btnParams);
         instructorScroll.addView(instructorSelector);
 
