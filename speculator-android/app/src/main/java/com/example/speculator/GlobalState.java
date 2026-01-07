@@ -31,7 +31,7 @@ public class GlobalState {
      * 4. arbitrary ticker instead of hard-coding (do for backtest) <DONE>
      * 5. (predict & backtest) multiple tickers <DONE>
      * 6. (deploy & simulate) prototypical agent and interface
-     * 7. (predict) live price stream and predictions; configure prediction interval
+     * 7. (predict) live price stream and predictions; configure prediction interval <DONE>
      * 8. djl -> Executorch
      * 9. limit datetime range based on upstream/ticker & left-dep
      * 10. fix "exceeded rate limit"
@@ -47,7 +47,8 @@ public class GlobalState {
      * 20. migrate group selectors to ObjectMenu <DONE>
      * 21. refactor model storage into list / LocalObject <DONE>
      * 22. refactor upstream and state
-     * 23. multiple predict per ticker w/ multiple ticker <TEST>
+     * 23. multiple predict per ticker w/ multiple ticker <DONE>
+     * 24. LinePlotter labelling / legend
      */ 
     static Path appStorageRoot;
 
@@ -66,6 +67,10 @@ public class GlobalState {
             public static LocalObject<String> apiKey = new LocalObject.Encrypted<>(storageRoot, "apiKey");
             public static LocalObject<String> accNo = new LocalObject.Encrypted<>(storageRoot,  "accNo");
         }
+    }
+
+    public static class Loop {
+        public static Duration interval = Duration.ofSeconds(1); // wait time after callback complete
     }
 
     public static class Predict {
@@ -94,9 +99,11 @@ public class GlobalState {
                         Predict.predictManager = new PredictManager<>(smList.stream().map(SavedStateMachine::get).collect(Collectors.toList()));
                     }
             );
+            if (predictors.size() > 0) {
+                predictorMenu.check(0);
+            }
             Predict.tickerMenu = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
             Predict.instructorMenu = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});
-            // remove before flight
         }
     }
 

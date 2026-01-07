@@ -102,6 +102,7 @@ public class ModelsAgentsFragment extends Fragment {
          modelDeleteBtn.setOnClickListener(
                  btn -> {
                      Log.d("debug_remove", ""+this.modelMenu.get().size());
+                     this.modelMenu.get().forEach(GlobalState.Predict.predictors::remove);
                      this.modelMenu.removeSelected();
                     }
          );
@@ -130,10 +131,10 @@ public class ModelsAgentsFragment extends Fragment {
 
         private  class nnBuilder extends Builder<NN16842> {
 
-            private Field<String> greeting = new Field<>() {
+            private Field<String> offset = new Field<>() {
                 @Override
                 public String getPrompt() {
-                    return "Enter greeting:";
+                    return "Enter offset:";
                 }
 
                 @Override
@@ -148,17 +149,13 @@ public class ModelsAgentsFragment extends Fragment {
             };
             private nnBuilder() {
                 super("NN16842-S5-M1");
-                super.register(greeting);
+                super.register(offset);
             }
 
             @Override
             public NN16842 build(Context context) {
-                NN16842 model = (NN16842) ModelLoaders.list.get(0).load(Map.of(
-                        "greeting", this.greeting.get()
-                ));
-                SavedStateMachine<ModelPredictor<Float, Float>> item = new SavedStateMachine<>(ModelLoaders.list.get(0), Map.of(
-                        "greeting", this.greeting.get()
-                ));
+                NN16842 model = new NN16842(Float.parseFloat(offset.get()));
+                SavedStateMachine<ModelPredictor<Float, Float>> item = new SavedStateMachine<>(ModelLoaders.list.get(0), model.save());
                 GlobalState.Predict.predictors.add(item);
                 ModelsAgentsFragment.this.modelMenu.add(item);
                 return model;

@@ -102,6 +102,7 @@ public class MPDrawer extends InstructedDrawer {
         };
         lines.forEach(ds -> ds.setDrawCircleHole(false));
         lines.forEach(ds -> ds.setDrawCircles(false));
+        lines.forEach(ds -> ds.setDrawValues(false));
         lines.forEach(lineData::addDataSet);
         Log.d("debug_draw", "" + points.size());
         Log.d("debug_draw", "" + lines.get(0).getEntryCount());

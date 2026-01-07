@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 public class ModelLoaders {
     public static List<StateLoader<ModelPredictor<Float, Float>>> list = Stream.<ModelPredictor<Float, Float>>of(
             // CONFIG
-            new NN16842(null)
+            new NN16842(0)
     )
             .map(StateMachine::getLoader)
             .map(loader -> (StateLoader<ModelPredictor<Float, Float>>)loader)

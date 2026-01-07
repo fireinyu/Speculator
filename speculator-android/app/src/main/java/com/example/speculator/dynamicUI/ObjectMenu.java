@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
+import com.example.speculator.GlobalState;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -77,6 +78,10 @@ public class ObjectMenu <T> {
         return this.form;
     }
 
+    public void check(int idx) {
+        this.options.get(idx).check();
+    }
+
     public List<T> get() {
         return this.selectQueue.stream().map(Option::get).collect(Collectors.toList());
     }
@@ -145,6 +150,10 @@ public class ObjectMenu <T> {
 
         private void clear() {
             this.btn.setChecked(false);
+        }
+
+        private void check() {
+            this.btn.setChecked(true);
         }
 
         private V get() {

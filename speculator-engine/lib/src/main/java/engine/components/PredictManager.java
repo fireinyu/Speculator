@@ -3,6 +3,7 @@ package engine.components;
 import java.sql.Time;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -10,7 +11,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import javax.swing.Timer;
 
 import ai.djl.Model;
 import engine.Instances.UpstreamAdapters;
@@ -22,6 +30,22 @@ import engine.PriceData.TimeSeries;
 import jdk.jshell.spi.SPIResolutionException;
 
 public class PredictManager<T extends Number, V extends Number>{
+    public static <T extends Number, V extends Number> ScheduledExecutorService predictLoop(
+            Supplier<? extends PredictManager<T, V>> getManager,
+            Supplier<? extends List<Ticker>> getTickers,
+            Duration interval,
+            Consumer<List<PredictResult<T, V>>> callback) {
+        ScheduledExecutorService clock = Executors.newSingleThreadScheduledExecutor();
+        clock.scheduleWithFixedDelay(() -> {
+            List<CompletableFuture<PredictResult<T, V>>> predCF =  getTickers.get().stream()
+                    .map(getManager.get()::predictAsync)
+                    .collect(Collectors.toList());
+            CompletableFuture.allOf(predCF.toArray(new CompletableFuture<?>[]{})).thenRunAsync(() -> {
+                callback.accept(predCF.stream().map(CompletableFuture::join).collect(Collectors.toList()));
+            });
+        },0, interval.toMillis(), TimeUnit.MILLISECONDS);
+        return clock;
+    }
     private List<ModelPredictor<T, V>> predictors;
     private Map<Duration, Integer> leftDependencies; //include latest / now
     private Map<Duration, Integer> rightDependencies; //exclude latest / now
@@ -119,6 +143,19 @@ public class PredictManager<T extends Number, V extends Number>{
 
     public CompletableFuture<PredictResult<T, V>> predictAsync(Ticker ticker) {
         return CompletableFuture.supplyAsync(() -> this.predict(ticker));
+    }
+
+    public ScheduledExecutorService predictLoop(List<Ticker> tickers, Duration interval , Consumer<? super List<? super PredictResult<T, V>>> callback) {
+        ScheduledExecutorService clock = Executors.newSingleThreadScheduledExecutor();
+        clock.scheduleWithFixedDelay(() -> {
+            List<CompletableFuture<PredictResult<T, V>>> predCF =  tickers.stream()
+                    .map(this::predictAsync)
+                    .collect(Collectors.toList());
+            CompletableFuture.allOf(predCF.toArray(new CompletableFuture<?>[]{})).thenRunAsync(() -> {
+                callback.accept(predCF.stream().map(CompletableFuture::join).collect(Collectors.toList()));
+            });
+        },0, interval.toMillis(), TimeUnit.MILLISECONDS);
+        return clock;
     }
 
     public CompletableFuture<BacktestResult<T, V>> backTestAsync(Ticker ticker, ZonedDateTime anchor) {

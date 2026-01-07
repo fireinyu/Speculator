@@ -68,16 +68,13 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
     protected List<DrawInstruction> drawAllBacktest(List<PredictManager.BacktestResult<T, V>> results) {
         List<Ticker> tickers = results.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList());
         List<TimeSeries<T>> featuresLs = results.stream().map(PredictManager.PredictResult::getFeatures).collect(Collectors.toList());
-        List<TimeSeries<V>> predsLs = results.stream()
-                .map(PredictManager.PredictResult::getPrediction)
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+
         List<TimeSeries<T>> targetsLs = results.stream().map(PredictManager.BacktestResult::getTargets).collect(Collectors.toList());
 
         ZonedDateTime anchor = TimeSeries.getAnchor(featuresLs);
         ArrayList<DrawInstruction> instructions = new ArrayList<>();
         if (tickers.size() == 1) {
+            List<TimeSeries<V>> predsLs = new ArrayList<>(results.get(0).getPrediction().values());
             double anchorPrice = featuresLs.get(0).priceAt(anchor).doubleValue();
             featuresLs.stream()
                     .map(this::makeUnformattedFeatures)
@@ -93,10 +90,15 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
                     .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
                     .forEach(line -> instructions.add(new DrawInstruction(line, lineColors.get(0), DrawInstruction.Style.DOTTED, "targets")));
         } else {
+            List<List<TimeSeries<V>>> allPredLs = results.stream()
+                    .map(PredictManager.PredictResult::getPrediction)
+                    .map(Map::values)
+                    .map(ArrayList::new)
+                    .collect(Collectors.toList());
             for (int i = 0; i < tickers.size(); i++) {
                 DrawInstruction.Color color = lineColors.get(i);
                 TimeSeries<T> f = featuresLs.get(i);
-                TimeSeries<V> p =  predsLs.get(i);
+                List<TimeSeries<V>> predsLs = allPredLs.get(i);
                 double anchorPrice = f.priceAt(anchor).doubleValue();
                 instructions.add(new DrawInstruction(
                         this.makeUnformattedFeatures(f).stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()),
@@ -105,13 +107,10 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
                         "features"
 
                 ));
-                instructions.add(new DrawInstruction(
-                        this.makeUnformattedPrediction(p).stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()),
-                        color,
-                        DrawInstruction.Style.DASHED,
-                        "prediction"
-
-                ));
+                predsLs.stream()
+                        .map(this::makeUnformattedPrediction)
+                        .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
+                        .forEach(line -> instructions.add(new DrawInstruction(line, color, DrawInstruction.Style.DASHED, "prediction")));
                 if (i < targetsLs.size()) {
                     TimeSeries<T> t =  targetsLs.get(i);
                     instructions.add(new DrawInstruction(
