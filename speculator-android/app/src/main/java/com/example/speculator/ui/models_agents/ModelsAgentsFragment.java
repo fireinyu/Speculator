@@ -22,6 +22,7 @@ import com.example.speculator.dynamicUI.Builder;
 import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
 import engine.Instances.ModelLoaders;
+import engine.PriceData.OffsetSeries;
 import engine.Serialisation.SavedStateMachine;
 import engine.Serialisation.StateLoader;
 import engine.Serialisation.StateMachine;
@@ -34,6 +35,7 @@ import com.example.speculator.dynamicUI.ObjectMenu;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -129,9 +131,9 @@ public class ModelsAgentsFragment extends Fragment {
     }
     private class Builders {
 
-        private  class nnBuilder extends Builder<NN16842> {
+        private class nnBuilder extends Builder<ModelPredictor<Float, Float>> {
 
-            private Field<String> offset = new Field<>() {
+            private Field<Long> offset = new Field<>() {
                 @Override
                 public String getPrompt() {
                     return "Enter offset:";
@@ -143,8 +145,8 @@ public class ModelsAgentsFragment extends Fragment {
                 }
 
                 @Override
-                public String get(View src) {
-                    return ((EditText)src).getText().toString();
+                public Long get(View src) {
+                    return Long.parseLong(((EditText)src).getText().toString());
                 }
             };
             private nnBuilder() {
@@ -153,8 +155,8 @@ public class ModelsAgentsFragment extends Fragment {
             }
 
             @Override
-            public NN16842 build(Context context) {
-                NN16842 model = new NN16842(Float.parseFloat(offset.get()));
+            public ModelPredictor<Float, Float> build(Context context) {
+                ModelPredictor<Float, Float> model = ModelPredictor.offset(new NN16842(), Duration.ofSeconds(offset.get()));
                 SavedStateMachine<ModelPredictor<Float, Float>> item = new SavedStateMachine<>(ModelLoaders.list.get(0), model.save());
                 GlobalState.Predict.predictors.add(item);
                 ModelsAgentsFragment.this.modelMenu.add(item);

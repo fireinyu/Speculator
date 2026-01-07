@@ -26,6 +26,7 @@ public class MPDrawer extends InstructedDrawer {
 
     @Override
     public void draw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
+        Log.d("debug_plot", "start");
         int colorHex;
         switch (color) {
             case RED:

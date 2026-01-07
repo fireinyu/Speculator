@@ -148,6 +148,20 @@ public class TimeSeries <V extends Number> extends Series<V>{
 
     }
 
+    public int indexAt(ZonedDateTime anchor) {
+        int anchorIndex = Collections.binarySearch(this.times, anchor);
+        if (anchorIndex < 0) {
+            anchorIndex = -(anchorIndex + 1);
+            if (anchorIndex == 0) {
+                return 0;
+            } else {
+                return anchorIndex - 1;
+            }
+        } else {
+            return  anchorIndex;
+        }
+    }
+
     public V priceAt (ZonedDateTime anchor) {
         int anchorIndex = Collections.binarySearch(this.times, anchor);
         V anchorPrice;

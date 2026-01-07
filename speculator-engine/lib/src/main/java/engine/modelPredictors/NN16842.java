@@ -53,9 +53,8 @@ public class NN16842 extends ModelPredictor<Float, Float> {
         private ai.djl.inference.Predictor<List<? extends Float>, List<Float>> predictor;
         private Translator<List<? extends Float>, List<Float>> translator;
 
-        private float offset;
-        private _Model (float offset) {
-            this.offset = offset;
+
+        private _Model ( ) {
             this.translator = new Translator<>() {
 
                 @Override
@@ -102,12 +101,12 @@ public class NN16842 extends ModelPredictor<Float, Float> {
             ArrayList<OffsetCandle<Float>> M1 = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
                 S5.add(
-                        new OffsetCandle<>(Duration.ofSeconds(5*(i+1)), (float) Math.exp(combinedOutput.get(i)) * baseline + offset)
+                        new OffsetCandle<>(Duration.ofSeconds(5*(i+1)), (float) Math.exp(combinedOutput.get(i)) * baseline)
                 );
             }
             for (int i = 0; i < 2; i++) {
                 M1.add(
-                        new OffsetCandle<>(Duration.ofMinutes(i+1), (float) Math.exp(combinedOutput.get(4 + i)) * baseline + offset)
+                        new OffsetCandle<>(Duration.ofMinutes(i+1), (float) Math.exp(combinedOutput.get(4 + i)) * baseline )
                 );
             }
 
@@ -121,16 +120,15 @@ public class NN16842 extends ModelPredictor<Float, Float> {
     }
 
     private float offset;
-    public NN16842(float offset) {
+    public NN16842() {
         super(
                 new _Extractor(),
-                new _Model(offset),
+                new _Model(),
                 List.of(Duration.ofSeconds(5), Duration.ofMinutes(1)),
                 List.of(16, 8),
                 List.of(4, 2)
         );
         ((_Model)model)._init(getClass().getResourceAsStream("/m_16842.pt"));
-        this.offset = offset;
     }
     @Override
     public Map<String, String> save() {
@@ -141,13 +139,13 @@ public class NN16842 extends ModelPredictor<Float, Float> {
 
     private static class Loader implements StateLoader<ModelPredictor<Float, Float>> {
         @Override
-        public NN16842 load(Map<String, String> state) {
-            return new NN16842(Float.parseFloat(state.get("offset")));
+        public ModelPredictor<Float, Float> load(Map<String, String> state) {
+            return new NN16842();
         }
 
         @Override
         public String toString(Map<String, String> state) {
-            return "offset: " + state.get("offset");
+            return "NN16842";
         }
 
         @Override
