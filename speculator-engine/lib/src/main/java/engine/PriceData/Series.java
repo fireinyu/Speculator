@@ -39,6 +39,12 @@ public class Series <T extends Number> {
         return new Datapoint<>(this.data.get(index));
     }
 
+    public Series<T> slice(int from, int to) {
+        Series<T> res = new Series<>(List.of());
+        res.data = this.data.subList(from, to);
+        return res;
+    }
+
     public int size () {
         return this.data.size();
     }

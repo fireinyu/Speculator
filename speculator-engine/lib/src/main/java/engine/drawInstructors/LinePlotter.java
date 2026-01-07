@@ -5,16 +5,20 @@ import engine.components.DrawInstructor;
 import engine.components.InstructedDrawer;
 import engine.PriceData.Ticker;
 import engine.PriceData.TimeSeries;
+import engine.components.PredictManager;
 
+import java.sql.Time;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class LinePlotter <V extends Number> extends DrawInstructor<V> {
+public class LinePlotter <T extends Number, V extends Number> extends DrawInstructor<T, V> {
     private static List<DrawInstruction.Color> lineColors = List.of(
             DrawInstruction.Color.RED,
             DrawInstruction.Color.BLUE,
@@ -53,17 +57,24 @@ public class LinePlotter <V extends Number> extends DrawInstructor<V> {
     }
 
     @Override
-    protected DrawInstruction singleDraw(TimeSeries<V> input, String label) {
-        return new DrawInstruction(
-                input.extract((dt, px) -> new DrawInstruction.Point(dt.toEpochSecond(), px)),
-                lineColors.get(0),
-                DrawInstruction.Style.SOLID,
-                ""
+    protected List<DrawInstruction> drawAllPredict(List<PredictManager.PredictResult<T, V>> results) {
+        return this.drawAllBacktest(results.stream()
+                .map(res -> new PredictManager.BacktestResult<>(res, new TimeSeries<>(List.of())))
+                .collect(Collectors.toList())
         );
     }
 
     @Override
-    protected List<DrawInstruction> drawAll(List<? extends Ticker> tickers, List<? extends TimeSeries<V>> featuresLs, List<? extends TimeSeries<V>> predsLs, List<? extends TimeSeries<V>> targetsLs) {
+    protected List<DrawInstruction> drawAllBacktest(List<PredictManager.BacktestResult<T, V>> results) {
+        List<Ticker> tickers = results.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList());
+        List<TimeSeries<T>> featuresLs = results.stream().map(PredictManager.PredictResult::getFeatures).collect(Collectors.toList());
+        List<TimeSeries<V>> predsLs = results.stream()
+                .map(PredictManager.PredictResult::getPrediction)
+                .map(Map::values)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
+        List<TimeSeries<T>> targetsLs = results.stream().map(PredictManager.BacktestResult::getTargets).collect(Collectors.toList());
+
         ZonedDateTime anchor = TimeSeries.getAnchor(featuresLs);
         ArrayList<DrawInstruction> instructions = new ArrayList<>();
         if (tickers.size() == 1) {
@@ -82,10 +93,9 @@ public class LinePlotter <V extends Number> extends DrawInstructor<V> {
                     .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
                     .forEach(line -> instructions.add(new DrawInstruction(line, lineColors.get(0), DrawInstruction.Style.DOTTED, "targets")));
         } else {
-            Iterator<DrawInstruction.Color> colors = lineColors.iterator();
             for (int i = 0; i < tickers.size(); i++) {
                 DrawInstruction.Color color = lineColors.get(i);
-                TimeSeries<V> f = featuresLs.get(i);
+                TimeSeries<T> f = featuresLs.get(i);
                 TimeSeries<V> p =  predsLs.get(i);
                 double anchorPrice = f.priceAt(anchor).doubleValue();
                 instructions.add(new DrawInstruction(
@@ -103,7 +113,7 @@ public class LinePlotter <V extends Number> extends DrawInstructor<V> {
 
                 ));
                 if (i < targetsLs.size()) {
-                    TimeSeries<V> t =  targetsLs.get(i);
+                    TimeSeries<T> t =  targetsLs.get(i);
                     instructions.add(new DrawInstruction(
                             this.makeUnformattedTargets(t).stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()),
                             color,

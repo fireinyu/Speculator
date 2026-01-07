@@ -292,6 +292,9 @@ public abstract class Oanda extends Upstream implements Snapshottable{
 
         @Override
         TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime at) {
+            if (duration.isZero()) {
+                return new TimeSeries<>(List.of());
+            }
             ArrayList<Candle<Float>> candles = new ArrayList<>();
             ZonedDateTime start = at.minus(this.duration);
             while (at.isAfter(start)) {
@@ -307,6 +310,9 @@ public abstract class Oanda extends Upstream implements Snapshottable{
 
         @Override
         TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at) {
+            if (duration.isZero()) {
+                return new TimeSeries<>(List.of());
+            }
             ArrayList<Candle<Float>> candles = new ArrayList<>();
             ZonedDateTime end = at.plus(this.duration);
             while (at.isBefore(end)) {

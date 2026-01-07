@@ -5,26 +5,23 @@ import engine.PriceData.TimeSeries;
 
 import java.util.List;
 
-public abstract class DrawInstructor<V extends Number> {
+public abstract class DrawInstructor<T extends Number, V extends Number> {
 
-    public InstructedPlotter<V> makePlotter(InstructedDrawer drawer) {
+    public InstructedPlotter<T, V> makePlotter(InstructedDrawer drawer) {
         return new InstructedPlotter<>(this, drawer);
     }
-    protected abstract DrawInstruction singleDraw(TimeSeries<V> input, String label);
-    protected abstract List<DrawInstruction> drawAll(List<? extends Ticker> tickers, List<? extends TimeSeries<V>> featuresLs, List<? extends TimeSeries<V>> predsLs, List<? extends TimeSeries<V>> targetsLs);
+    protected abstract List<DrawInstruction> drawAllPredict(List<PredictManager.PredictResult<T, V>> results);
+
+    protected abstract List<DrawInstruction> drawAllBacktest(List<PredictManager.BacktestResult<T, V>> results);
 
 
-
-    private static class InstructedPlotter <T extends Number> extends Plotter <T> {
-        private DrawInstructor<T> instructor;
+    private static class InstructedPlotter <T extends Number, V extends  Number> extends Plotter <T, V> {
+        private DrawInstructor<T, V> instructor;
         private InstructedDrawer drawer;
-        public InstructedPlotter(DrawInstructor<T> instructor, InstructedDrawer drawer) {
+        public InstructedPlotter(DrawInstructor<T, V> instructor, InstructedDrawer drawer) {
             this.instructor = instructor;
             this.drawer = drawer;
 
-        }@Override
-        public void plot(TimeSeries<T> input, String label) {
-            instructor.singleDraw(input, label).drawBy(this.drawer);
         }
 
         @Override
@@ -33,9 +30,14 @@ public abstract class DrawInstructor<V extends Number> {
         }
 
         @Override
-        public void plotAll(List<? extends Ticker> tickers, List<? extends TimeSeries<T>> featuresLs, List<? extends TimeSeries<T>> predsLs, List<? extends TimeSeries<T>> targetsLs) {
-            instructor.drawAll(tickers, featuresLs, predsLs, targetsLs).forEach(instruction -> instruction.drawBy(this.drawer));
+        public void plotAllBackTest(List<PredictManager.BacktestResult<T, V>> backtestResults) {
+            this.instructor.drawAllBacktest(backtestResults).forEach(drawInstruction -> drawInstruction.drawBy(this.drawer));
         }
 
+        @Override
+        public void plotAllPredict(List<PredictManager.PredictResult<T, V>> predictResults) {
+            this.instructor.drawAllPredict(predictResults).forEach(drawInstruction -> drawInstruction.drawBy(this.drawer));
+
+        }
     }
 }

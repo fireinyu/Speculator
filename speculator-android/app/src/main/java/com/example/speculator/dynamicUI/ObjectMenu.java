@@ -96,6 +96,9 @@ public class ObjectMenu <T> {
     public void removeSelected() {
         this.options.removeIf(option -> this.selectQueue.stream().anyMatch(option::equals));
         this.selectQueue.clear();
+        if (enableCallback) {
+            callback.accept(this.get());
+        }
         this.update();
     }
 

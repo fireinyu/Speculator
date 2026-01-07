@@ -10,7 +10,7 @@ import engine.components.DrawInstruction;
 import engine.components.DrawInstructor;
 import engine.components.InstructedDrawer;
 
-public class BoundPlotter <V extends Number> extends LinePlotter<V>{
+public class BoundPlotter <T extends Number, V extends Number> extends LinePlotter<T, V>{
 
     public BoundPlotter() {
         super();

@@ -33,6 +33,11 @@ public class TimeSeries <V extends Number> extends Series<V>{
 
     }
 
+    @Override
+    public TimeSeries<V> slice(int from, int to) {
+        return new TimeSeries<V>(this.times.subList(from, to), this.get().subList(from, to));
+    }
+
     public <D extends Datapoint<? extends V> & Timed> TimeSeries (D[] datapoints) {
         super(datapoints);
         this.times = new ArrayList<>();

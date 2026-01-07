@@ -9,14 +9,18 @@ import engine.Serialisation.StateLoader;
 import engine.Util;
 
 import java.time.Duration;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import engine.Serialisation.StateMachine;
+import kotlin.collections.builders.MapBuilder;
 
 public abstract class ModelPredictor<V extends Number, R extends Number> implements StateMachine<ModelPredictor<V, R>> {
 
@@ -58,9 +62,18 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         return CompletableFuture.supplyAsync(() -> this.predict(input, latest));
     }
 
-    public List<Duration> getRanges() {
-        return Util.combine(this.intervals.stream(), this.rightDependencies.stream(), (interval, rDep) -> interval.multipliedBy(rDep.longValue()))
-                .collect(Collectors.toList());
+    public Map<Duration, Integer> getRightDependencies() {
+        HashMap<Duration, Integer> map = new HashMap<>();
+        IntStream.range(0, this.intervals.size())
+                .forEach(i -> map.put(intervals.get(i), rightDependencies.get(i)));
+        return map;
+    }
+
+    public Map<Duration, Integer> getLeftDependencies() {
+        HashMap<Duration, Integer> map = new HashMap<>();
+        IntStream.range(0, this.intervals.size())
+                .forEach(i -> map.put(intervals.get(i), leftDependencies.get(i)));
+        return map;
     }
 
     public <T extends Upstream & Snapshottable> List<T> requestLeftUpstreams (UpstreamAdapter adapter) {

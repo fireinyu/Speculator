@@ -13,10 +13,13 @@ import engine.components.ModelPredictor;
 import engine.PriceData.Ticker;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import engine.Serialisation.LocalObject;
+import engine.components.PredictManager;
 
 public class GlobalState {
     /* TODO LIST
@@ -44,6 +47,7 @@ public class GlobalState {
      * 20. migrate group selectors to ObjectMenu <DONE>
      * 21. refactor model storage into list / LocalObject <DONE>
      * 22. refactor upstream and state
+     * 23. multiple predict per ticker w/ multiple ticker <TEST>
      */ 
     static Path appStorageRoot;
 
@@ -68,18 +72,27 @@ public class GlobalState {
         public static Path storageRoot;
         public static LocalList<SavedStateMachine<ModelPredictor<Float, Float>>> predictors;
         public static List<SavedStateMachine<ModelPredictor<Float, Float>>> selectedPredictors;
+        public static PredictManager<Float, Float> predictManager;
+        public static PredictManager<Float, Float> pullManager;
         public static ObjectMenu<SavedStateMachine<ModelPredictor<Float, Float>>> predictorMenu;
         public static ObjectMenu<Ticker> tickerMenu;
-        public static ObjectMenu<DrawInstructor<Float>> instructorMenu;
+        public static ObjectMenu<DrawInstructor<Float, Float>> instructorMenu;
         public static void init(Context context) {
             Predict.storageRoot = GlobalState.appStorageRoot.resolve("models");
             Predict.predictors = new LocalList<>(Predict.storageRoot);
+            Predict.pullManager = new PredictManager<>(List.of(ModelPredictor.identity(
+                    List.of(Duration.ofSeconds(60)),
+                    List.of(100)
+            )));
             Predict.selectedPredictors = new ArrayList<>();
             Predict.predictorMenu = ObjectMenu.of(
                     context,
                     GlobalState.Predict.predictors.get(),
                     3,
-                    smList -> GlobalState.Predict.selectedPredictors = new ArrayList<>(smList)
+                    smList -> {
+                        GlobalState.Predict.selectedPredictors = new ArrayList<>(smList);
+                        Predict.predictManager = new PredictManager<>(smList.stream().map(SavedStateMachine::get).collect(Collectors.toList()));
+                    }
             );
             Predict.tickerMenu = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
             Predict.instructorMenu = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});

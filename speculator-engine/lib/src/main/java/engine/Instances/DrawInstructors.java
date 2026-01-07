@@ -7,7 +7,7 @@ import engine.drawInstructors.BoundPlotter;
 import engine.drawInstructors.LinePlotter;
 
 public class DrawInstructors {
-    public static List<DrawInstructor<Float>> list = List.of(
+    public static List<DrawInstructor<Float, Float>> list = List.of(
             new LinePlotter<>(),
             new BoundPlotter<>()
     );

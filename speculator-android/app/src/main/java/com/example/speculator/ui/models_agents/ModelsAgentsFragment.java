@@ -102,9 +102,7 @@ public class ModelsAgentsFragment extends Fragment {
          modelDeleteBtn.setOnClickListener(
                  btn -> {
                      Log.d("debug_remove", ""+this.modelMenu.get().size());
-                     this.modelMenu.get().forEach(GlobalState.Predict.predictors::remove);
                      this.modelMenu.removeSelected();
-                     GlobalState.Predict.selectedPredictors = new ArrayList<>();
                     }
          );
 

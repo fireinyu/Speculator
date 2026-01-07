@@ -5,58 +5,28 @@ import engine.PriceData.TimeSeries;
 
 import java.util.List;
 
-public abstract class Plotter <V extends Number> implements Multiplot<V> {
-
-    public abstract void plot (TimeSeries<V> input, String label);
+public abstract class Plotter <T extends  Number, V extends Number> {
 
     public abstract void unplot ();
 
-    @Override
-    public void plotAll(
-            List<? extends Ticker> tickers,
-            List<? extends TimeSeries<V>> featuresLs,
-            List<? extends TimeSeries<V>> predsLs
+    public abstract void plotAllBackTest(
+            List<PredictManager.BacktestResult<T, V>> results
+    );
+
+    public abstract void plotAllPredict(
+            List<PredictManager.PredictResult<T, V>> results
+    );
+
+    public void plotPredict(
+            PredictManager.PredictResult<T, V> result
     ) {
-        this.plotAll(tickers, featuresLs, predsLs, List.of());
+        this.plotAllPredict(List.of(result));
     }
 
-    @Override
-    public void plotAll(
-            List<? extends Ticker> tickers,
-            TimeSeries<V> features,
-            List<? extends TimeSeries<V>> predsLs,
-            TimeSeries<V> targets
+    public void plotBackTest(
+            PredictManager.BacktestResult<T, V> result
     ) {
-        this.plotAll(
-                tickers,
-                List.of(features),
-                predsLs,
-                List.of(targets)
-        );
-    }
-
-    @Override
-    public void plotAll(
-            List<? extends Ticker> tickers,
-            TimeSeries<V> features,
-            List<? extends TimeSeries<V>> predsLs
-    ) {
-        this.plotAll(
-                tickers,
-                List.of(features),
-                predsLs,
-                List.of()
-        );
-    }
-
-    @Override
-    public void plotAll(List<? extends Ticker> tickers, List<? extends TimeSeries<V>> featuresLs) {
-        this.plotAll(
-                tickers,
-                featuresLs,
-                List.of(),
-                List.of()
-        );
+        this.plotAllBackTest(List.of(result));
     }
 
 
