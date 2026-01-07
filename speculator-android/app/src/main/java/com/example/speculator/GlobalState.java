@@ -49,6 +49,7 @@ public class GlobalState {
      * 22. refactor upstream and state
      * 23. multiple predict per ticker w/ multiple ticker <DONE>
      * 24. LinePlotter labelling / legend
+     * 25. Staggered ModelPredictor wrapper (use TimeSeries binary search)
      */ 
     static Path appStorageRoot;
 
