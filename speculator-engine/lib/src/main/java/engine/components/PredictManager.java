@@ -77,11 +77,13 @@ public class PredictManager<T extends Number, V extends Number>{
 
     }
     public BacktestResult<T, V> backtest(Ticker ticker, ZonedDateTime anchor) {
+        System.out.println("start");
         UpstreamAdapter adapter = UpstreamAdapters.getAdapterFor(ticker);
         HashMap<Duration, TickerState<T>> states = new HashMap<>();
         leftDependencies.forEach((interval, ld) -> states.put(interval, adapter.makeLeftFor(interval, ld).<T>snapshot(anchor).getTickerState(ticker)));
         PredictResult<T, V> predictResult = this.predictFromStates(ticker, states);
         ArrayList<TickerState<T>> rightStates = new ArrayList<>();
+        System.out.println("p1");
         this.rightDependencies.forEach((interval, rd) -> rightStates.add(adapter.makeRightFor(interval, rd).<T>verify(anchor).getTickerState(ticker)));
         TimeSeries<T> targets = rightStates.stream()
                 .map(TickerState::getPriceData)
@@ -89,6 +91,7 @@ public class PredictManager<T extends Number, V extends Number>{
                         new TimeSeries<>(List.of()),
                         (accum, nxt) -> accum.merge(nxt)
                 );
+        System.out.println("p2");
         return new BacktestResult<>(predictResult, targets);
     }
 
@@ -115,6 +118,11 @@ public class PredictManager<T extends Number, V extends Number>{
                     ArrayList<TimeSeries<T>> fs = new ArrayList<>();
                     map.forEach((interval, ld) -> {
                         TimeSeries<T> maxF = maxFeatures.get(interval);
+//                        fs.add(maxF);
+                        System.out.println("q0");
+                        System.out.println(ld);
+                        System.out.println(ld);
+                        System.out.println(maxF.slice(maxF.size() - ld, maxF.size()).size());
                         fs.add(maxF.slice(maxF.size() - ld, maxF.size()));
                     });
                     features.put(model, fs);

@@ -52,7 +52,7 @@ public class GlobalState {
      * 25. Staggered ModelPredictor wrapper (use TimeSeries binary search) <DONE>
      * 26. (engine) presets
      * 27. (android) default objectmenu selection/s
-     * 28. fix poor performance of backtest (probably targets)
+     * 28. fix poor performance of backtest (probably targets) <DONE>
      */ 
     static Path appStorageRoot;
 

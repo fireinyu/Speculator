@@ -37,7 +37,9 @@ import com.github.mikephil.charting.data.LineData;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -74,6 +76,7 @@ public class BacktestFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.selectedDateTime = ZonedDateTime.now();
+//        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
         this.chart = root.findViewById(R.id.backtest_chart);
         this.chart.setData(new LineData());
         plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
@@ -178,7 +181,7 @@ public class BacktestFragment extends Fragment {
                         );
                         this.enableNewPlots();
                     });
-                });
+                }).join();
     }
 //
 //    public void predict(List<Ticker> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {

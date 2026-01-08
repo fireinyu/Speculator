@@ -126,7 +126,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             IntStream.range(0, model.intervals.size())
                     .forEach(i -> {
                         Duration interval = model.intervals.get(i);
-                        double ratio = offset.toMillis()/interval.toMillis();
+                        double ratio = offset.toMillis()/(double)interval.toMillis();
                         leftDependencies.add(model.leftDependencies.get(i) + (int)Math.ceil(ratio));
                     });
             return leftDependencies;
@@ -136,7 +136,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             IntStream.range(0, model.intervals.size())
                     .forEach(i -> {
                         Duration interval = model.intervals.get(i);
-                        double ratio = offset.toMillis()/interval.toMillis();
+                        double ratio = offset.toMillis()/(double)interval.toMillis();
                         rightDependencies.add(Math.max(0, model.rightDependencies.get(i) - (int)Math.floor(ratio)));
                     });
             return rightDependencies;
@@ -171,12 +171,18 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
                     anchorIndices.stream(),
                     TimeSeries::get
             ).max(Comparator.comparing(Candle::getTime)).get();
+            System.out.println("pp0");
+            System.out.println(anchor);
             List<TimeSeries<V>> offsetInput = new ArrayList<>();
             IntStream.range(0, model.intervals.size())
                     .forEach(i -> {
                         int ld = model.leftDependencies.get(i);
                         TimeSeries<V> ts = input.get(i);
                         int anchorIndex = anchorIndices.get(i);
+                        System.out.println("pp1");
+                        System.out.println(anchorIndex);
+                        System.out.println(ld);
+//                        ts.getTimes().forEach(System.out::println);
                         offsetInput.add(ts.slice(anchorIndex + 1 - ld, anchorIndex + 1));
 
                     });

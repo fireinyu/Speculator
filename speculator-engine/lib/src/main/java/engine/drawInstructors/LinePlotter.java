@@ -95,6 +95,8 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
                     .map(Map::values)
                     .map(ArrayList::new)
                     .collect(Collectors.toList());
+            System.out.println("end");
+
             for (int i = 0; i < tickers.size(); i++) {
                 DrawInstruction.Color color = lineColors.get(i);
                 TimeSeries<T> f = featuresLs.get(i);
@@ -107,10 +109,12 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
                         "features"
 
                 ));
+
                 predsLs.stream()
                         .map(this::makeUnformattedPrediction)
                         .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
                         .forEach(line -> instructions.add(new DrawInstruction(line, color, DrawInstruction.Style.DASHED, "prediction")));
+
                 if (i < targetsLs.size()) {
                     TimeSeries<T> t =  targetsLs.get(i);
                     instructions.add(new DrawInstruction(

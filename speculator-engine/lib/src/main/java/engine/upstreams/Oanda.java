@@ -38,6 +38,7 @@ import okhttp3.Response;
 public abstract class Oanda extends Upstream implements Snapshottable{
     private static LocalObject<String> USERID;
     private static LocalObject<String> APIKEY;
+    private static OkHttpClient client = new OkHttpClient();
 
     public static void authenticate(LocalObject<String> userID, LocalObject<String> apiKey) {
         Oanda.USERID = userID;
@@ -63,7 +64,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
         JSONObject res = null;
         Response response = null;
         try {
-            response = new OkHttpClient().newCall(request).execute();
+            response = Oanda.client.newCall(request).execute();
             try {
                 res = new JSONObject(response.body().string());
             } catch (JSONException e) {
@@ -347,6 +348,9 @@ public abstract class Oanda extends Upstream implements Snapshottable{
         TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime end) {
             ArrayList<Candle<Float>> candles = new ArrayList<>();
             int count = this.count;
+            System.out.println("ps0");
+            System.out.println(end);
+
             while (count > 0) {
                 int increment = Math.min(count, Oanda.FETCH_SIZE);
                 List<Candle<Float>> delta = super.fetchCandles(ticker, null, end, increment);
@@ -354,6 +358,9 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 candles.addAll(delta);
                 count -= increment;
             }
+            System.out.println(this.count);
+            System.out.println(candles.size());
+            System.out.println(candles.get(candles.size()-1).getTime());
             return new TimeSeries<>(candles);
         }
 
