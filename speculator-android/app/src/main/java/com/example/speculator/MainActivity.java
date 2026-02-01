@@ -27,6 +27,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.speculator.databinding.ActivityMainBinding;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
@@ -124,6 +125,10 @@ public class MainActivity extends AppCompatActivity {
             GlobalState.Presets.presetMenu.removeSelected();
         });
         defaultPreset.setOnClickListener(btn -> {
+            List<Preset<Float, Float>> presets = GlobalState.Presets.presetMenu.get();
+            if (presets.isEmpty()) {
+                return;
+            }
             GlobalState.Presets.defaultPreset.put(GlobalState.Presets.presetMenu.get().get(0));
         });
 
