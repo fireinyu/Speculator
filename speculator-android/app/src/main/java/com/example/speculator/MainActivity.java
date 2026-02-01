@@ -4,8 +4,14 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ScrollView;
 
+import engine.PriceData.Ticker;
+import engine.Serialisation.SavedStateMachine;
+import engine.components.DrawInstructor;
+import engine.sugar.Preset;
 import engine.upstreams.Oanda;
 
 import com.google.android.material.chip.ChipGroup;
@@ -21,6 +27,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.speculator.databinding.ActivityMainBinding;
 
+import java.util.stream.Collectors;
+
 public class MainActivity extends AppCompatActivity {
 
     private AppBarConfiguration mAppBarConfiguration;
@@ -30,6 +38,11 @@ public class MainActivity extends AppCompatActivity {
 
     private ScrollView tickerScroll;
     private ScrollView instructorScroll;
+    private ScrollView presetScroll;
+    private Button newPreset;
+    private Button removePreset;
+    private Button defaultPreset;
+    private EditText newPresetName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +67,11 @@ public class MainActivity extends AppCompatActivity {
         popupDrawer = findViewById(R.id.popupDrawer);
         tickerScroll = findViewById(R.id.tickerScroll);
         instructorScroll = findViewById(R.id.plotterScroll);
+        presetScroll = findViewById(R.id.presetScroll);
+        newPreset = findViewById(R.id.newPreset);
+        defaultPreset = findViewById(R.id.defaultPreset);
+        removePreset = findViewById(R.id.removePreset);
+        newPresetName = findViewById(R.id.newPresetName);
         Oanda.authenticate(GlobalState.Authentication.Oanda.accNo, GlobalState.Authentication.Oanda.apiKey);
         findViewById(R.id.tickerBar).setOnClickListener(bar -> {
             Log.d("debug_tickers", "hi");
@@ -76,6 +94,39 @@ public class MainActivity extends AppCompatActivity {
         View instructorSelector = GlobalState.Predict.instructorMenu.getView();
         instructorSelector.setLayoutParams(btnParams);
         instructorScroll.addView(instructorSelector);
+
+        View presetSelector = GlobalState.Presets.presetMenu.getView();
+        presetSelector.setLayoutParams(btnParams);
+        presetScroll.addView(presetSelector);
+
+        newPreset.setOnClickListener(btn -> {
+            Preset<Float, Float> preset = new Preset<>(
+                    newPresetName.getText().toString(),
+                    GlobalState.Predict.selectedPredictors,
+                    GlobalState.Predict.tickerMenu.get().stream()
+                            .map(Ticker::getName)
+                            .collect(Collectors.toList()),
+                    GlobalState.Predict.instructorMenu.get().stream()
+                            .map(SavedStateMachine::new)
+                            .collect(Collectors.toList())
+            );
+            GlobalState.Presets.presets.add(preset);
+            GlobalState.Presets.presetMenu.add(preset);
+        });
+        removePreset.setOnClickListener(btn -> {
+            GlobalState.Presets.presetMenu.get().stream().
+                    peek(ps -> {
+                        if (GlobalState.Presets.defaultPreset.equals(ps)) {
+                            GlobalState.Presets.defaultPreset.delete();
+                        }
+                    }).
+                    forEach(GlobalState.Presets.presets::remove);
+            GlobalState.Presets.presetMenu.removeSelected();
+        });
+        defaultPreset.setOnClickListener(btn -> {
+            GlobalState.Presets.defaultPreset.put(GlobalState.Presets.presetMenu.get().get(0));
+        });
+
 
     }
 

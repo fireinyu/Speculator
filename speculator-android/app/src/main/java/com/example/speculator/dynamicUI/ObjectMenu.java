@@ -1,6 +1,7 @@
 package com.example.speculator.dynamicUI;
 
 import android.content.Context;
+import android.graphics.Path;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -64,7 +65,7 @@ public class ObjectMenu <T> {
             enableCallback = false;
             Option<T> toRemove = this.selectQueue.poll();
             toRemove.clear();
-            enableCallback = true;
+            enableCallback = toCallback;
         }
         if (toCallback) {
             callback.accept(this.get());
@@ -105,6 +106,16 @@ public class ObjectMenu <T> {
             callback.accept(this.get());
         }
         this.update();
+    }
+
+    public void preset(List<? extends T> selected) {
+        this.enableCallback = false;
+        this.selectQueue.forEach(Option::clear);
+        this.options.stream()
+                .filter(opt -> selected.stream().anyMatch(obj -> opt.get().equals(obj)))
+                .forEach(Option::check);
+        this.enableCallback = true;
+        this.onCheckChange();
     }
 
     private void update() {

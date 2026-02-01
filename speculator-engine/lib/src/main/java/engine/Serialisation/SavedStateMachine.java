@@ -17,6 +17,11 @@ public class SavedStateMachine <T extends StateMachine<T>> implements Serializab
         this.state = new HashMap<>(state);
     }
 
+    @SuppressWarnings("unchecked")
+    public SavedStateMachine(T stateMachine) {
+        this((StateLoader<T>)stateMachine.getLoader(), stateMachine.save());
+    }
+
     public T get() {
         if (this.object == null) {
             this.object = this.loader.load(this.state);
@@ -35,7 +40,7 @@ public class SavedStateMachine <T extends StateMachine<T>> implements Serializab
         if (obj instanceof SavedStateMachine) {
             SavedStateMachine other = (SavedStateMachine) obj;
             return
-                    this.loader.toString().equals(other.loader.toString())
+                    this.loader.getClass().equals(other.loader.getClass())
                     && this.state.equals(other.state)
                     ;
         } else {

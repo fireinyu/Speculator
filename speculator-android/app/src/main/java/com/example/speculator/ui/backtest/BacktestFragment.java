@@ -21,7 +21,6 @@ import engine.components.PredictManager;
 import engine.components.Snapshottable;
 import engine.PriceData.TickerState;
 import com.example.speculator.GlobalState;
-import engine.Instances.UpstreamAdapters;
 import com.example.speculator.MPDrawer;
 import engine.PriceData.Candle;
 import engine.components.ModelPredictor;

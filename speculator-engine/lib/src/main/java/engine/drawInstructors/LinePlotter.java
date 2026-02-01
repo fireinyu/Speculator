@@ -1,5 +1,7 @@
 package engine.drawInstructors;
 
+import engine.Serialisation.StateLoader;
+import engine.Serialisation.StateMachine;
 import engine.components.DrawInstruction;
 import engine.components.DrawInstructor;
 import engine.components.InstructedDrawer;
@@ -7,8 +9,11 @@ import engine.PriceData.Ticker;
 import engine.PriceData.TimeSeries;
 import engine.components.PredictManager;
 
+import java.io.Serializable;
 import java.sql.Time;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,7 +23,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class LinePlotter <T extends Number, V extends Number> extends DrawInstructor<T, V> {
+public class LinePlotter <T extends Number, V extends Number> extends DrawInstructor<T, V> implements Serializable {
     private static List<DrawInstruction.Color> lineColors = List.of(
             DrawInstruction.Color.RED,
             DrawInstruction.Color.BLUE,
@@ -128,5 +133,25 @@ public class LinePlotter <T extends Number, V extends Number> extends DrawInstru
             }
         }
         return instructions;
+    }
+
+    @Override
+    public StateLoader<? extends StateMachine<DrawInstructor<T, V>>> getLoader() {
+        return new StateLoader<>() {
+            @Override
+            public DrawInstructor<T, V> load(Map<String, String> state) {
+                return new LinePlotter<>();
+            }
+
+            @Override
+            public String toString(Map<String, String> state) {
+                return "";
+            }
+        };
+    }
+
+    @Override
+    public Map<String, String> save() {
+        return Map.of();
     }
 }

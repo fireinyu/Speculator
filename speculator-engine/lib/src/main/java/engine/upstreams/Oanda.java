@@ -110,7 +110,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/instruments/%s/candles?%s%s%sgranularity=%s",
                         Oanda.USERID.get().orElse("noId"),
-                        ticker.getAliasFor(this),
+                        ticker.getAliasFor(Oanda.Adapter.class),
                         f,
                         t,
                         c,
@@ -176,7 +176,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 Position<Float> position = Position.empty();
                 for (int i = 0; i < allPos.length(); i++) {
                     JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
+                    if (posObj.getString("instrument").equals(ticker.getAliasFor(Oanda.Adapter.class))) {
                         float netUnits = 0f;
                         float netAmount = 0f;
                         for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
@@ -239,7 +239,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 Position<Float> position = Position.empty();
                 for (int i = 0; i < allPos.length(); i++) {
                     JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
+                    if (posObj.getString("instrument").equals(ticker.getAliasFor(Oanda.Adapter.class))) {
                         float netUnits = 0f;
                         float netAmount = 0f;
                         for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {

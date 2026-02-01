@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import javax.swing.Timer;
 
 import ai.djl.Model;
-import engine.Instances.UpstreamAdapters;
 import engine.PriceData.Candle;
 import engine.PriceData.State;
 import engine.PriceData.Ticker;
@@ -78,7 +77,7 @@ public class PredictManager<T extends Number, V extends Number>{
     }
     public BacktestResult<T, V> backtest(Ticker ticker, ZonedDateTime anchor) {
         System.out.println("start");
-        UpstreamAdapter adapter = UpstreamAdapters.getAdapterFor(ticker);
+        UpstreamAdapter adapter = ticker.preferredUAs().get(0);
         HashMap<Duration, TickerState<T>> states = new HashMap<>();
         leftDependencies.forEach((interval, ld) -> states.put(interval, adapter.makeLeftFor(interval, ld).<T>snapshot(anchor).getTickerState(ticker)));
         PredictResult<T, V> predictResult = this.predictFromStates(ticker, states);
@@ -96,7 +95,7 @@ public class PredictManager<T extends Number, V extends Number>{
     }
 
     public PredictResult<T, V> predict(Ticker ticker) {
-        UpstreamAdapter adapter = UpstreamAdapters.getAdapterFor(ticker);
+        UpstreamAdapter adapter = ticker.preferredUAs().get(0);
         HashMap<Duration, TickerState<T>> states = new HashMap<>();
         leftDependencies.forEach((interval, ld) -> states.put(interval, adapter.makeLeftFor(interval, ld).<T>update().getTickerState(ticker)));
         return this.predictFromStates(ticker, states);

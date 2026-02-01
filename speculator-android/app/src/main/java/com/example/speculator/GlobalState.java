@@ -5,7 +5,7 @@ import android.content.Context;
 import com.example.speculator.dynamicUI.ObjectMenu;
 
 import engine.Instances.DrawInstructors;
-import engine.Instances.UpstreamAdapters;
+import engine.Instances.Tickers;
 import engine.Serialisation.LocalList;
 import engine.Serialisation.SavedStateMachine;
 import engine.components.DrawInstructor;
@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 import engine.Serialisation.LocalObject;
 import engine.components.PredictManager;
+import engine.sugar.Preset;
 
 public class GlobalState {
     /* TODO LIST
@@ -50,17 +51,23 @@ public class GlobalState {
      * 23. multiple predict per ticker w/ multiple ticker <DONE>
      * 24. LinePlotter labelling / legend
      * 25. Staggered ModelPredictor wrapper (use TimeSeries binary search) <DONE>
-     * 26. (engine) presets
-     * 27. (android) default objectmenu selection/s
+     * 26. (engine) presets <DONE>
+     * 27. (android) ObjectMenu preset <DONE>
      * 28. fix poor performance of backtest (probably targets) <DONE>
      */ 
     static Path appStorageRoot;
+    static List<Ticker> tickers = List.of(
+            // CONFIG
+            /// supported tickers
+            Tickers.XNG,
+            Tickers.SGD
+    );
 
     public static void init (Context context) {
         GlobalState.appStorageRoot = context.getFilesDir().toPath();
 
         Predict.init(context);
-
+        Presets.init(context);
 
     }
 
@@ -75,6 +82,33 @@ public class GlobalState {
 
     public static class Loop {
         public static Duration interval = Duration.ofSeconds(1); // wait time after callback complete
+    }
+
+    public static class Presets {
+        public static Path storageRoot;
+        public static LocalList<Preset<Float, Float>> presets;
+        public static ObjectMenu<Preset<Float, Float>> presetMenu;
+        public static LocalObject<Preset<Float, Float>> defaultPreset;
+        public static void init(Context context) {
+            Presets.storageRoot = GlobalState.appStorageRoot.resolve("presets");
+            Presets.presets = new LocalList<>(Presets.storageRoot, "list");
+            Presets.defaultPreset = new LocalObject<>(Presets.storageRoot, "default");
+            Presets.presetMenu = ObjectMenu.of(
+                    context,
+                    Presets.presets.get(),
+                    1,
+                    presetList -> {
+                        if (presetList.isEmpty()) {
+                            return;
+                        }
+                        Preset<Float, Float> selected = presetList.get(0);
+                        Predict.tickerMenu.preset(selected.getTickers().stream().map(Tickers.map::get).collect(Collectors.toList()));
+                        Predict.predictorMenu.preset(selected.getModelStates());
+                        Predict.instructorMenu.preset(selected.getInstructorStates().stream().map(SavedStateMachine::get).collect(Collectors.toList()));
+                    }
+            );
+            defaultPreset.get().ifPresent(preset -> Presets.presetMenu.preset(List.of(preset)));
+        }
     }
 
     public static class Predict {
@@ -106,7 +140,7 @@ public class GlobalState {
             if (predictors.size() > 0) {
                 predictorMenu.check(0);
             }
-            Predict.tickerMenu = ObjectMenu.of(context, UpstreamAdapters.getTickers(), 3, x->{});
+            Predict.tickerMenu = ObjectMenu.of(context, tickers, 3, x->{});
             Predict.instructorMenu = ObjectMenu.of(context, DrawInstructors.list, DrawInstructors.list.subList(0, 1), 1, x->{});
         }
     }
