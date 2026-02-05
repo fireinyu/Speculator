@@ -18,7 +18,6 @@ import androidx.fragment.app.Fragment;
 
 import engine.Serialisation.SavedStateMachine;
 import engine.components.PredictManager;
-import engine.components.Snapshottable;
 import engine.PriceData.TickerState;
 import com.example.speculator.GlobalState;
 import com.example.speculator.MPDrawer;

@@ -34,14 +34,15 @@ public class PredictManager<T extends Number, V extends Number>{
             Supplier<? extends List<Ticker>> getTickers,
             Duration interval,
             Consumer<List<PredictResult<T, V>>> callback) {
-        ScheduledExecutorService clock = Executors.newSingleThreadScheduledExecutor();
+        ScheduledExecutorService clock = Executors.newScheduledThreadPool(Thread.activeCount());
         clock.scheduleWithFixedDelay(() -> {
-            List<CompletableFuture<PredictResult<T, V>>> predCF =  getTickers.get().stream()
-                    .map(getManager.get()::predictAsync)
+//            System.out.println("debug pm: start");
+            List<PredictResult<T, V>> predCF =  getTickers.get().stream()
+                    .map(getManager.get()::predict)
                     .collect(Collectors.toList());
-            CompletableFuture.allOf(predCF.toArray(new CompletableFuture<?>[]{})).thenRunAsync(() -> {
-                callback.accept(predCF.stream().map(CompletableFuture::join).collect(Collectors.toList()));
-            });
+//            System.out.println("debug pm: cp0");
+//            System.out.println("debug pm: mid");
+            callback.accept(predCF);
         },0, interval.toMillis(), TimeUnit.MILLISECONDS);
         return clock;
     }
@@ -76,28 +77,34 @@ public class PredictManager<T extends Number, V extends Number>{
 
     }
     public BacktestResult<T, V> backtest(Ticker ticker, ZonedDateTime anchor) {
-        System.out.println("start");
-        UpstreamAdapter adapter = ticker.preferredUAs().get(0);
+//        System.out.println("start");
+        Upstream upstream = ticker.preferredUpstreams().get(0);
         HashMap<Duration, TickerState<T>> states = new HashMap<>();
-        leftDependencies.forEach((interval, ld) -> states.put(interval, adapter.makeLeftFor(interval, ld).<T>snapshot(anchor).getTickerState(ticker)));
+        leftDependencies.forEach((interval, ld) -> states.put(interval, upstream.<T>snapshot(anchor, interval, ld).getTickerState(ticker)));
         PredictResult<T, V> predictResult = this.predictFromStates(ticker, states);
         ArrayList<TickerState<T>> rightStates = new ArrayList<>();
-        System.out.println("p1");
-        this.rightDependencies.forEach((interval, rd) -> rightStates.add(adapter.makeRightFor(interval, rd).<T>verify(anchor).getTickerState(ticker)));
+//        System.out.println("p1a");
+        this.rightDependencies.forEach((interval, rd) -> rightStates.add(upstream.<T>verify(anchor, interval, rd).getTickerState(ticker)));
         TimeSeries<T> targets = rightStates.stream()
                 .map(TickerState::getPriceData)
                 .reduce(
                         new TimeSeries<>(List.of()),
                         (accum, nxt) -> accum.merge(nxt)
                 );
-        System.out.println("p2");
+//        System.out.println("p2");
         return new BacktestResult<>(predictResult, targets);
     }
 
     public PredictResult<T, V> predict(Ticker ticker) {
-        UpstreamAdapter adapter = ticker.preferredUAs().get(0);
+        Upstream upstream = ticker.preferredUpstreams().get(0);
         HashMap<Duration, TickerState<T>> states = new HashMap<>();
-        leftDependencies.forEach((interval, ld) -> states.put(interval, adapter.makeLeftFor(interval, ld).<T>update().getTickerState(ticker)));
+//        System.out.println("debug pm: predict: start");
+
+        leftDependencies.forEach((interval, ld) -> {
+            states.put(interval, upstream.<T>update(interval, ld).getTickerState(ticker));
+        });
+//        System.out.println("debug pm: predict: cp0");
+
         return this.predictFromStates(ticker, states);
     }
 
@@ -118,11 +125,13 @@ public class PredictManager<T extends Number, V extends Number>{
                     map.forEach((interval, ld) -> {
                         TimeSeries<T> maxF = maxFeatures.get(interval);
 //                        fs.add(maxF);
-                        System.out.println("q0");
-                        System.out.println(ld);
-                        System.out.println(ld);
-                        System.out.println(maxF.slice(maxF.size() - ld, maxF.size()).size());
+//                        System.out.println("debug pm: predictfs: cp0");
+//                        System.out.println("debug pm: predictfs: " +ld);
+//                        System.out.println("debug pm: predictfs: " + maxF.size());
+//                        System.out.println("debug pm: predictfs: " + maxF.slice(maxF.size() - ld, maxF.size()).size());
                         fs.add(maxF.slice(maxF.size() - ld, maxF.size()));
+//                        System.out.println("debug pm: predictfs: cp1");
+
                     });
                     features.put(model, fs);
                 });

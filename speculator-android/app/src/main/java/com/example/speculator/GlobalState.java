@@ -21,40 +21,19 @@ import java.util.stream.Collectors;
 import engine.Serialisation.LocalObject;
 import engine.components.PredictManager;
 import engine.sugar.Preset;
+import engine.upstreams.Oanda;
 
 public class GlobalState {
     /* TODO LIST
-     * 1. (backtest) overlay actual data <DONE>
      * 2. upstream to cache data
-     * 3. (predict & backtest) multiple predictors <DONE>
-     * 3a. (predict & backtest) prediction function given particular predictor and ticker <IGNORE>
-     * 3b. (predict & backtest) to use first predictor if multiple tickers; other wise use all predictors <DONE>
-     * 4. arbitrary ticker instead of hard-coding (do for backtest) <DONE>
-     * 5. (predict & backtest) multiple tickers <DONE>
      * 6. (deploy & simulate) prototypical agent and interface
-     * 7. (predict) live price stream and predictions; configure prediction interval <DONE>
      * 8. djl -> Executorch
      * 9. limit datetime range based on upstream/ticker & left-dep
      * 10. fix "exceeded rate limit"
-     * 11. fix http3 connection leaking <DONE>
-     * 12. make repo public (separate from python part) <DONE>
      * 13. update & push pyWorkflow template
-     * 14. min-max bound plotter <DONE>
-     * 15. change serialisation to be platform-agnostic <DONE>
-     * 16. Select 1 of multiple plotters <DONE>
-     * 17. isolate engine code <DONE>
-     * 18. migrate LinePlotter to Instructor <DONE>
-     * 19. ObjectMenu save and load state(refactoring) <DONE>
-     * 20. migrate group selectors to ObjectMenu <DONE>
-     * 21. refactor model storage into list / LocalObject <DONE>
-     * 22. refactor upstream and state
-     * 23. multiple predict per ticker w/ multiple ticker <DONE>
+     * 22. refactor upstream and state <DONE>
      * 24. LinePlotter labelling / legend
-     * 25. Staggered ModelPredictor wrapper (use TimeSeries binary search) <DONE>
-     * 26. (engine) presets <DONE>
-     * 27. (android) ObjectMenu preset <DONE>
-     * 28. fix poor performance of backtest (probably targets) <DONE>
-     */ 
+     */
     static Path appStorageRoot;
     static List<Ticker> tickers = List.of(
             // CONFIG
@@ -65,7 +44,7 @@ public class GlobalState {
 
     public static void init (Context context) {
         GlobalState.appStorageRoot = context.getFilesDir().toPath();
-
+        Authentication.init(context);
         Predict.init(context);
         Presets.init(context);
 
@@ -73,6 +52,9 @@ public class GlobalState {
 
     public static class Authentication {
         public static Path storageRoot = GlobalState.appStorageRoot.resolve("auth");
+        public static void init(Context context) {
+            engine.upstreams.Oanda.authenticate(GlobalState.Authentication.Oanda.accNo, GlobalState.Authentication.Oanda.apiKey);
+        }
         public static class Oanda {
             public static Path storageRoot = Authentication.storageRoot.resolve("oanda");
             public static LocalObject<String> apiKey = new LocalObject.Encrypted<>(storageRoot, "apiKey");

@@ -4,11 +4,9 @@ package engine.upstreams;
 import engine.PriceData.LongPosition;
 import engine.PriceData.Position;
 import engine.PriceData.ShortPosition;
-import engine.components.Snapshottable;
 import engine.PriceData.State;
 import engine.PriceData.TickerState;
 import engine.components.Upstream;
-import engine.components.UpstreamAdapter;
 import engine.Serialisation.LocalObject;
 import engine.PriceData.Candle;
 import engine.PriceData.Ticker;
@@ -35,10 +33,11 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public abstract class Oanda extends Upstream implements Snapshottable{
-    private static LocalObject<String> USERID;
-    private static LocalObject<String> APIKEY;
+public class Oanda extends Upstream {
     private static OkHttpClient client = new OkHttpClient();
+
+    private static LocalObject<String> APIKEY;
+    private static LocalObject<String> USERID;
 
     public static void authenticate(LocalObject<String> userID, LocalObject<String> apiKey) {
         Oanda.USERID = userID;
@@ -56,11 +55,16 @@ public abstract class Oanda extends Upstream implements Snapshottable{
             throw new IllegalArgumentException("invalid duration");
         }
     }
-    private static long parseDatetime(ZonedDateTime dateTime) {
-        return dateTime.toEpochSecond();
-    }
 
-    private static JSONObject send(Request request) {
+    private static JSONObject send(Request.Builder partial) {
+//        System.out.println("debug pm: send: start");
+//        System.out.println("debug pm: send: " + Oanda.APIKEY);
+        Request request = null;
+        request = partial
+                .addHeader("Authorization", "Bearer " + Oanda.APIKEY.get().get())
+                .addHeader("Accept-Datetime-Format", "UNIX")
+                .build();
+//        System.out.println("debug pm: send: " + request);
         JSONObject res = null;
         Response response = null;
         try {
@@ -76,18 +80,8 @@ public abstract class Oanda extends Upstream implements Snapshottable{
         return res;
     }
 
-    Duration interval;
-    private Request.Builder requestBuilder;
 
-
-    Oanda(Duration interval) {
-        this.interval = interval;
-        this.requestBuilder = new Request.Builder()
-                .get()
-                .addHeader("Accept-Datetime-Format", "UNIX");
-    }
-
-    List<Candle<Float>> fetchCandles (Ticker ticker, ZonedDateTime from, ZonedDateTime to, Integer count) {
+    List<Candle<Float>> fetchCandles (Ticker ticker, ZonedDateTime from, ZonedDateTime to, Duration interval, Integer count) {
         String f = Optional.ofNullable(from)
                 .map(dt -> dt.toEpochSecond())
                 .map(l -> String.valueOf(l))
@@ -105,19 +99,17 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 .orElse("");
         ArrayList<Candle<Float>> candles = new ArrayList<>();
 
-        Request pxRequest = this.requestBuilder
-                .header("Authorization", "Bearer " + Oanda.APIKEY.get().orElse("noAuth"))
+        Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/instruments/%s/candles?%s%s%sgranularity=%s",
                         Oanda.USERID.get().orElse("noId"),
-                        ticker.getAliasFor(Oanda.Adapter.class),
+                        ticker.getAliasFor(this),
                         f,
                         t,
                         c,
-                        Oanda.parseInterval(this.interval)
-                ))
-                .build();
-        JSONObject pxObject = Oanda.send(pxRequest);
+                        Oanda.parseInterval(interval)
+                ));
+        JSONObject pxObject = Oanda.send(partial);
 
         try {
             JSONArray delta = pxObject.getJSONArray("candles");
@@ -151,24 +143,30 @@ public abstract class Oanda extends Upstream implements Snapshottable{
 
     }
     @Override
-    public State<Float> update() {
-        return this.snapshot(ZonedDateTime.now());
+    public State<Float> update(Duration interval, int ld) {
+//        System.out.println("debug pm: update: start");
+        return this.snapshot(ZonedDateTime.now(), interval, ld);
     }
 
     @Override
-    public State<Float> snapshot(ZonedDateTime at) {
-        Request posRequest = this.requestBuilder
-                .header("Authorization", "Bearer " + Oanda.APIKEY.get().orElse("noAuth"))
+    public State<Float> snapshot(ZonedDateTime at, Duration interval, int ld) {
+        Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
                         Oanda.USERID.get().orElse("noId")
-                ))
-                .build();
-        JSONObject allPosObj = Oanda.send(posRequest);
+                ));
+//        System.out.println("debug pm: snapshot: cp0");
+//        System.out.println("debug pm: snapshot: " + partial);
+        JSONObject allPosObj = Oanda.send(partial);
         JSONArray ap = null;
+//        System.out.println("debug pm: snapshot: cp1");
+//        System.out.println("debug pm: snapshot: " + allPosObj);
         try {
             ap = allPosObj.getJSONArray("positions");
         } catch (JSONException e) {
+//            System.out.println(posRequest);
+//            System.out.println(posRequest.headers());
+//            System.out.println(allPosObj);
         }
         JSONArray allPos = ap;
         Function<Ticker, TickerState<Float>> handler = ticker -> {
@@ -176,7 +174,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 Position<Float> position = Position.empty();
                 for (int i = 0; i < allPos.length(); i++) {
                     JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(Oanda.Adapter.class))) {
+                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
                         float netUnits = 0f;
                         float netAmount = 0f;
                         for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
@@ -208,7 +206,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                     }
                 }
                 return TickerState.of(
-                        this.snapshotCandlesFor(ticker, at),
+                        this.snapshotCandlesFor(ticker, at, interval, ld),
                         position
                 );
             } catch (JSONException e) {
@@ -219,15 +217,13 @@ public abstract class Oanda extends Upstream implements Snapshottable{
     }
 
     @Override
-    public State<Float> verify(ZonedDateTime from) {
-        Request posRequest = this.requestBuilder
-                .header("Authorization", "Bearer " + Oanda.APIKEY.get().orElse("noAuth"))
+    public State<Float> verify(ZonedDateTime from, Duration interval, int rd) {
+        Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
                         Oanda.USERID.get().orElse("noId")
-                ))
-                .build();
-        JSONObject allPosObj = Oanda.send(posRequest);
+                ));
+        JSONObject allPosObj = Oanda.send(partial);
         JSONArray ap = null;
         try {
             ap = allPosObj.getJSONArray("positions");
@@ -239,7 +235,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                 Position<Float> position = Position.empty();
                 for (int i = 0; i < allPos.length(); i++) {
                     JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(Oanda.Adapter.class))) {
+                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
                         float netUnits = 0f;
                         float netAmount = 0f;
                         for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
@@ -271,7 +267,7 @@ public abstract class Oanda extends Upstream implements Snapshottable{
                     }
                 }
                 return TickerState.of(
-                        this.verifyCandlesFor(ticker, from),
+                        this.verifyCandlesFor(ticker, from, interval, rd),
                         position
                 );
             } catch (JSONException e) {
@@ -281,113 +277,46 @@ public abstract class Oanda extends Upstream implements Snapshottable{
         return State.of(handler);
     }
 
-    abstract TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime at);
-    abstract TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at);
+    private TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime end, Duration interval, int ld) {
+        ArrayList<Candle<Float>> candles = new ArrayList<>();
+        int count = ld;
+//        System.out.println("ps0");
+//        System.out.println(end);
+//        System.out.println("debug pm: snapshotcf: " +count);
 
-    private static class DurationOanda extends Oanda {
-        private Duration duration; //at least
-        private DurationOanda(Duration duration, Duration interval) {
-            super(interval);
-            this.duration = duration;
+        while (count > 0) {
+            int increment = Math.min(count, Oanda.FETCH_SIZE);
+            List<Candle<Float>> delta = fetchCandles(ticker, null, end, interval, increment);
+            end = delta.get(0).getTime();
+            candles.addAll(delta);
+            count -= delta.size();
         }
-
-        @Override
-        TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime at) {
-            if (duration.isZero()) {
-                return new TimeSeries<>(List.of());
-            }
-            ArrayList<Candle<Float>> candles = new ArrayList<>();
-            ZonedDateTime start = at.minus(this.duration);
-            while (at.isAfter(start)) {
-                List<Candle<Float>> delta = super.fetchCandles(ticker, null, at, Oanda.FETCH_SIZE);
-                if (delta.size() == 0) {
-                    break;
-                }
-                at = delta.get(0).getTime();
-                candles.addAll(delta);
-            }
-            return new TimeSeries<>(candles);
-        }
-
-        @Override
-        TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at) {
-            if (duration.isZero()) {
-                return new TimeSeries<>(List.of());
-            }
-            ArrayList<Candle<Float>> candles = new ArrayList<>();
-            ZonedDateTime end = at.plus(this.duration);
-            while (at.isBefore(end)) {
-                List<Candle<Float>> delta = super.fetchCandles(ticker, at, null, Oanda.FETCH_SIZE);
-                if (delta.size() == 0) {
-                    break;
-                }
-                at = delta.get(delta.size()-1).getTime().plus(Duration.ofMillis(1));
-                if (at.isAfter(end)) {
-                    int sliceLast = Collections.binarySearch(delta.stream().map(Candle::getTime).collect(Collectors.toList()), end);
-                    if (sliceLast < 0) {
-                        sliceLast = -sliceLast - 2;
-                    }
-                    delta = delta.subList(0, sliceLast+1);
-                }
-                candles.addAll(delta);
-            }
-            return new TimeSeries<>(candles);
-        }
-
+//        System.out.println("debug pm: snapshotcf: " +candles.size());
+//        System.out.println(candles.get(candles.size()-1).getTime());
+        return new TimeSeries<>(candles);
     }
-    private static class CountOanda extends Oanda  {
-
-        private int count;
-
-        private CountOanda(int count, Duration interval) {
-            super(interval);
-            this.count = count;
+    private TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at, Duration interval, int rd) {
+        Duration duration = interval.multipliedBy(rd);
+        if (duration.isZero()) {
+            return new TimeSeries<>(List.of());
         }
-
-        @Override
-        TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime end) {
-            ArrayList<Candle<Float>> candles = new ArrayList<>();
-            int count = this.count;
-            System.out.println("ps0");
-            System.out.println(end);
-
-            while (count > 0) {
-                int increment = Math.min(count, Oanda.FETCH_SIZE);
-                List<Candle<Float>> delta = super.fetchCandles(ticker, null, end, increment);
-                end = delta.get(0).getTime();
-                candles.addAll(delta);
-                count -= increment;
+        ArrayList<Candle<Float>> candles = new ArrayList<>();
+        ZonedDateTime end = at.plus(duration);
+        while (at.isBefore(end)) {
+            List<Candle<Float>> delta = fetchCandles(ticker, at, null, interval, Oanda.FETCH_SIZE);
+            if (delta.size() == 0) {
+                break;
             }
-            System.out.println(this.count);
-            System.out.println(candles.size());
-            System.out.println(candles.get(candles.size()-1).getTime());
-            return new TimeSeries<>(candles);
+            at = delta.get(delta.size()-1).getTime().plus(Duration.ofMillis(1));
+            if (at.isAfter(end)) {
+                int sliceLast = Collections.binarySearch(delta.stream().map(Candle::getTime).collect(Collectors.toList()), end);
+                if (sliceLast < 0) {
+                    sliceLast = -sliceLast - 2;
+                }
+                delta = delta.subList(0, sliceLast+1);
+            }
+            candles.addAll(delta);
         }
-
-        @Override
-        TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at) {
-            return null;
-        }
-    }
-
-    public static class Adapter extends UpstreamAdapter {
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Oanda makeLeftFor(Duration interval, int leftDependency) {
-            return new CountOanda(
-                    leftDependency + 100,
-                    interval
-            );
-        }
-
-
-        @Override
-        public Snapshottable makeRightFor(Duration interval, int rightDependency) {
-            return new DurationOanda(
-                    interval.multipliedBy(rightDependency),
-                    interval
-            );
-        }
+        return new TimeSeries<>(candles);
     }
 }

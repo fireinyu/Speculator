@@ -24,6 +24,7 @@
         android:layout_height="0dp"
         android:background="@color/teal_700"
         android:elevation="2dp"
+        android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@+id/guideline12"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

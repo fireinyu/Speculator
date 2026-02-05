@@ -73,7 +73,6 @@ public class MainActivity extends AppCompatActivity {
         defaultPreset = findViewById(R.id.defaultPreset);
         removePreset = findViewById(R.id.removePreset);
         newPresetName = findViewById(R.id.newPresetName);
-        Oanda.authenticate(GlobalState.Authentication.Oanda.accNo, GlobalState.Authentication.Oanda.apiKey);
         findViewById(R.id.tickerBar).setOnClickListener(bar -> {
             Log.d("debug_tickers", "hi");
             if (popupDrawer.getVisibility() == View.GONE) {
