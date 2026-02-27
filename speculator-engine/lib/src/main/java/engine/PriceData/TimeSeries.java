@@ -23,6 +23,9 @@ public class TimeSeries <V extends Number> extends Series<V>{
                 .orElse(null);
     }
 
+    public static <V extends Number> TimeSeries<V> empty() {
+        return new TimeSeries<V>(List.of());
+    }
     private List<ZonedDateTime> times;
 
     public TimeSeries (List<ZonedDateTime> times, List<V> prices) {

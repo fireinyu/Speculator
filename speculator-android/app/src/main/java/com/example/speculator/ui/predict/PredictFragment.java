@@ -20,8 +20,6 @@ import engine.components.PredictManager;
 import com.example.speculator.GlobalState;
 import com.example.speculator.MPDrawer;
 
-import engine.PriceData.Ticker;
-
 import com.example.speculator.R;
 
 import com.example.speculator.databinding.FragmentPredictBinding;
@@ -29,10 +27,7 @@ import com.github.mikephil.charting.charts.LineChart;
 
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.stream.Collectors;
 
 public class PredictFragment extends Fragment {
 

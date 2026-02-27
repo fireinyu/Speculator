@@ -8,11 +8,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ScrollView;
 
-import engine.PriceData.Ticker;
+import engine.components.Ticker;
 import engine.Serialisation.SavedStateMachine;
-import engine.components.DrawInstructor;
 import engine.sugar.Preset;
-import engine.upstreams.Oanda;
 
 import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.navigation.NavigationView;

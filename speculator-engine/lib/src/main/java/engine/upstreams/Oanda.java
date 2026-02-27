@@ -4,12 +4,10 @@ package engine.upstreams;
 import engine.PriceData.LongPosition;
 import engine.PriceData.Position;
 import engine.PriceData.ShortPosition;
-import engine.PriceData.State;
-import engine.PriceData.TickerState;
 import engine.components.Upstream;
 import engine.Serialisation.LocalObject;
 import engine.PriceData.Candle;
-import engine.PriceData.Ticker;
+import engine.components.Ticker;
 import engine.PriceData.TimeSeries;
 
 import org.json.JSONArray;
@@ -21,11 +19,13 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -33,7 +33,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class Oanda extends Upstream {
+public class Oanda extends Upstream<Float> {
     private static OkHttpClient client = new OkHttpClient();
 
     private static LocalObject<String> APIKEY;
@@ -142,19 +142,15 @@ public class Oanda extends Upstream {
         return candles;
 
     }
-    @Override
-    public State<Float> update(Duration interval, int ld) {
-//        System.out.println("debug pm: update: start");
-        return this.snapshot(ZonedDateTime.now(), interval, ld);
-    }
 
     @Override
-    public State<Float> snapshot(ZonedDateTime at, Duration interval, int ld) {
+    public Map<Ticker<Float>, Position<Float>> fetchPositionsNow(Set<Ticker<Float>> tickers) {
         Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
                         Oanda.USERID.get().orElse("noId")
                 ));
+
 //        System.out.println("debug pm: snapshot: cp0");
 //        System.out.println("debug pm: snapshot: " + partial);
         JSONObject allPosObj = Oanda.send(partial);
@@ -169,115 +165,65 @@ public class Oanda extends Upstream {
 //            System.out.println(allPosObj);
         }
         JSONArray allPos = ap;
-        Function<Ticker, TickerState<Float>> handler = ticker -> {
+        Map<Ticker<Float>, Position<Float>> positionMap = new HashMap<>();
+        for (int i = 0; i < allPos.length(); i++) {
             try {
-                Position<Float> position = Position.empty();
-                for (int i = 0; i < allPos.length(); i++) {
-                    JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
-                        float netUnits = 0f;
-                        float netAmount = 0f;
-                        for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
-                            if (side.getString("units").equals("0")){
-                                continue;
-                            }
-                            netUnits += Float.parseFloat(
-                                    side.getString("units")
-                            );
-                            netAmount += Float.parseFloat(
-                                    side.getString("units")
-                            ) * Float.parseFloat(
-                                    side.getString("averagePrice")
-                            );
+                JSONObject posObj = allPos.getJSONObject(i);
+                String instrument = posObj.getString("instrument");
+                List<Ticker<Float>> tickerMatchLs = tickers.stream()
+                        .filter(tk -> tk.getAliasFor(this).equals(instrument))
+                        .collect(Collectors.toList());
+                if (!tickerMatchLs.isEmpty()) {
+                    float netUnits = 0f;
+                    float netAmount = 0f;
+                    for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
+                        if (side.getString("units").equals("0")){
+                            continue;
                         }
-                        Float avgPrice = netAmount / netUnits;
-                        if (netUnits < 0) {
-                            position = new ShortPosition<>(
-                                    -netUnits,
-                                    avgPrice
-                            );
-                        } else if (netUnits > 0) {
-                            position = new LongPosition<>(
-                                    netUnits,
-                                    avgPrice
-                            );
-                        }
-                        break;
+                        netUnits += Float.parseFloat(
+                                side.getString("units")
+                        );
+                        netAmount += Float.parseFloat(
+                                side.getString("units")
+                        ) * Float.parseFloat(
+                                side.getString("averagePrice")
+                        );
                     }
+                    Float avgPrice = netAmount / netUnits;
+                    Ticker<Float> ticker = tickerMatchLs.get(0);
+                    Position<Float> position = Position.empty();
+                    if (netUnits < 0) {
+                        position = new ShortPosition<>(
+                                -netUnits,
+                                avgPrice
+                        );
+                    } else if (netUnits > 0) {
+                        position = new LongPosition<>(
+                                netUnits,
+                                avgPrice
+                        );
+                    }
+                    positionMap.put(ticker, position);
                 }
-                return TickerState.of(
-                        this.snapshotCandlesFor(ticker, at, interval, ld),
-                        position
-                );
             } catch (JSONException e) {
-                throw new RuntimeException();
-            }
-        };
-        return State.of(handler);
+                System.out.println("CRITICAL WARNING");
+            };
+        }
+        return positionMap;
     }
 
     @Override
-    public State<Float> verify(ZonedDateTime from, Duration interval, int rd) {
-        Request.Builder partial = new Request.Builder()
-                .url(String.format(
-                        "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
-                        Oanda.USERID.get().orElse("noId")
-                ));
-        JSONObject allPosObj = Oanda.send(partial);
-        JSONArray ap = null;
-        try {
-            ap = allPosObj.getJSONArray("positions");
-        } catch (JSONException e) {
-        }
-        JSONArray allPos = ap;
-        Function<Ticker, TickerState<Float>> handler = ticker -> {
-            try {
-                Position<Float> position = Position.empty();
-                for (int i = 0; i < allPos.length(); i++) {
-                    JSONObject posObj = allPos.getJSONObject(i);
-                    if (posObj.getString("instrument").equals(ticker.getAliasFor(this))) {
-                        float netUnits = 0f;
-                        float netAmount = 0f;
-                        for (JSONObject side : List.of(posObj.getJSONObject("long"), posObj.getJSONObject("short"))) {
-                            if (side.getString("units").equals("0")){
-                                continue;
-                            }
-                            netUnits += Float.parseFloat(
-                                    side.getString("units")
-                            );
-                            netAmount += Float.parseFloat(
-                                    side.getString("units")
-                            ) * Float.parseFloat(
-                                    side.getString("averagePrice")
-                            );
-                        }
-                        Float avgPrice = netAmount / netUnits;
-                        if (netUnits < 0) {
-                            position = new ShortPosition<>(
-                                    -netUnits,
-                                    avgPrice
-                            );
-                        } else if (netUnits > 0) {
-                            position = new LongPosition<>(
-                                    netUnits,
-                                    avgPrice
-                            );
-                        }
-                        break;
-                    }
-                }
-                return TickerState.of(
-                        this.verifyCandlesFor(ticker, from, interval, rd),
-                        position
-                );
-            } catch (JSONException e) {
-                throw new RuntimeException();
-            }
-        };
-        return State.of(handler);
+    public Map<Ticker<Float>, Position<Float>> fetchPositionsAt(Set<Ticker<Float>> tickers, ZonedDateTime at) {
+        return this.fetchPositionsNow(tickers);
     }
 
-    private TimeSeries<Float> snapshotCandlesFor(Ticker ticker, ZonedDateTime end, Duration interval, int ld) {
+    @Override
+    public TimeSeries<Float> fetchPricesNow(Ticker<Float> ticker, Duration interval, int ld) {
+        return this.fetchPricesLeft(ticker, interval, ld, ZonedDateTime.now());
+    }
+
+    @Override
+    public TimeSeries<Float> fetchPricesLeft(Ticker<Float> ticker, Duration interval, int ld, ZonedDateTime end) {
         ArrayList<Candle<Float>> candles = new ArrayList<>();
         int count = ld;
 //        System.out.println("ps0");
@@ -295,7 +241,9 @@ public class Oanda extends Upstream {
 //        System.out.println(candles.get(candles.size()-1).getTime());
         return new TimeSeries<>(candles);
     }
-    private TimeSeries<Float> verifyCandlesFor(Ticker ticker, ZonedDateTime at, Duration interval, int rd) {
+
+    @Override
+    public TimeSeries<Float> fetchPricesRight(Ticker<Float> ticker, Duration interval, int rd, ZonedDateTime at) {
         Duration duration = interval.multipliedBy(rd);
         if (duration.isZero()) {
             return new TimeSeries<>(List.of());

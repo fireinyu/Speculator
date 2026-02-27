@@ -1,20 +1,15 @@
 package engine.drawInstructors;
 
 import java.io.Serializable;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
-import engine.PriceData.Ticker;
 import engine.PriceData.TimeSeries;
 import engine.Serialisation.StateLoader;
 import engine.Serialisation.StateMachine;
 import engine.components.DrawInstruction;
 import engine.components.DrawInstructor;
-import engine.components.InstructedDrawer;
 
 public class BoundPlotter <T extends Number, V extends Number> extends LinePlotter<T, V> implements Serializable {
 

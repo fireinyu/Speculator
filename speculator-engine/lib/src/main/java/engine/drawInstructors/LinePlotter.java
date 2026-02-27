@@ -4,24 +4,17 @@ import engine.Serialisation.StateLoader;
 import engine.Serialisation.StateMachine;
 import engine.components.DrawInstruction;
 import engine.components.DrawInstructor;
-import engine.components.InstructedDrawer;
-import engine.PriceData.Ticker;
+import engine.components.Ticker;
 import engine.PriceData.TimeSeries;
 import engine.components.PredictManager;
 
 import java.io.Serializable;
-import java.sql.Time;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class LinePlotter <T extends Number, V extends Number> extends DrawInstructor<T, V> implements Serializable {
     private static List<DrawInstruction.Color> lineColors = List.of(

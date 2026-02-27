@@ -10,7 +10,7 @@ import engine.Serialisation.LocalList;
 import engine.Serialisation.SavedStateMachine;
 import engine.components.DrawInstructor;
 import engine.components.ModelPredictor;
-import engine.PriceData.Ticker;
+import engine.components.Ticker;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 import engine.Serialisation.LocalObject;
 import engine.components.PredictManager;
 import engine.sugar.Preset;
-import engine.upstreams.Oanda;
 
 public class GlobalState {
     /* TODO LIST
@@ -35,7 +34,7 @@ public class GlobalState {
      * 24. LinePlotter labelling / legend
      */
     static Path appStorageRoot;
-    static List<Ticker> tickers = List.of(
+    static List<Ticker<Float>> tickers = List.of(
             // CONFIG
             /// supported tickers
             Tickers.XNG,
@@ -100,7 +99,7 @@ public class GlobalState {
         public static PredictManager<Float, Float> predictManager;
         public static PredictManager<Float, Float> pullManager;
         public static ObjectMenu<SavedStateMachine<ModelPredictor<Float, Float>>> predictorMenu;
-        public static ObjectMenu<Ticker> tickerMenu;
+        public static ObjectMenu<Ticker<Float>> tickerMenu;
         public static ObjectMenu<DrawInstructor<Float, Float>> instructorMenu;
         public static void init(Context context) {
             Predict.storageRoot = GlobalState.appStorageRoot.resolve("models");

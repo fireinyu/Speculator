@@ -1,15 +1,17 @@
 package engine.components;
 
-import java.sql.Time;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
@@ -18,171 +20,160 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import javax.swing.Timer;
-
-import ai.djl.Model;
 import engine.PriceData.Candle;
 import engine.PriceData.State;
-import engine.PriceData.Ticker;
 import engine.PriceData.TickerState;
 import engine.PriceData.TimeSeries;
-import jdk.jshell.spi.SPIResolutionException;
+import engine.Util;
 
 public class PredictManager<T extends Number, V extends Number>{
     public static <T extends Number, V extends Number> ScheduledExecutorService predictLoop(
-            Supplier<? extends PredictManager<T, V>> getManager,
-            Supplier<? extends List<Ticker>> getTickers,
+            Supplier<PredictManager<T, V>> getManager,
+            Supplier<? extends Collection<Ticker<T>> > getTickers,
             Duration interval,
-            Consumer<List<PredictResult<T, V>>> callback) {
+            Consumer<? super Set<PredictResult<T, V>>> callback) {
         ScheduledExecutorService clock = Executors.newScheduledThreadPool(Thread.activeCount());
         clock.scheduleWithFixedDelay(() -> {
 //            System.out.println("debug pm: start");
-            List<PredictResult<T, V>> predCF =  getTickers.get().stream()
-                    .map(getManager.get()::predict)
-                    .collect(Collectors.toList());
-//            System.out.println("debug pm: cp0");
-//            System.out.println("debug pm: mid");
-            callback.accept(predCF);
+            callback.accept(getManager.get().predict(getTickers.get()));
         },0, interval.toMillis(), TimeUnit.MILLISECONDS);
         return clock;
     }
     private List<ModelPredictor<T, V>> predictors;
-    private Map<Duration, Integer> leftDependencies; //include latest / now
-    private Map<Duration, Integer> rightDependencies; //exclude latest / now
+
+    private Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> dependencies;
 
     public PredictManager(List<ModelPredictor<T, V>> predictors) {
         this.predictors = predictors;
-        leftDependencies = new HashMap<>();
-        predictors.forEach(model -> {
-            Map<Duration, Integer> leftDeps = model.getLeftDependencies();
-            leftDeps.forEach((interval, ld) -> {
-                if (leftDependencies.containsKey(interval)) {
-                    leftDependencies.put(interval, Math.max(leftDependencies.get(interval), ld));
+        Map<Duration, Integer> leftDependencies = UpstreamRequest.unionCommon(predictors.stream()
+                .map(ModelPredictor::getLeftDependencies)
+                .collect(Collectors.toSet())
+        );
+
+        Map<Duration, Integer> rightDependencies = UpstreamRequest.unionCommon(predictors.stream()
+                .map(ModelPredictor::getLeftDependencies)
+                .collect(Collectors.toSet())
+        );
+        this.dependencies = Util.Pair.create(leftDependencies, rightDependencies);
+    }
+
+    private Map<Upstream<T>, HashSet<Ticker<T>>> groupByUpstream(Collection<? extends Ticker<T>> tickers) {
+        HashMap<Upstream<T>, Util.Pair<Integer, Integer>> upstreams = new HashMap<>();
+        for (Ticker<T> ticker : tickers) {
+            List<Upstream<T>> tickerUpstreams = ticker.preferredUpstreams();
+            for (int i = 0; i < tickerUpstreams.size() ; i++) {
+                Upstream<T> upstream = tickerUpstreams.get(i);
+                if (upstreams.containsKey(upstream)) {
+                    upstreams.put(upstream, Util.Pair.create(upstreams.get(upstream).first + 1, upstreams.get(upstream).second - i));
                 } else {
-                    leftDependencies.put(interval, ld);
+                    upstreams.put(upstream, Util.Pair.create(1, -i));
                 }
-            }) ;
-        });
-        rightDependencies = new HashMap<>();
-        predictors.forEach(model -> {
-            Map<Duration, Integer> rightDeps = model.getRightDependencies();
-            rightDeps.forEach((interval, rd) -> {
-                if (rightDependencies.containsKey(interval)) {
-                    rightDependencies.put(interval, Math.max(rightDependencies.get(interval), rd));
-                } else {
-                    rightDependencies.put(interval, rd);
+            }
+        }
+        PriorityQueue<Upstream<T>> upstreamPQ = new PriorityQueue<>(Comparator
+                .comparing(up -> upstreams.get(up).first)
+                .thenComparing(up -> upstreams.get(up).second)
+        );
+        upstreamPQ.addAll(upstreams.keySet());
+        HashSet<Ticker<T>> tickerSet = new HashSet<>(tickers);
+        HashMap<Upstream<T>, HashSet<Ticker<T>>> groups = new HashMap<>();
+        while (!tickerSet.isEmpty()) {
+            Upstream<T> upstream = upstreamPQ.poll();
+            HashSet<Ticker<T>> group = new HashSet<>();
+            for (Ticker<T> ticker : tickerSet) {
+                if (ticker.canRequestFrom(upstream)) {
+                    tickerSet.remove(ticker);
+                    group.add(ticker);
                 }
-            }) ;
-        });
-
+            }
+            groups.put(upstream, group);
+        }
+        return groups;
     }
-    public BacktestResult<T, V> backtest(Ticker ticker, ZonedDateTime anchor) {
-//        System.out.println("start");
-        Upstream upstream = ticker.preferredUpstreams().get(0);
-        HashMap<Duration, TickerState<T>> states = new HashMap<>();
-        leftDependencies.forEach((interval, ld) -> states.put(interval, upstream.<T>snapshot(anchor, interval, ld).getTickerState(ticker)));
-        PredictResult<T, V> predictResult = this.predictFromStates(ticker, states);
-        ArrayList<TickerState<T>> rightStates = new ArrayList<>();
-//        System.out.println("p1a");
-        this.rightDependencies.forEach((interval, rd) -> rightStates.add(upstream.<T>verify(anchor, interval, rd).getTickerState(ticker)));
-        TimeSeries<T> targets = rightStates.stream()
-                .map(TickerState::getPriceData)
-                .reduce(
-                        new TimeSeries<>(List.of()),
-                        (accum, nxt) -> accum.merge(nxt)
-                );
-//        System.out.println("p2");
-        return new BacktestResult<>(predictResult, targets);
-    }
-
-    public PredictResult<T, V> predict(Ticker ticker) {
-        Upstream upstream = ticker.preferredUpstreams().get(0);
-        HashMap<Duration, TickerState<T>> states = new HashMap<>();
-//        System.out.println("debug pm: predict: start");
-
-        leftDependencies.forEach((interval, ld) -> {
-            states.put(interval, upstream.<T>update(interval, ld).getTickerState(ticker));
-        });
-//        System.out.println("debug pm: predict: cp0");
-
-        return this.predictFromStates(ticker, states);
-    }
-
-    private PredictResult<T, V> predictFromStates(Ticker ticker, HashMap<Duration, TickerState<T>> states) {
-        Candle<T> latest = states.values().stream()
-                .map(TickerState::getLatest)
-                .max(Comparator.comparing(Candle::getTime))
-                .get();
-        HashMap<Duration,TimeSeries<T>> maxFeatures = new HashMap<>();
-        states.forEach((interval, state) -> {
-            maxFeatures.put(interval, state.getPriceData());
-        });
-        HashMap<ModelPredictor<T, V>, List<TimeSeries<T>>> features = new HashMap<>();
-        predictors
-                .forEach(model -> {
-                    Map<Duration, Integer> map = model.getLeftDependencies();
-                    ArrayList<TimeSeries<T>> fs = new ArrayList<>();
-                    map.forEach((interval, ld) -> {
-                        TimeSeries<T> maxF = maxFeatures.get(interval);
-//                        fs.add(maxF);
-//                        System.out.println("debug pm: predictfs: cp0");
-//                        System.out.println("debug pm: predictfs: " +ld);
-//                        System.out.println("debug pm: predictfs: " + maxF.size());
-//                        System.out.println("debug pm: predictfs: " + maxF.slice(maxF.size() - ld, maxF.size()).size());
-                        fs.add(maxF.slice(maxF.size() - ld, maxF.size()));
-//                        System.out.println("debug pm: predictfs: cp1");
-
-                    });
-                    features.put(model, fs);
-                });
-        HashMap<ModelPredictor<T, V>, List<TimeSeries<V>>> predictions = new HashMap<>();
-        predictors.forEach(model -> {
-            List<TimeSeries<V>> prediction = model.predict(features.get(model), latest);
-            predictions.put(model, prediction);
-        });
-        TimeSeries<T> resF = maxFeatures.values().stream()
-                .reduce(
-                        new TimeSeries<>(List.of()),
-                        (accum, nxt) -> accum.merge(nxt)
-                );
-        Map<ModelPredictor<T, V>, TimeSeries<V>> resP = new HashMap<>();
-        predictions.forEach((model, preds) -> {
-            TimeSeries<V> resPred = preds.stream()
+    private Map<Ticker<T>, PredictResult<T,V>> predictFromState(Collection<? extends Ticker<T>> tickers, State<T> state) {
+        Map<Ticker<T>, PredictResult<T,V>> results =  new HashMap<>();
+        for (Ticker<T> ticker : tickers) {
+            TickerState<T> tickerState = state.getTickerState(ticker);
+            TimeSeries<T> features = dependencies.first.keySet().stream()
+                    .map(tickerState::getPriceData)
                     .reduce(
-                            new TimeSeries<>(List.of()),
-                            (accum, nxt) -> accum.merge(nxt)
+                            TimeSeries.empty(),
+                            TimeSeries::merge
                     );
-            resP.put(model, resPred);
-        });
-        return new PredictResult<>(ticker, resF, resP);
+            Map<ModelPredictor<T, V>, TimeSeries<V>> predictions = new HashMap<>();
+            for (ModelPredictor<T, V> model : this.predictors) {
+                TimeSeries<V> prediction = model.predict(state.getTickerState(ticker)).stream()
+                        .reduce(
+                                TimeSeries.empty(),
+                                TimeSeries::merge
+                        );
+                predictions.put(model, prediction);
+            }
+            results.put(ticker, new PredictResult<>(ticker, features, predictions));
+        }
+        return results;
+    }
+    private Collection<PredictResult<T,V>> predictUsingUpstream(Upstream<T> upstream, Collection<Ticker<T>> tickers) {
+        UpstreamRequest<T> request = new UpstreamRequest<>(tickers, this.dependencies);
+        State<T> leftState = upstream.update(request);
+        return this.predictFromState(tickers, leftState).values();
     }
 
-    public CompletableFuture<PredictResult<T, V>> predictAsync(Ticker ticker) {
-        return CompletableFuture.supplyAsync(() -> this.predict(ticker));
+    private Set<BacktestResult<T,V>> backtestUsingUpstream(Upstream<T> upstream, Collection<Ticker<T>> tickers, ZonedDateTime anchor) {
+        UpstreamRequest<T> request = new UpstreamRequest<>(tickers, this.dependencies);
+        State<T> leftState = upstream.snapshot(anchor, request);
+        Map<Ticker<T>, PredictResult<T, V>> predictions = this.predictFromState(tickers, leftState);
+        State<T> rightState = upstream.verify(anchor, request);
+        Map<Ticker<T>, TimeSeries<T>> targets = tickers.stream().collect(Collectors.toMap(
+                ticker -> ticker,
+                ticker -> {
+                    TickerState<T> tickerState = rightState.getTickerState(ticker);
+                    return dependencies.second.keySet().stream()
+                            .map(tickerState::getPriceData)
+                            .reduce(
+                                    TimeSeries.empty(),
+                                    TimeSeries::merge
+                            );
+                }
+        ));
+        return tickers.stream()
+                .map(ticker -> new BacktestResult<>(predictions.get(ticker), targets.get(ticker)))
+                .collect(Collectors.toSet());
     }
 
-    public ScheduledExecutorService predictLoop(List<Ticker> tickers, Duration interval , Consumer<? super List<? super PredictResult<T, V>>> callback) {
-        ScheduledExecutorService clock = Executors.newSingleThreadScheduledExecutor();
-        clock.scheduleWithFixedDelay(() -> {
-            List<CompletableFuture<PredictResult<T, V>>> predCF =  tickers.stream()
-                    .map(this::predictAsync)
-                    .collect(Collectors.toList());
-            CompletableFuture.allOf(predCF.toArray(new CompletableFuture<?>[]{})).thenRunAsync(() -> {
-                callback.accept(predCF.stream().map(CompletableFuture::join).collect(Collectors.toList()));
-            });
-        },0, interval.toMillis(), TimeUnit.MILLISECONDS);
-        return clock;
+    public Set<BacktestResult<T,V>> backtest(Collection<? extends Ticker<T>> tickers, ZonedDateTime anchor) {
+//        System.out.println("start");
+        Map<Upstream<T>, HashSet<Ticker<T>>> groups = groupByUpstream(tickers);
+        Set<BacktestResult<T, V>> results = new HashSet<>();
+        for (Upstream<T> upstream : groups.keySet()) {
+            results.addAll(backtestUsingUpstream(upstream, groups.get(upstream), anchor));
+        }
+        return results;
     }
 
-    public CompletableFuture<BacktestResult<T, V>> backTestAsync(Ticker ticker, ZonedDateTime anchor) {
-        return CompletableFuture.supplyAsync(() -> this.backtest(ticker, anchor));
+
+    public Set<PredictResult<T, V>> predict(Collection<? extends Ticker<T>> tickers) {
+        Map<Upstream<T>, HashSet<Ticker<T>>> groups = groupByUpstream(tickers);
+        Set<PredictResult<T, V>> results = new HashSet<>();
+        for (Upstream<T> upstream : groups.keySet()) {
+            results.addAll(predictUsingUpstream(upstream, groups.get(upstream)));
+        }
+        return results;
+    }
+
+    public CompletableFuture<Set<PredictResult<T, V>>> predictAsync(Collection<? extends Ticker<T>> tickers) {
+        return CompletableFuture.supplyAsync(() -> this.predict(tickers));
+    }
+
+    public CompletableFuture<Set<BacktestResult<T, V>>> backTestAsync(Collection<? extends Ticker<T>> tickers, ZonedDateTime anchor) {
+        return CompletableFuture.supplyAsync(() -> this.backtest(tickers, anchor));
     }
     public static class PredictResult<T extends Number, V extends Number> {
-        private Ticker ticker;
+        private Ticker<T> ticker;
         private TimeSeries<T> features;
         private Map<ModelPredictor<T, V>, TimeSeries<V>> predictions;
 
-        public PredictResult(Ticker ticker, TimeSeries<T> features, Map<ModelPredictor<T, V>, TimeSeries<V>> predictions) {
+        public PredictResult(Ticker<T> ticker, TimeSeries<T> features, Map<ModelPredictor<T, V>, TimeSeries<V>> predictions) {
             this.ticker = ticker;
             this.features = features;
             this.predictions = predictions;
@@ -192,7 +183,7 @@ public class PredictManager<T extends Number, V extends Number>{
             return predictions;
         }
 
-        public Ticker getTicker() {
+        public Ticker<T> getTicker() {
             return ticker;
         }
 
@@ -204,7 +195,7 @@ public class PredictManager<T extends Number, V extends Number>{
     public static class BacktestResult<T extends Number, V extends Number> extends PredictResult<T, V> {
         private TimeSeries<T> targets;
 
-        public BacktestResult(Ticker ticker, TimeSeries<T> features, Map<ModelPredictor<T, V>, TimeSeries<V>> predictions, TimeSeries<T> targets) {
+        public BacktestResult(Ticker<T> ticker, TimeSeries<T> features, Map<ModelPredictor<T, V>, TimeSeries<V>> predictions, TimeSeries<T> targets) {
             super(ticker, features, predictions);
             this.targets = targets;
         }

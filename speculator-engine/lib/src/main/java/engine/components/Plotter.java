@@ -1,8 +1,5 @@
 package engine.components;
 
-import engine.PriceData.Ticker;
-import engine.PriceData.TimeSeries;
-
 import java.util.List;
 
 public abstract class Plotter <T extends  Number, V extends Number> {

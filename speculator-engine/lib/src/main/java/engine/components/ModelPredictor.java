@@ -4,26 +4,26 @@ package engine.components;
 
 import engine.PriceData.Candle;
 import engine.PriceData.OffsetSeries;
-import engine.PriceData.Series;
+import engine.PriceData.TickerState;
 import engine.PriceData.TimeSeries;
 import engine.Serialisation.StateLoader;
 import engine.Util;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import engine.Serialisation.StateMachine;
-import kotlin.collections.builders.MapBuilder;
 
 public abstract class ModelPredictor<V extends Number, R extends Number> implements StateMachine<ModelPredictor<V, R>> {
 
@@ -37,10 +37,17 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
 
     protected FeatureExtractor<V> extractor;
     protected Predictor<V, R> model;
+    private Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies;
 
-    private ArrayList<Integer> leftDependencies;
-    private ArrayList<Integer> rightDependencies;
-    private ArrayList<Duration> intervals;
+    public ModelPredictor (FeatureExtractor<V> extractor,
+                           Predictor<V, R> model,
+                           Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies) {
+        // leftDependencies: include latest/now
+        // rightDependencies: exclude latest/now
+        this.extractor = extractor;
+        this.model = model;
+        this.dependencies = dependencies;
+    }
 
     public ModelPredictor (FeatureExtractor<V> extractor,
                            Predictor<V, R> model,
@@ -51,14 +58,23 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         // rightDependencies: exclude latest/now
         this.extractor = extractor;
         this.model = model;
-        this.leftDependencies = new ArrayList<>();
-        this.leftDependencies.addAll(leftDependencies);
-        this.rightDependencies = new ArrayList<>();
-        this.rightDependencies.addAll(rightDependencies);
-        this.intervals = new ArrayList<>();
-        this.intervals.addAll(intervals);
+        LinkedHashMap<Duration, Integer> left = new LinkedHashMap<>();
+        LinkedHashMap<Duration, Integer> right = new LinkedHashMap<>();
+        for (int i = 0; i < intervals.size(); i++) {
+            left.put(intervals.get(i), leftDependencies.get(i));
+            right.put(intervals.get(i), rightDependencies.get(i));
+        }
+        this.dependencies = Util.Pair.create(left, right);
     }
 
+    public List<TimeSeries<R>> predict(TickerState<V> input) {
+        return this.predict(this.dependencies.first.keySet().stream()
+                .map(dep -> Util.Pair.create(dep, input.getPriceData(dep)))
+                .map(pair -> pair.second.slice(pair.second.size() - this.dependencies.first.get(pair.first), pair.second.size()))
+                .collect(Collectors.toList()),
+                input.getAbsoluteLatest()
+        );
+    }
     public List<TimeSeries<R>> predict (List<? extends TimeSeries<V>> input, Candle<V> latest) {
         List<V> features = this.extractor.extract(input, latest.get());
         List<OffsetSeries<R>> output = this.model.predict(features, latest.get());
@@ -70,17 +86,11 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
     }
 
     public Map<Duration, Integer> getRightDependencies() {
-        HashMap<Duration, Integer> map = new HashMap<>();
-        IntStream.range(0, this.intervals.size())
-                .forEach(i -> map.put(intervals.get(i), rightDependencies.get(i)));
-        return map;
+        return this.dependencies.second;
     }
 
     public Map<Duration, Integer> getLeftDependencies() {
-        HashMap<Duration, Integer> map = new HashMap<>();
-        IntStream.range(0, this.intervals.size())
-                .forEach(i -> map.put(intervals.get(i), leftDependencies.get(i)));
-        return map;
+        return this.dependencies.first;
     }
 
     private static class Identity <V extends Number, R extends Number> extends ModelPredictor<V, R> {

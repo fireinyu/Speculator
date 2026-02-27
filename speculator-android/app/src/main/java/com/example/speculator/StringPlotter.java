@@ -1,13 +1,8 @@
 package com.example.speculator;
 
-import android.util.Log;
-
 import engine.components.Plotter;
-import engine.PriceData.Ticker;
-import engine.PriceData.TimeSeries;
 import engine.components.PredictManager;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class StringPlotter <X extends Number, Y extends Number> extends Plotter<X, Y> {

@@ -2,18 +2,11 @@ package engine.sugar;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
-import engine.PriceData.Ticker;
 import engine.Serialisation.SavedStateMachine;
-import engine.Serialisation.StateLoader;
-import engine.Serialisation.StateMachine;
 import engine.components.DrawInstructor;
 import engine.components.ModelPredictor;
-import engine.components.PredictManager;
 
 public class Preset <T extends Number, V extends Number> implements Serializable {
     private ArrayList<SavedStateMachine<ModelPredictor<T, V>>> modelStates;

@@ -1,11 +1,7 @@
 package engine.components;
 
-import engine.Instances.DrawInstructors;
-import engine.PriceData.Ticker;
-import engine.PriceData.TimeSeries;
 import engine.Serialisation.StateMachine;
 
-import java.io.Serializable;
 import java.util.List;
 
 public abstract class DrawInstructor<T extends Number, V extends Number> implements StateMachine<DrawInstructor<T, V>> {
