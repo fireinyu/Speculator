@@ -18,8 +18,8 @@ import engine.Util.Pair;
 public abstract class Upstream<V extends Number> {
 
     // ticker -> interval
-    private Hashtable<Ticker<V>, Hashtable<Duration, TimeSeries<V>>> lCache;
-    private Hashtable<Ticker<V>, Hashtable<Duration, TimeSeries<V>>> rCache;
+    private State.LeftMutableState<V> lCache;
+    private State.RightMutableState<V> rCache;
 
     public State<V> update(UpstreamRequest<V> request) {
         UpstreamRequest.LeftRequest<V> left = request.getLeft();
@@ -71,6 +71,7 @@ public abstract class Upstream<V extends Number> {
     // include latest / now
     public abstract TimeSeries<V> fetchPricesRight(Ticker<V> ticker, Duration interval, int rightDependency, ZonedDateTime at);
     // exclude latest / now
+    // go by duration, usually
     //    public <V extends Number> CompletableFuture<? extends State<V>> updateAsync () {
 //        return CompletableFuture.supplyAsync(this::update);
 //    }

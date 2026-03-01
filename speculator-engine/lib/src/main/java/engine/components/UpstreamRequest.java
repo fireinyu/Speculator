@@ -1,6 +1,7 @@
 package engine.components;
 
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +35,7 @@ public class UpstreamRequest<V extends Number> {
     }
 
     Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> common;
-    private Set<Ticker<V>> tickers;
+    Set<Ticker<V>> tickers;
     Map<Ticker<V>, Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>>> special;
 
     public UpstreamRequest(
@@ -225,6 +226,34 @@ public class UpstreamRequest<V extends Number> {
             return super.getLD(ticker, interval);
         }
 
+        public void bootstrap(Ticker<V> ticker, Duration interval, ZonedDateTime anchor, ZonedDateTime cacheLast) {
+
+            // delta duration: between last cache and anchor + interval*rd
+            Duration delta = Duration.between(cacheLast, anchor);
+            int newLd;
+            if (special.containsKey(ticker)) {
+                newLd = Math.min(
+                        (int)Math.ceil(interval.toMillis()/(double)delta.toMillis()),
+                        special.get(ticker).first.get(interval)
+                );
+                special.get(ticker).first.put(interval, newLd);
+            } else {
+                // in common
+                newLd = Math.min(
+                        (int)Math.ceil(interval.toMillis()/(double)delta.toMillis()),
+                        common.first.get(interval)
+                );
+                special.get(ticker).first.put(interval, newLd);
+            }
+            if (newLd <= 0) {
+                tickers.remove(ticker);
+                special.remove(ticker);
+            } else {
+                special.get(ticker).first.put(interval, newLd);
+            }
+
+        }
+
     }
 
     public static class RightRequest <V extends Number> extends UpstreamRequest<V> {
@@ -278,6 +307,28 @@ public class UpstreamRequest<V extends Number> {
 
         public int getDependency(Ticker<V> ticker, Duration interval) {
             return super.getRD(ticker, interval);
+        }
+        public void bootstrap(Ticker<V> ticker, Duration interval, ZonedDateTime anchor, ZonedDateTime cacheLast) {
+            // delta duration: between last cache and anchor + interval*rd
+            Duration delta;
+            if(cacheLast.isAfter(anchor)) {
+                if (special.containsKey(ticker)) {
+                    delta = interval.multipliedBy(special.get(ticker).second.get(interval))
+                            .minus(Duration.between(cacheLast, anchor));
+                } else {
+                    delta = interval.multipliedBy(common.second.get(interval))
+                            .minus(Duration.between(cacheLast, anchor));
+                }
+                int newRd = (int)Math.ceil(delta.toMillis()/(double)interval.toMillis());
+                newRd = Math.min(newRd, 0);
+                if (newRd <= 0) {
+                    tickers.remove(ticker);
+                    special.remove(ticker);
+                } else {
+                    special.get(ticker).second.put(interval, newRd);
+                }
+            }
+
         }
     }
 

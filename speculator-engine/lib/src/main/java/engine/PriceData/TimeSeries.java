@@ -2,7 +2,6 @@ package engine.PriceData;
 
 import engine.Util;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,18 +35,6 @@ public class TimeSeries <V extends Number> extends Series<V>{
 
     }
 
-    @Override
-    public TimeSeries<V> slice(int from, int to) {
-        return new TimeSeries<V>(this.times.subList(from, to), this.get().subList(from, to));
-    }
-
-    public <D extends Datapoint<? extends V> & Timed> TimeSeries (D[] datapoints) {
-        super(datapoints);
-        this.times = new ArrayList<>();
-        for (D dp : datapoints) {
-            this.times.add(dp.getTime());
-        }
-    }
     public <D extends Datapoint<? extends V> & Timed> TimeSeries (List<D> datapoints) {
         super(datapoints);
         this.times = new ArrayList<>();
@@ -56,69 +43,113 @@ public class TimeSeries <V extends Number> extends Series<V>{
         }
     }
 
-
-    public TimeSeries (Series<V> src, Duration interval, ZonedDateTime start) {
-        super(src);
-        this.times = new ArrayList<>();
-        for (int i = 0; i < this.size(); i++) {
-            times.add(start);
-            start = start.plus(interval);
-        }
-    }
-
     public TimeSeries (TimeSeries<V> src) {
         super(src);
-        this.times = List.copyOf(src.times);
+        this.times = src.times;
     }
 
-    public TimeSeries<V> merge (TimeSeries<? extends V> src) {
+    private TimeSeries (Series<V> src, List<ZonedDateTime> times) {
+        super(src);
+        this.times = times;
+    }
+
+    @Override
+    public TimeSeries<V> slice(int from, int to) {
+        List<ZonedDateTime> slicedTimes = this.times.subList(from, to);
+        if ((this.size()+super.excess)/(double)(from-to) > super.loadRatio) {
+            slicedTimes = new ArrayList<>(slicedTimes);
+        }
+        Series<V> res = super.slice(from, to);
+
+        return new TimeSeries<>(res, slicedTimes);
+    }
+
+
+    public TimeSeries<V> merge (TimeSeries<V> src) {
         if (src.size() == 0) {
-            return new TimeSeries<>(this.getTimes(), this.get());
+            return new TimeSeries<>(this);
         }
+        ArrayList<Candle<V>> resultCandles = new ArrayList<>();
         List<ZonedDateTime> times = this.getTimes();
-        List<V> prices = new ArrayList<>(this.get());
+        List<V> prices = this.get();
         List<ZonedDateTime> newTimes = src.getTimes();
-        List<? extends V> newPrices = src.get();
-        for (int i = 0; i < src.size(); i++) {
-            ZonedDateTime time = newTimes.get(i);
-            int idx = Collections.binarySearch(times, time);
-            if (idx >= 0) {
-                prices.set(idx, newPrices.get(i));
+        List<V> newPrices = src.get();
+        int thisIndex = 0;
+        int srcIndex = 0;
+        int thisSize = this.size();
+        int srcSize = src.size();
+        while (thisIndex < thisSize && srcIndex < srcSize) {
+            ZonedDateTime thisTime = times.get(thisIndex);
+            ZonedDateTime srcTime = newTimes.get(srcIndex);
+            int compareResult = thisTime.compareTo(srcTime);
+            Candle<V> newCandle = null;
+            if (compareResult < 0) {
+                newCandle = new Candle<>(thisTime, prices.get(thisIndex));
+                thisIndex++;
+            } else if (compareResult == 0){
+                newCandle = new Candle<>(srcTime, newPrices.get(srcIndex));
+                thisIndex++;
+                srcIndex++;
+
             } else {
-                idx = -idx - 1;
-                prices.add(idx, newPrices.get(i));
-                times.add(idx, time);
+                newCandle = new Candle<>(srcTime, newPrices.get(srcIndex));
+                srcIndex++;
             }
+            resultCandles.add(newCandle);
         }
-
-
-        TimeSeries<V> ts = new TimeSeries<>(times, prices);
-
-        return ts;
+        if (thisIndex < thisSize) {
+            IntStream.range(thisIndex, thisSize)
+                    .mapToObj(i -> new Candle<>(times.get(i), prices.get(i)))
+                    .forEach(resultCandles::add);
+        } else if (srcIndex < srcSize) {
+            IntStream.range(srcIndex, srcSize)
+                    .mapToObj(i -> new Candle<>(newTimes.get(i), newPrices.get(i)))
+                    .forEach(resultCandles::add);
+        }
+        return new TimeSeries<>(resultCandles);
     }
 
-    public void extendLeft (TimeSeries<? extends V> src){
-        assert src.until().isBefore(this.from());
-        super.extendLeft(src);
-        List<ZonedDateTime> combinedTimes = List.copyOf(src.times);
-        combinedTimes.addAll(this.times);
-        this.times = combinedTimes;
+    TimeSeries<V> updateLength(TimeSeries<V> delta, ZonedDateTime until, int length) {
+        // overlapping part of delta is ignored
+        // until inclusive
+        TimeSeries<V> deltaAppendSlice = delta.slice(
+                delta.pointsBefore(this.until()),
+                delta.pointsNotAfter(until));
+        TimeSeries<V> res = this.extendRight(deltaAppendSlice);
+        res = res.slice(res.size()-length, res.size());
+        res.original = true; // since intermediate res is garbage-collected anyways, treat as weak reference
+        return res;
     }
 
-    public void extendRight (TimeSeries<V> src){
+    TimeSeries<V> updateRange(TimeSeries<V> delta, ZonedDateTime from, ZonedDateTime until) {
+        // overlapping part of delta is ignored
+        // from exclusive, until inclusive
+        TimeSeries<V> deltaAppendSlice = delta.slice(
+                delta.pointsBefore(this.until()),
+                delta.pointsNotAfter(until));
+        TimeSeries<V> res = this.extendRight(deltaAppendSlice);
+        res = res.slice(res.pointsNotAfter(from), res.size());
+        res.original = true;
+        return res;
+    }
+
+    public TimeSeries<V> extendLeft (TimeSeries<V> src){
+        return src.extendRight(this);
+    }
+
+    public TimeSeries<V> extendRight (TimeSeries<V> src){
         assert src.from().isAfter(this.until());
-        super.extendRight(src);
+        if (!super.original) {
+            this.times =  new ArrayList<>(this.times);
+        }
+        int size = this.size();
         this.times.addAll(src.times);
-    }
-
-    public void extendLeft (Series<V> src, Duration interval) {
-        ZonedDateTime start = this.from().minus(interval.multipliedBy(src.size()));
-        this.extendLeft(new TimeSeries<>(src, interval, start));
-    }
-
-    public void extendRight (Series<V> src, Duration interval) {
-        ZonedDateTime start = this.until().plus(interval);
-        this.extendRight(new TimeSeries<>(src, interval, start));
+        TimeSeries<V> res = new TimeSeries<>(
+                super.extendRight(src),
+                this.times
+        );
+        this.times = this.times.subList(0, size);
+        return res;
     }
 
     public List<ZonedDateTime> getTimes () {
@@ -151,17 +182,23 @@ public class TimeSeries <V extends Number> extends Series<V>{
 
     }
 
-    public int indexAt(ZonedDateTime anchor) {
+    private int pointsBefore(ZonedDateTime anchor) {
+        // number of datapoints strictly before anchor
         int anchorIndex = Collections.binarySearch(this.times, anchor);
         if (anchorIndex < 0) {
-            anchorIndex = -(anchorIndex + 1);
-            if (anchorIndex == 0) {
-                return 0;
-            } else {
-                return anchorIndex - 1;
-            }
+            return -(anchorIndex + 1);
         } else {
-            return  anchorIndex;
+            return anchorIndex;
+        }
+    }
+
+    public int pointsNotAfter(ZonedDateTime anchor) {
+        // number of datapoints at or before anchor
+        int anchorIndex = Collections.binarySearch(this.times, anchor);
+        if (anchorIndex < 0) {
+            return -(anchorIndex + 1);
+        } else {
+            return anchorIndex+1;
         }
     }
 

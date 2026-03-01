@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -37,7 +36,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
 
     protected FeatureExtractor<V> extractor;
     protected Predictor<V, R> model;
-    private Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies;
+    Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies;
 
     public ModelPredictor (FeatureExtractor<V> extractor,
                            Predictor<V, R> model,
@@ -131,29 +130,28 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
 
         private ModelPredictor<V, R> model;
         private Duration offset;
-        private static <V extends Number, R extends Number> List<Integer> makeLeft(ModelPredictor<V, R> model, Duration offset) {
-            List<Integer> leftDependencies = new ArrayList<>();
-            IntStream.range(0, model.intervals.size())
-                    .forEach(i -> {
-                        Duration interval = model.intervals.get(i);
-                        double ratio = offset.toMillis()/(double)interval.toMillis();
-                        leftDependencies.add(model.leftDependencies.get(i) + (int)Math.ceil(ratio));
-                    });
-            return leftDependencies;
+        private static <V extends Number, R extends Number> LinkedHashMap<Duration, Integer> makeLeft(ModelPredictor<V, R> model, Duration offset) {
+            LinkedHashMap<Duration, Integer> original = model.dependencies.first;
+            LinkedHashMap<Duration, Integer> updated  = new LinkedHashMap<>();
+            for (Duration interval : original.keySet()) {
+                double ratio = offset.toMillis()/(double)interval.toMillis();
+                updated.put(interval, original.get(interval) + (int)Math.ceil(ratio));
+            }
+            return updated;
         }
-        private static <V extends Number, R extends Number> List<Integer> makeRight(ModelPredictor<V, R> model, Duration offset) {
-            List<Integer> rightDependencies = new ArrayList<>();
-            IntStream.range(0, model.intervals.size())
-                    .forEach(i -> {
-                        Duration interval = model.intervals.get(i);
-                        double ratio = offset.toMillis()/(double)interval.toMillis();
-                        rightDependencies.add(Math.max(0, model.rightDependencies.get(i) - (int)Math.floor(ratio)));
-                    });
-            return rightDependencies;
+        private static <V extends Number, R extends Number> LinkedHashMap<Duration, Integer> makeRight(ModelPredictor<V, R> model, Duration offset) {
+            LinkedHashMap<Duration, Integer> original = model.dependencies.second;
+            LinkedHashMap<Duration, Integer> updated  = new LinkedHashMap<>();
+            for (Duration interval : original.keySet()) {
+                double ratio = offset.toMillis()/(double)interval.toMillis();
+                updated.put(interval, Math.max(0, original.get(interval) - (int)Math.floor(ratio)));
+            }
+            return updated;
         }
+
         public OffsetModel(ModelPredictor<V, R> model, Duration offset) {
             super(
-                    null, null, model.intervals, OffsetModel.makeLeft(model, offset), OffsetModel.makeRight(model, offset));
+                    null, null, Util.Pair.create(OffsetModel.makeLeft(model, offset), OffsetModel.makeRight(model, offset)));
             this.model = model;
             this.offset = offset;
         }
@@ -174,7 +172,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         public List<TimeSeries<R>> predict(List<? extends TimeSeries<V>> input, Candle<V> latest) {
             ZonedDateTime anchor = latest.getTime().minus(offset);
             List<Integer> anchorIndices = input.stream()
-                    .map(ts -> ts.indexAt(anchor))
+                    .map(ts -> ts.pointsNotAfter(anchor))
                     .collect(Collectors.toList());
             Candle<V> offsetLatest = Util.combine(
                     input.stream(),
@@ -184,19 +182,14 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             System.out.println("pp0");
             System.out.println(anchor);
             List<TimeSeries<V>> offsetInput = new ArrayList<>();
-            IntStream.range(0, model.intervals.size())
-                    .forEach(i -> {
-                        int ld = model.leftDependencies.get(i);
-                        TimeSeries<V> ts = input.get(i);
-                        int anchorIndex = anchorIndices.get(i);
-                        System.out.println("pp1");
-                        System.out.println(anchorIndex);
-                        System.out.println(ld);
-//                        ts.getTimes().forEach(System.out::println);
-                        offsetInput.add(ts.slice(anchorIndex + 1 - ld, anchorIndex + 1));
-
-                    });
-
+            int inputIdx = 0;
+            for (Duration interval: model.dependencies.first.keySet()) {
+                int ld = model.dependencies.first.get(interval);
+                TimeSeries<V> ts = input.get(inputIdx);
+                int anchorIndex = anchorIndices.get(inputIdx);
+                offsetInput.add(ts.slice(anchorIndex - ld, anchorIndex));
+                inputIdx++;
+            }
             return this.model.predict(offsetInput, offsetLatest);
         }
 

@@ -4,11 +4,10 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OffsetSeries<V extends Number> extends Series<V>{
+public class OffsetSeries<V extends Number>{
 
     List<? extends OffsetCandle<? extends V>> candles;
     public OffsetSeries (List<? extends OffsetCandle<? extends V>> candles) {
-        super(candles);
         this.candles = candles;
     }
 
