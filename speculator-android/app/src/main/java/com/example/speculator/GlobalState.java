@@ -24,7 +24,7 @@ import engine.sugar.Preset;
 
 public class GlobalState {
     /* TODO LIST
-     * 2. upstream to cache data
+     * 2. benchmark upstream cache data
      * 6. (deploy & simulate) prototypical agent and interface
      * 8. djl -> Executorch
      * 9. limit datetime range based on upstream/ticker & left-dep
@@ -32,6 +32,7 @@ public class GlobalState {
      * 13. update & push pyWorkflow template
      * 22. refactor upstream and state <DONE>
      * 24. LinePlotter labelling / legend
+     * 25. fix line artifact issue (obvious for usdsgd)
      */
     static Path appStorageRoot;
     static List<Ticker<Float>> tickers = List.of(

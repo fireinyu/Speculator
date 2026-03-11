@@ -23,7 +23,7 @@ public abstract class Builder <T>{
 
     public ViewGroup makeForm(Context root) {
         // include overall label, input prompts, input entry views, submit button
-        // bind build to submit button
+        // bind build until submit button
         LinearLayout form = new LinearLayout(root);
         form.setOrientation(LinearLayout.VERTICAL);
         TextView label = new TextView(root);

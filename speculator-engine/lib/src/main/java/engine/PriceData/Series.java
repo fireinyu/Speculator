@@ -13,7 +13,7 @@ import javax.xml.crypto.Data;
 public class Series <T extends Number> {
 
     List<T> data;
-    boolean original = true; // whether ok to shallow copy
+    boolean original = true; // whether ok until shallow copy
     int excess = 0; // number of unreachable elements
     int loadRatio = 1; // maximum number of unreachable elements as a fraction of size, in a slice
 

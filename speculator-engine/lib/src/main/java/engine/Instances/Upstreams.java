@@ -1,6 +1,6 @@
 package engine.Instances;
 
-import engine.components.Upstream;
+import engine.PriceData.Upstream;
 import engine.upstreams.Oanda;
 
 public class Upstreams {

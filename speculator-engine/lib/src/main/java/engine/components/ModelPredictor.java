@@ -22,6 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import javax.rmi.ssl.SslRMIClientSocketFactory;
+
 import engine.Serialisation.StateMachine;
 
 public abstract class ModelPredictor<V extends Number, R extends Number> implements StateMachine<ModelPredictor<V, R>> {
@@ -67,6 +69,11 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
     }
 
     public List<TimeSeries<R>> predict(TickerState<V> input) {
+        System.out.println("Model::predict");
+        System.out.println("Model::predict bug start");
+        input.getIntervals().stream()
+                .peek(System.out::println)
+                .forEach(ts -> System.out.println(input.getPriceData(ts).size()));
         return this.predict(this.dependencies.first.keySet().stream()
                 .map(dep -> Util.Pair.create(dep, input.getPriceData(dep)))
                 .map(pair -> pair.second.slice(pair.second.size() - this.dependencies.first.get(pair.first), pair.second.size()))
@@ -75,8 +82,10 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         );
     }
     public List<TimeSeries<R>> predict (List<? extends TimeSeries<V>> input, Candle<V> latest) {
+        System.out.println("Model:predict");
         List<V> features = this.extractor.extract(input, latest.get());
         List<OffsetSeries<R>> output = this.model.predict(features, latest.get());
+        System.out.println("Model:predict end");
         return output.stream().map(ts -> ts.at(latest.getTime())).collect(Collectors.toList());
     }
 
@@ -172,14 +181,13 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         public List<TimeSeries<R>> predict(List<? extends TimeSeries<V>> input, Candle<V> latest) {
             ZonedDateTime anchor = latest.getTime().minus(offset);
             List<Integer> anchorIndices = input.stream()
-                    .map(ts -> ts.pointsNotAfter(anchor))
+                    .map(ts -> ts.pointsNotAfter(anchor)-1)
                     .collect(Collectors.toList());
             Candle<V> offsetLatest = Util.combine(
                     input.stream(),
                     anchorIndices.stream(),
                     TimeSeries::get
             ).max(Comparator.comparing(Candle::getTime)).get();
-            System.out.println("pp0");
             System.out.println(anchor);
             List<TimeSeries<V>> offsetInput = new ArrayList<>();
             int inputIdx = 0;
@@ -187,7 +195,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
                 int ld = model.dependencies.first.get(interval);
                 TimeSeries<V> ts = input.get(inputIdx);
                 int anchorIndex = anchorIndices.get(inputIdx);
-                offsetInput.add(ts.slice(anchorIndex - ld, anchorIndex));
+                offsetInput.add(ts.slice(anchorIndex+1 - ld, anchorIndex+1));
                 inputIdx++;
             }
             return this.model.predict(offsetInput, offsetLatest);

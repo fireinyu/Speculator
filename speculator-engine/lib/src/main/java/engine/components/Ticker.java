@@ -6,6 +6,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import engine.PriceData.Upstream;
 import engine.Util.Pair;
 
 public abstract class Ticker <V extends Number>{

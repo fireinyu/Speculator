@@ -3,15 +3,13 @@ package engine.PriceData;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import engine.Util;
 import engine.components.Ticker;
-import engine.components.UpstreamRequest;
 
 public class State<V extends Number> {
 
@@ -25,7 +23,11 @@ public class State<V extends Number> {
     }
 
     public TickerState<V> getTickerState(Ticker<V> ticker) {
-        return this.tickerData.get(ticker).asView();
+//        System.out.println("State::getTS");
+//        System.out.println(this.tickerData.get(ticker));
+        return Optional.ofNullable(this.tickerData.get(ticker))
+                .map(TickerState::asView)
+                .orElse(null);
     }
 
     public Set<Ticker<V>> getTickers() {
@@ -39,136 +41,131 @@ public class State<V extends Number> {
         return new State<>(copyData);
     }
 
-    public static abstract class MutableState<V extends Number> extends State<V> {
+    public static class MutableState<V extends Number> extends State<V> {
         Hashtable<Ticker<V>, Integer> nonHits;
-        int nonHitsBeforeClear; // also applies to tickerState
+        HashSet<Ticker<V>> hits;
+        int nonHitsBeforeClear; // also applies until tickerState
         public MutableState(int nonHitsBeforeClear) {
             // start out empty
             super(new HashMap<>());
             this.nonHits = new Hashtable<>();
+            this.hits = new HashSet<>();
             this.nonHitsBeforeClear = nonHitsBeforeClear;
         }
 
-        public abstract UpstreamRequest<V> bootstrapRequest(UpstreamRequest<V> request, ZonedDateTime at);
+        public MutableState() {
+            this(3);
+        }
 
         public State<V> asView() {
             // makes shallow copy view (for abstraction)
             return new State<>(this.tickerData);
         }
-    }
 
-    public static class LeftMutableState<V extends Number> extends MutableState<V>{
-        public LeftMutableState(int nonHitsBeforeClear) {
-            super(nonHitsBeforeClear);
+        public int pointsNotAfter(Ticker<V> ticker, Duration interval, ZonedDateTime at) {
+            return this.tickerData.get(ticker).asMutable().pointsNotAfter(interval, at);
+        }
+
+        public void extendLeft(Ticker<V> ticker, Duration interval, TimeSeries<V> deltaLeft) {
+            this.tickerData.get(ticker).asMutable().extendLeft(interval, deltaLeft);
+            this.markHit(ticker, interval);
+        }
+
+        public void extendRight(Ticker<V> ticker, Duration interval, TimeSeries<V> deltaRight) {
+            this.tickerData.get(ticker).asMutable().extendRight(interval, deltaRight);
+            this.markHit(ticker, interval);
+
+        }
+
+        public void dropLeft(Ticker<V> ticker, Duration interval, int count) {
+            TickerState<V> tickerState = this.tickerData.get(ticker);
+            tickerState.asMutable().dropLeft(interval, count);
+            if (tickerState.isEmpty()) {
+                this.tickerData.remove(ticker);
+            } else {
+                this.markHit(ticker, interval);
+            }
+        }
+
+        public void dropAfter(Ticker<V> ticker, Duration interval, ZonedDateTime after) {
+            TickerState<V> tickerState = this.tickerData.get(ticker);
+            tickerState.asMutable().dropAfter(interval, after);
+            if (tickerState.isEmpty()) {
+                this.tickerData.remove(ticker);
+            } else {
+                this.markHit(ticker, interval);
+            }
+        }
+
+        public void put(Ticker<V> ticker, Duration interval, TimeSeries<V> timeSeries) {
+            if (timeSeries.isEmpty()) {
+                return;
+            }
+            if (!this.tickerData.containsKey(ticker)) {
+                this.tickerData.put(ticker, new TickerState.MutableTickerState<>(nonHitsBeforeClear));
+            }
+            this.tickerData.get(ticker).put(interval, timeSeries);
+            this.markHit(ticker, interval);
+        }
+
+        public boolean contains(Ticker<V> ticker, Duration interval) {
+            return this.tickerData.containsKey(ticker) && this.tickerData.get(ticker).contains(interval);
+        }
+
+        public ZonedDateTime from(Ticker<V> ticker, Duration interval) {
+            return this.tickerData.get(ticker).from(interval);
+        }
+
+        public ZonedDateTime until(Ticker<V> ticker, Duration interval) {
+            return this.tickerData.get(ticker).until(interval);
+        }
+
+        public void markHit(Ticker<V> ticker, Duration interval) {
+            if (this.tickerData.containsKey(ticker)) {
+                this.hits.add(ticker);
+                this.tickerData.get(ticker).asMutable().markHit(interval);
+            }
         }
 
         @Override
-        public UpstreamRequest.LeftRequest<V> bootstrapRequest(UpstreamRequest<V> request, ZonedDateTime at) {
-            UpstreamRequest.LeftRequest<V> res = request.getLeft();
-            res.getTickers().forEach(
-                    ticker -> getTickerState(ticker).bootstrapRequestLeft(res ,at, ticker)
-            );
-            return res;
+        public TickerState<V> getTickerState(Ticker<V> ticker) {
+            this.hits.add(ticker);
+            return super.getTickerState(ticker);
         }
 
-        public MutableState<V> update(State<V> delta, UpstreamRequest<V> request, ZonedDateTime at) {
-            // modifies tickerData and nonHits
-            // returns self, for chaining
-            UpstreamRequest.LeftRequest<V> leftRequest = request.getLeft();
-            for (Ticker<V> ticker: tickerData.keySet()) {
-                if (delta.tickerData.containsKey(ticker)) {
-                    // update using timeseries::update
-                    tickerData.get(ticker).asMutable().updateLeft(
-                            delta.tickerData.get(ticker),
-                            ticker,
-                            leftRequest,
-                            at
-                    );
-                    this.nonHits.put(ticker, nonHitsBeforeClear);
+        public void cleanUp() {
+            Hashtable<Ticker<V>, Integer> nonHits = new Hashtable<>();
+            for (Ticker<V> ticker : this.tickerData.keySet()) {
+                if (this.hits.contains(ticker)) {
+                    nonHits.put(ticker, this.nonHitsBeforeClear);
+                    TickerState.MutableTickerState<V> ts = this.tickerData.get(ticker).asMutable();
+                    ts.cleanUp();
+                    if (ts.isEmpty()) {
+                        this.tickerData.remove(ticker);
+                    }
                 } else {
-                    // decrease nonhitsbeforeclear
-                    // this.nonHits.putIfAbsent(ticker, nonHitsBeforeClear); // needed if not starting out empty
-                    int nonHit = this.nonHits.get(ticker);
-                    if (nonHit == 0) {
-                        this.nonHits.remove(ticker);
+                    int nh = this.nonHits.get(ticker);
+                    if (nh == 0) {
                         this.tickerData.remove(ticker);
                     } else {
-                        this.nonHits.put(ticker, nonHit-1);
+                        nonHits.put(ticker, nh-1);
                     }
                 }
             }
-            for (Ticker<V> ticker : delta.tickerData.keySet()) {
-                if (!this.nonHits.containsKey(ticker)) {
-                    tickerData.put(ticker, new TickerState.MutableTickerState<>(nonHitsBeforeClear));
-                    tickerData.get(ticker).asMutable().updateLeft(
-                            delta.tickerData.get(ticker),
-                            ticker,
-                            leftRequest,
-                            at
-                    );
-                    this.nonHits.put(ticker, nonHitsBeforeClear);
-                }
+            this.nonHits = nonHits;
+            this.hits = new HashSet<>();
+        }
+
+        public Util.Pair<State<V>, State<V>> partition(ZonedDateTime at) {
+            HashMap<Ticker<V>, TickerState<V>> leftMap = new HashMap<>();
+            HashMap<Ticker<V>, TickerState<V>> rightMap = new HashMap<>();
+            for (Ticker<V> ticker : this.tickerData.keySet()) {
+                Util.Pair<TickerState<V>, TickerState<V>> pair = this.tickerData.get(ticker).asMutable().partition(at);
+                leftMap.put(ticker, pair.first);
+                rightMap.put(ticker, pair.second);
             }
-            return this;
+            return Util.Pair.create(new State<>(leftMap), new State<>(rightMap));
         }
     }
-
-    public static class RightMutableState<V extends Number> extends MutableState<V> {
-        public RightMutableState(int nonHitsBeforeClear) {
-            super(nonHitsBeforeClear);
-        }
-
-        @Override
-        public UpstreamRequest.RightRequest<V> bootstrapRequest(UpstreamRequest<V> request, ZonedDateTime at) {
-            UpstreamRequest.RightRequest<V> res = request.getRight();
-            res.getTickers().forEach(
-                    ticker -> getTickerState(ticker).bootstrapRequestRight(res ,at, ticker)
-            );
-            return res;
-        }
-
-        public MutableState<V> update(State<V> delta, UpstreamRequest<V> request, ZonedDateTime at) {
-            // modifies tickerData and nonHits
-            // returns self, for chaining
-            UpstreamRequest.RightRequest<V> rightRequest = request.getRight();
-            for (Ticker<V> ticker: tickerData.keySet()) {
-                if (delta.tickerData.containsKey(ticker)) {
-                    // update using timeseries::update
-                    tickerData.get(ticker).asMutable().updateRight(
-                            delta.tickerData.get(ticker),
-                            ticker,
-                            rightRequest,
-                            at
-                    );
-                    this.nonHits.put(ticker, nonHitsBeforeClear);
-                } else {
-                    // decrease nonhitsbeforeclear
-                    // this.nonHits.putIfAbsent(ticker, nonHitsBeforeClear); // needed if not starting out empty
-                    int nonHit = this.nonHits.get(ticker);
-                    if (nonHit == 0) {
-                        this.nonHits.remove(ticker);
-                        this.tickerData.remove(ticker);
-                    } else {
-                        this.nonHits.put(ticker, nonHit-1);
-                    }
-                }
-            }
-            for (Ticker<V> ticker : delta.tickerData.keySet()) {
-                if (!this.nonHits.containsKey(ticker)) {
-                    tickerData.put(ticker, new TickerState.MutableTickerState<>(nonHitsBeforeClear));
-                    tickerData.get(ticker).asMutable().updateRight(
-                            delta.tickerData.get(ticker),
-                            ticker,
-                            rightRequest,
-                            at
-                    );
-                    this.nonHits.put(ticker, nonHitsBeforeClear);
-                }
-            }
-            return this;
-        }
-    }
-
-
 
 }

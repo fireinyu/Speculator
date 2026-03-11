@@ -139,19 +139,15 @@ public class BacktestFragment extends Fragment {
         this.plotter.unplot();
         plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
         List<Ticker<Float>> tickers = GlobalState.Predict.tickerMenu.get();
-        List<CompletableFuture<PredictManager.BacktestResult<Float, Float>>> results = tickers.stream()
-                .map(ticker -> GlobalState.Predict.pullManager.backTestAsync(ticker, selectedDateTime))
-                .collect(Collectors.toList());
-
-        CompletableFuture.allOf(results.toArray(new CompletableFuture<?>[]{}))
-                .thenRunAsync(() -> {
-                    getActivity().runOnUiThread(() -> {
-                        this.plotter.plotAllPredict(
-                                results.stream().map(CompletableFuture::join).collect(Collectors.toList())
-                        );
-                        this.enableNewPlots();
-                    });
-                });
+        CompletableFuture<List<PredictManager.BacktestResult<Float, Float>>> results = GlobalState.Predict.pullManager.backTestAsync(tickers, selectedDateTime);
+        results.thenAcceptAsync(ls -> {
+            getActivity().runOnUiThread(() -> {
+                this.plotter.plotAllPredict(
+                        ls.stream().collect(Collectors.toList())
+                );
+                this.enableNewPlots();
+            });
+        });
     }
 
     public void predict(View view) {
@@ -159,19 +155,15 @@ public class BacktestFragment extends Fragment {
         this.plotter.unplot();
         plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
         List<Ticker<Float>> tickers = GlobalState.Predict.tickerMenu.get();
-        List<CompletableFuture<PredictManager.BacktestResult<Float, Float>>> results = tickers.stream()
-                .map(ticker -> GlobalState.Predict.predictManager.backTestAsync(ticker, selectedDateTime))
-                .collect(Collectors.toList());
-
-        CompletableFuture.allOf(results.toArray(new CompletableFuture<?>[]{}))
-                .thenRunAsync(() -> {
-                    getActivity().runOnUiThread(() -> {
-                        this.plotter.plotAllBackTest(
-                                results.stream().map(CompletableFuture::join).collect(Collectors.toList())
-                        );
-                        this.enableNewPlots();
-                    });
-                }).join();
+        CompletableFuture<List<PredictManager.BacktestResult<Float, Float>>> results = GlobalState.Predict.predictManager.backTestAsync(tickers, selectedDateTime);
+        results.thenAcceptAsync(ls -> {
+            getActivity().runOnUiThread(() -> {
+                this.plotter.plotAllBackTest(
+                        ls.stream().collect(Collectors.toList())
+                );
+                this.enableNewPlots();
+            });
+        });
     }
 //
 //    public void predict(List<Ticker<Float>> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {

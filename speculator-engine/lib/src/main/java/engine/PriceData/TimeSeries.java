@@ -2,6 +2,7 @@ package engine.PriceData;
 
 import engine.Util;
 
+import java.sql.Time;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,7 +24,7 @@ public class TimeSeries <V extends Number> extends Series<V>{
     }
 
     public static <V extends Number> TimeSeries<V> empty() {
-        return new TimeSeries<V>(List.of());
+        return new EmptyTimeSeries<>();
     }
     private List<ZonedDateTime> times;
 
@@ -55,12 +56,15 @@ public class TimeSeries <V extends Number> extends Series<V>{
 
     @Override
     public TimeSeries<V> slice(int from, int to) {
+        if (from >= to) {
+            return new EmptyTimeSeries<>();
+        }
         List<ZonedDateTime> slicedTimes = this.times.subList(from, to);
         if ((this.size()+super.excess)/(double)(from-to) > super.loadRatio) {
             slicedTimes = new ArrayList<>(slicedTimes);
         }
         Series<V> res = super.slice(from, to);
-
+        System.out.println("slice result: " + from + to + res.size() );
         return new TimeSeries<>(res, slicedTimes);
     }
 
@@ -109,36 +113,18 @@ public class TimeSeries <V extends Number> extends Series<V>{
         return new TimeSeries<>(resultCandles);
     }
 
-    TimeSeries<V> updateLength(TimeSeries<V> delta, ZonedDateTime until, int length) {
-        // overlapping part of delta is ignored
-        // until inclusive
-        TimeSeries<V> deltaAppendSlice = delta.slice(
-                delta.pointsBefore(this.until()),
-                delta.pointsNotAfter(until));
-        TimeSeries<V> res = this.extendRight(deltaAppendSlice);
-        res = res.slice(res.size()-length, res.size());
-        res.original = true; // since intermediate res is garbage-collected anyways, treat as weak reference
-        return res;
-    }
-
-    TimeSeries<V> updateRange(TimeSeries<V> delta, ZonedDateTime from, ZonedDateTime until) {
-        // overlapping part of delta is ignored
-        // from exclusive, until inclusive
-        TimeSeries<V> deltaAppendSlice = delta.slice(
-                delta.pointsBefore(this.until()),
-                delta.pointsNotAfter(until));
-        TimeSeries<V> res = this.extendRight(deltaAppendSlice);
-        res = res.slice(res.pointsNotAfter(from), res.size());
-        res.original = true;
-        return res;
-    }
-
     public TimeSeries<V> extendLeft (TimeSeries<V> src){
         return src.extendRight(this);
     }
 
     public TimeSeries<V> extendRight (TimeSeries<V> src){
+        System.out.println("TSeries::extendRight");
+        System.out.println("TSeries::extendRight bug start");
+        if (src instanceof EmptyTimeSeries) {
+            return this;
+        }
         assert src.from().isAfter(this.until());
+        System.out.println("TSeries::extendRight bug end");
         if (!super.original) {
             this.times =  new ArrayList<>(this.times);
         }
@@ -149,6 +135,7 @@ public class TimeSeries <V extends Number> extends Series<V>{
                 this.times
         );
         this.times = this.times.subList(0, size);
+        System.out.println("TSeries::extendRight end");
         return res;
     }
 
@@ -230,8 +217,44 @@ public class TimeSeries <V extends Number> extends Series<V>{
     }
 
     public Candle<V> getLast() {
+        System.out.println("TimeSeries::getLast");
+        System.out.println(this.size());
         return this.get(this.size()-1);
     }
 
+    boolean isEmpty() {
+        return this.data.isEmpty();
+    }
+
+    public static class EmptyTimeSeries <V extends Number> extends TimeSeries<V> {
+        public EmptyTimeSeries() {
+            super(List.of());
+        }
+
+        @Override
+        public TimeSeries<V> slice(int from, int to) {
+            return new EmptyTimeSeries<>();
+        }
+
+        @Override
+        public TimeSeries<V> merge(TimeSeries<V> src) {
+            return src;
+        }
+
+        @Override
+        public TimeSeries<V> extendRight(TimeSeries<V> src) {
+            return src;
+        }
+
+        @Override
+        public TimeSeries<V> extendLeft(TimeSeries<V> src) {
+            return src;
+        }
+
+        @Override
+        boolean isEmpty() {
+            return true;
+        }
+    }
 
 }

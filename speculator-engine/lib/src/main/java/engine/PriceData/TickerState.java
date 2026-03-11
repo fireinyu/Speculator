@@ -4,11 +4,11 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Set;
 
-import engine.components.Ticker;
-import engine.components.UpstreamRequest;
+import engine.Util;
 
 public class TickerState <V extends Number> {
     HashMap<Duration,TimeSeries<V>> priceData;
@@ -31,15 +31,15 @@ public class TickerState <V extends Number> {
         return this.priceData.get(interval);
     }
     public Candle<V> getAbsoluteLatest() {
+//        System.out.println("TickerState:getAbsLate");
         // absolute latest across all intervals
         return this.getIntervals().stream()
                 .map(this::getPriceData)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug start"))
                 .map(TimeSeries::getLast)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug end"))
                 .max(Comparator.comparing(Candle::getTime))
                 .get();
-    }
-    public Candle<V> getCommonLatest() {
-        return null;
     }
 
     public Position<V> getPosition() {
@@ -62,103 +62,74 @@ public class TickerState <V extends Number> {
         throw new IllegalStateException("not mutable");
     }
 
-    UpstreamRequest.LeftRequest<V> bootstrapRequestLeft(UpstreamRequest.LeftRequest<V> request, ZonedDateTime at, Ticker<V> ticker) {
-        request.getIntervals(ticker).forEach(interval -> {
-            ZonedDateTime cacheLast = priceData.get(interval).until();
-            request.bootstrap(ticker, interval, at, cacheLast);
-        });
-        return request;
+
+    public void put(Duration interval, TimeSeries<V> timeSeries) {
+        this.priceData.put(interval, timeSeries);
     }
-    UpstreamRequest.RightRequest<V> bootstrapRequestRight(UpstreamRequest.RightRequest<V> request, ZonedDateTime at, Ticker<V> ticker) {
-        priceData.keySet().forEach(interval -> {
-            ZonedDateTime cacheLast = priceData.get(interval).until();
-            request.bootstrap(ticker, interval, at, cacheLast);
-        });
-        return request;
+
+    public boolean contains(Duration interval) {
+        return this.priceData.containsKey(interval);
+    }
+
+    public ZonedDateTime from(Duration interval) {
+        return this.getPriceData(interval).from();
+    }
+
+    public ZonedDateTime until(Duration interval) {
+        return this.getPriceData(interval).until();
+    }
+    boolean isEmpty() {
+        return this.priceData.isEmpty();
     }
 
     public static class MutableTickerState <V extends Number> extends TickerState<V> {
         private Hashtable<Duration, Integer> nonHits; // value = remaining non-hits
+        private HashSet<Duration> hits;
         private int nonHitsBeforeClear;
 
         public MutableTickerState(int nonHitsBeforeClear) {
             // start out empty
             super(new HashMap<>(), Position.empty());
             this.nonHits = new Hashtable<>();
+            this.hits = new HashSet<>();
             this.nonHitsBeforeClear = nonHitsBeforeClear;
         }
-
-        MutableTickerState<V> updateLeft(TickerState<V> delta, Ticker<V> ticker, UpstreamRequest.LeftRequest<V> request, ZonedDateTime at) {
-            // modifies priceData and intervals
-            // request: the left upstreamrequest that produced delta
-            // returns self, for chaining
-            for (Duration interval: priceData.keySet()) {
-                if (delta.priceData.containsKey(interval)) {
-                    // update using timeseries::update
-                    priceData.put(interval,
-                            priceData.get(interval).updateLength(
-                                    delta.priceData.get(interval),
-                                    at,
-                                    request.getDependency(ticker, interval)
-                                    )
-                    );
-                    this.nonHits.put(interval, nonHitsBeforeClear);
-                } else {
-                    // decrease nonhitsbeforeclear
-                    // this.nonHits.putIfAbsent(interval, nonHitsBeforeClear); // need this if not starting empty
-                    int nonHit = this.nonHits.get(interval);
-                    if (nonHit == 0) {
-                        this.nonHits.remove(interval);
-                        this.priceData.remove(interval);
-                    } else {
-                        this.nonHits.put(interval, nonHit-1);
-                    }
-                }
-            }
-            for (Duration interval : delta.priceData.keySet()) {
-                if (!this.nonHits.containsKey(interval)) {
-                    priceData.put(interval, delta.priceData.get(interval));
-                    this.nonHits.put(interval, nonHitsBeforeClear);
-                }
-            }
-            return this;
+        public int pointsNotAfter(Duration interval, ZonedDateTime at) {
+            return this.getPriceData(interval).pointsNotAfter(at);
         }
 
-        MutableTickerState<V> updateRight(TickerState<V> delta, Ticker<V> ticker, UpstreamRequest.RightRequest<V> request, ZonedDateTime at) {
-            // modifies priceData and intervals
-            // request: the right upstreamrequest that produced delta
-            // returns self, for chaining
-            for (Duration interval: priceData.keySet()) {
-                if (delta.priceData.containsKey(interval)) {
-                    // update using timeseries::update
-                    priceData.put(
-                            interval,
-                            priceData.get(interval).updateRange(
-                                    delta.priceData.get(interval),
-                                    at,
-                                    at.plus(interval.multipliedBy(request.getDependency(ticker,interval)))
-                            )
-                    );
-                    this.nonHits.put(interval, nonHitsBeforeClear);
-                } else {
-                    // decrease nonhitsbeforeclear
-                    // this.nonHits.putIfAbsent(interval, nonHitsBeforeClear); // need this if not starting empty
-                    int nonHit = this.nonHits.get(interval);
-                    if (nonHit == 0) {
-                        this.nonHits.remove(interval);
-                        this.priceData.remove(interval);
-                    } else {
-                        this.nonHits.put(interval, nonHit-1);
-                    }
-                }
+        public void extendLeft(Duration interval, TimeSeries<V> deltaLeft) {
+            this.priceData.put(interval, this.getPriceData(interval).extendLeft(deltaLeft));
+        }
+
+        public void extendRight(Duration interval, TimeSeries<V> deltaRight) {
+            this.priceData.put(interval, this.getPriceData(interval).extendRight(deltaRight));
+        }
+
+        public void dropLeft(Duration interval, int count) {
+            if (count == 0) {
+                return;
             }
-            for (Duration interval : delta.priceData.keySet()) {
-                if (!this.nonHits.containsKey(interval)) {
-                    priceData.put(interval, delta.priceData.get(interval));
-                    this.nonHits.put(interval, nonHitsBeforeClear);
-                }
+            TimeSeries<V> ts = this.getPriceData(interval);
+            TimeSeries<V> newTs = ts.slice(count, ts.size());
+            if (newTs.isEmpty()) {
+                this.priceData.remove(interval);
+            } else {
+                newTs.original = true; // original timeseries deemed as derelict
+                this.priceData.put(interval, newTs);
             }
-            return this;
+        }
+
+        public void dropAfter(Duration interval, ZonedDateTime after) {
+            TimeSeries<V> ts = this.getPriceData(interval);
+            int keep = ts.pointsNotAfter(after);
+            TimeSeries<V> newTs = ts.slice(0, keep);
+            if (newTs.isEmpty()) {
+                this.priceData.remove(interval);
+            } else {
+                newTs.original = true; // original timeseries deemed as derelict
+                this.priceData.put(interval, newTs);
+            }
         }
 
         public TickerState<V> asView() {
@@ -174,6 +145,44 @@ public class TickerState <V extends Number> {
             return this;
         }
 
+        void markHit(Duration interval) {
+            if (this.priceData.containsKey(interval)) {
+                hits.add(interval);
+            }
+        }
+
+        void cleanUp() {
+            Hashtable<Duration, Integer> nonHits = new Hashtable<>();
+            for (Duration interval : this.priceData.keySet()) {
+                if (this.hits.contains(interval)) {
+                    nonHits.put(interval, this.nonHitsBeforeClear);
+                } else {
+                    int nh = this.nonHits.get(interval);
+                    if (nh == 0) {
+                        this.priceData.remove(interval);
+                    } else {
+                        nonHits.put(interval, nh-1);
+                    }
+                }
+            }
+            this.nonHits = nonHits;
+            this.hits = new HashSet<>();
+        }
+
+        Util.Pair<TickerState<V>, TickerState<V>> partition(ZonedDateTime at) {
+            HashMap<Duration, TimeSeries<V>> leftMap = new HashMap<>();
+            HashMap<Duration, TimeSeries<V>> rightMap = new HashMap<>();
+            for (Duration interval : this.priceData.keySet()) {
+                TimeSeries<V> ts = this.priceData.get(interval);
+                int mid = ts.pointsNotAfter(at);
+                leftMap.put(interval, ts.slice(0, mid));
+                rightMap.put(interval, ts.slice(mid, ts.size()));
+            }
+            return Util.Pair.create(
+                    new TickerState<>(leftMap, this.position),
+                    new TickerState<>(rightMap, this.position)
+            );
+        }
     }
 
 
