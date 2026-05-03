@@ -8,30 +8,35 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import engine.menus.Upstreams;
+import engine.Serialisation.CoreStateMachine;
+import engine.Serialisation.StateMachine;
 import engine.Util.Pair;
 import engine.components.Ticker;
 
-public abstract class Upstream<V extends Number> {
+public abstract class Upstream extends CoreStateMachine<Upstream> {
 
     // ticker -> interval
-    private State.MutableState<V> cache;
+    private State.MutableState cache;
 
-    public Upstream(int cacheNonHitsBeforeClear) {
+    @Override
+    public CoreStateLoader<? extends StateMachine<Upstream>> getLoader() {
+        return new CoreStateLoader<>(Upstreams.list);
+    }
+
+    public Upstream(int index) {
+        super(index);
         this.cache = new State.MutableState<>();
     }
 
-    public Upstream() {
-        this(4);
-    }
-
-    public State<V> update(
-            Collection<Ticker<V>> tickers,
+    public State update(
+            Collection<Ticker> tickers,
             Map<Duration, Integer> leftDependencies
     ) {
         return this.snapshot(tickers, leftDependencies, Map.of(), ZonedDateTime.now()).first;
     }
-    public Pair<State<V>, State<V>> snapshot(
-            Collection<Ticker<V>> tickers,
+    public Pair<State, State> snapshot(
+            Collection<Ticker> tickers,
             Map<Duration, Integer> leftDependencies,
             Map<Duration, Integer> rightDependencies,
             ZonedDateTime at
@@ -47,7 +52,7 @@ public abstract class Upstream<V extends Number> {
                 Duration rd = interval.multipliedBy(rightDependencies.getOrDefault(interval, 0));
                 dependencies.put(interval, Pair.create(ld, rd));
             }
-            for (Ticker<V> ticker : tickers) { // iterate over tickers
+            for (Ticker ticker : tickers) { // iterate over tickers
                 for (Duration interval : dependencies.keySet()) { // iterate over intervals
                     int ld = dependencies.get(interval).first;
                     Duration rd = dependencies.get(interval).second;
@@ -55,11 +60,11 @@ public abstract class Upstream<V extends Number> {
                     Duration minLeftDuration = interval.multipliedBy(ld - 1); // based on minimum left duration
                     if (!cache.contains(ticker, interval)) { // not in cache {9}
                         // basic fetch left by count
-                        TimeSeries<V> deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
+                        TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
                         // basic fetch right by duration
-                        TimeSeries<V> deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
+                        TimeSeries deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
                         // combine by right extend
-                        TimeSeries<V> delta = deltaLeft.extendRight(deltaRight);
+                        TimeSeries delta = deltaLeft.extendRight(deltaRight);
                         // put cache entry
                         cache.put(ticker, interval, delta);
                         continue;
@@ -70,24 +75,24 @@ public abstract class Upstream<V extends Number> {
                     if (at.plus(rd).isAfter(cacheFirst)) { // rightmost is after cache last {2,3,7,8}
                         if (at.minus(minLeftDuration).isAfter(cacheLast)){// no guaranteed overlap {3}
                             // basic fetch left by count
-                            TimeSeries<V> deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
+                            TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
                             // basic fetch right by duration
-                            TimeSeries<V> deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
+                            TimeSeries deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
                             // combine by right extend
-                            TimeSeries<V> delta = deltaLeft.extendRight(deltaRight);
+                            TimeSeries delta = deltaLeft.extendRight(deltaRight);
                             // replace cache entry
                             cache.put(ticker, interval, delta);
                         }
                         else{ // guaranteed overlap {2, 7, 8}
                             // fetch by duration from cache last until rightmost
-                            TimeSeries<V> deltaRight = this.fetchBetween(ticker, interval, cacheLast, rightDT);
+                            TimeSeries deltaRight = this.fetchBetween(ticker, interval, cacheLast, rightDT);
                             // right extend cache
                             cache.extendRight(ticker, interval, deltaRight);
                             // find number of cached candles not after at
                             int numCached = cache.pointsNotAfter(ticker, interval, at);
                             if (numCached < ld) { // too few cached candles {2}
                                 // fetch by count ending at cache first
-                                TimeSeries<V> deltaLeft = this.fetchCountUntil(ticker, interval, ld-numCached, cacheFirst.minus(interval));
+                                TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld-numCached, cacheFirst.minus(interval));
                                 // left extend cache
                                 cache.extendLeft(ticker, interval, deltaLeft);
                             } else { // at > cache last or <= cache last {7, 8}
@@ -98,21 +103,21 @@ public abstract class Upstream<V extends Number> {
                     } else { // rightmost is before cache last {1, 4, 5, 6}
                         if (rightDT.isBefore(cacheFirst)) { // rightmost is before cache first {1}
                             // basic fetch left by count
-                            TimeSeries<V> deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
+                            TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
                             // basic fetch right by duration
-                            TimeSeries<V> deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
+                            TimeSeries deltaRight = this.fetchBetween(ticker, interval, at, rightDT);
                             // combine by right extend
-                            TimeSeries<V> delta = deltaLeft.extendRight(deltaRight);
+                            TimeSeries delta = deltaLeft.extendRight(deltaRight);
                             // replace cache entry
                             cache.put(ticker, interval, delta);
                         } else { // guaranteed overlap {4, 5, 6}
                             if (at.isBefore(cacheFirst)) { // at is before cache first {5}
                                 // fetch left by count
-                                TimeSeries<V> deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
+                                TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
                                 // fetch right by missing duration
-                                TimeSeries<V> deltaRight = this.fetchBetween(ticker, interval, at, cacheFirst);
+                                TimeSeries deltaRight = this.fetchBetween(ticker, interval, at, cacheFirst);
                                 // right extend delta
-                                TimeSeries<V> delta = deltaLeft.extendRight(deltaRight);
+                                TimeSeries delta = deltaLeft.extendRight(deltaRight);
                                 // left extend cache
                                 cache.extendLeft(ticker, interval, delta);
                                 // right slice cache by DateTime
@@ -122,7 +127,7 @@ public abstract class Upstream<V extends Number> {
                                 int numCached = cache.pointsNotAfter(ticker, interval, at);
                                 if (numCached < ld) { // too few cached candles {4}
                                     // fetch left by missing count
-                                    TimeSeries<V> delta = this.fetchCountUntil(ticker, interval, ld-numCached, cacheFirst.minus(interval));
+                                    TimeSeries delta = this.fetchCountUntil(ticker, interval, ld-numCached, cacheFirst.minus(interval));
                                     // left extend cache
                                     cache.extendLeft(ticker, interval, delta);
                                     // right slice cache by DateTime
@@ -147,32 +152,32 @@ public abstract class Upstream<V extends Number> {
         return cache.partition(at);
     }
 
-    public TimeSeries<V> fetchCountUntil(Ticker<V> ticker, Duration interval, int leftDependency, ZonedDateTime until) {
+    public TimeSeries fetchCountUntil(Ticker ticker, Duration interval, int leftDependency, ZonedDateTime until) {
         if (leftDependency == 0) {
             return TimeSeries.empty();
         }
-        TimeSeries<V> big = this.fetchCountUntilAtLeast(ticker, interval, leftDependency, until);
-        TimeSeries<V> res = big.slice(big.size() - leftDependency, big.size());
+        TimeSeries big = this.fetchCountUntilAtLeast(ticker, interval, leftDependency, until);
+        TimeSeries res = big.slice(big.size() - leftDependency, big.size());
         res.original = true;
         return res;
     }
 
-    public TimeSeries<V> fetchBetween(Ticker<V> ticker, Duration interval, ZonedDateTime from, ZonedDateTime to) {
+    public TimeSeries fetchBetween(Ticker ticker, Duration interval, ZonedDateTime from, ZonedDateTime to) {
         if (!to.isAfter(from)) {
             return TimeSeries.empty();
         }
-        TimeSeries<V> big = this.fetchBetweenAtLeast(ticker, interval, from, to);
-        TimeSeries<V> res = big.slice(big.pointsNotAfter(from), big.pointsNotAfter(to));
+        TimeSeries big = this.fetchBetweenAtLeast(ticker, interval, from, to);
+        TimeSeries res = big.slice(big.pointsNotAfter(from), big.pointsNotAfter(to));
         res.original = true;
         return res;
     }
 
 
-    public abstract HashMap<Ticker<V>, Position<V>> fetchPositionsNow(Set<Ticker<V>> tickers);
-    protected abstract TimeSeries<V> fetchCountUntilAtLeast(Ticker<V> ticker, Duration interval, int leftDependency, ZonedDateTime until);
+    public abstract HashMap<Ticker, NAVPosition> fetchPositionsNow(Set<Ticker> tickers);
+    protected abstract TimeSeries fetchCountUntilAtLeast(Ticker ticker, Duration interval, int leftDependency, ZonedDateTime until);
     // include until
     // at least leftDependency
-    protected abstract TimeSeries<V> fetchBetweenAtLeast(Ticker<V> ticker, Duration interval ,ZonedDateTime from, ZonedDateTime to);
+    protected abstract TimeSeries fetchBetweenAtLeast(Ticker ticker, Duration interval ,ZonedDateTime from, ZonedDateTime to);
     // fetch minimal range: exclude from, include until
 
 

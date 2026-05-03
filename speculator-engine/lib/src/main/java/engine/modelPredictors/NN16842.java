@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -27,12 +28,12 @@ import ai.djl.ndarray.NDManager;
 import ai.djl.translate.TranslateException;
 import ai.djl.translate.Translator;
 import ai.djl.translate.TranslatorContext;
-public class NN16842 extends ModelPredictor<Float, Float> {
+public class NN16842 extends ModelPredictor {
 
-    private static class _Extractor extends FeatureExtractor<Float> {
+    private static class _Extractor extends FeatureExtractor {
 
         @Override
-        public List<Float> extract(List<? extends Series<Float>> input, Float baseline) {
+        public List<Float> extract(List<? extends Series> input, float baseline) {
             List<Float> S5 = input.get(0).get();
             List<Float> M1 = input.get(1).get();
             List<Float> features = new ArrayList<>();
@@ -48,7 +49,7 @@ public class NN16842 extends ModelPredictor<Float, Float> {
         }
     }
 
-    private static class _Model extends Predictor<Float, Float> {
+    private static class _Model extends Predictor {
 
         private ai.djl.inference.Predictor<List<? extends Float>, List<Float>> predictor;
         private Translator<List<? extends Float>, List<Float>> translator;
@@ -90,73 +91,69 @@ public class NN16842 extends ModelPredictor<Float, Float> {
         }
 
         @Override
-        public List<OffsetSeries<Float>> predict(List<? extends Float> input, Float baseline) {
+        public List<OffsetSeries> predict(List<Float> input, float baseline) {
             List<Float> combinedOutput = null;
             try {
                 combinedOutput = this.predictor.predict(input);
             } catch (TranslateException e) {
                 throw new RuntimeException();
             }
-            ArrayList<OffsetCandle<Float>> S5 = new ArrayList<>();
-            ArrayList<OffsetCandle<Float>> M1 = new ArrayList<>();
+            ArrayList<OffsetCandle> S5 = new ArrayList<>();
+            ArrayList<OffsetCandle> M1 = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
                 S5.add(
-                        new OffsetCandle<>(Duration.ofSeconds(5*(i+1)), (float) Math.exp(combinedOutput.get(i)) * baseline)
+                        new OffsetCandle(Duration.ofSeconds(5*(i+1)), (float) Math.exp(combinedOutput.get(i)) * baseline)
                 );
             }
             for (int i = 0; i < 2; i++) {
                 M1.add(
-                        new OffsetCandle<>(Duration.ofMinutes(i+1), (float) Math.exp(combinedOutput.get(4 + i)) * baseline )
+                        new OffsetCandle(Duration.ofMinutes(i+1), (float) Math.exp(combinedOutput.get(4 + i)) * baseline )
                 );
             }
 
             return List.of(
-                    new OffsetSeries<>(S5),
-                    new OffsetSeries<>(M1)
+                    new OffsetSeries(S5),
+                    new OffsetSeries(M1)
             );
 
         }
 
     }
+    private float bias;
 
-    private float offset;
-    public NN16842() {
+    public NN16842(float bias) {
         super(
                 new _Extractor(),
                 new _Model(),
                 List.of(Duration.ofSeconds(5), Duration.ofMinutes(1)),
                 List.of(16, 8),
-                List.of(4, 2)
+                List.of(4, 2),
+                Map.of("bias", String.valueOf(bias))
         );
         ((_Model)model)._init(getClass().getResourceAsStream("/m_16842.pt"));
-    }
-    @Override
-    public Map<String, String> save() {
-        return Map.of(
-                "offset", String.valueOf(this.offset)
-        );
-    }
-
-    private static class Loader implements StateLoader<ModelPredictor<Float, Float>> {
-        @Override
-        public ModelPredictor<Float, Float> load(Map<String, String> state) {
-            return new NN16842();
-        }
-
-        @Override
-        public String toString(Map<String, String> state) {
-            return "NN16842";
-        }
-
-        @Override
-        public String toString() {
-            return "NN16842";
-        }
+        this.bias = bias;
     }
 
     @Override
-    public StateLoader<? extends StateMachine<ModelPredictor<Float, Float>>> getLoader() {
+    public UserStateLoader<? extends StateMachine<ModelPredictor>> getLoader() {
         return new Loader();
     }
+
+    public static class Loader extends UserStateLoader<ModelPredictor> {
+        public Loader() {
+            super(List.of("bias"));
+        }
+
+        @Override
+        public ModelPredictor load(Map<String, String> state) {
+            return new NN16842(Float.parseFloat(state.get("bias")));
+        }
+
+    }
+//
+//    @Override
+//    public StateLoader<? extends StateMachine<ModelPredictor<Float, Float>>> getLoader() {
+//        return new Loader();
+//    }
 
 }

@@ -10,13 +10,13 @@ import java.util.Set;
 
 import engine.Util;
 
-public class TickerState <V extends Number> {
-    HashMap<Duration,TimeSeries<V>> priceData;
-    Position<V> position;
+public class TickerState {
+    HashMap<Duration,TimeSeries> priceData;
+    NAVPosition position;
 
     public TickerState(
-            HashMap<Duration, TimeSeries<V>> priceData,
-            Position<V> position
+            HashMap<Duration, TimeSeries> priceData,
+            NAVPosition position
     ) {
         // constructor for delta
         this.priceData = priceData;
@@ -27,10 +27,10 @@ public class TickerState <V extends Number> {
         return this.priceData.keySet();
     }
 
-    public TimeSeries<V> getPriceData(Duration interval) {
+    public TimeSeries getPriceData(Duration interval) {
         return this.priceData.get(interval);
     }
-    public Candle<V> getAbsoluteLatest() {
+    public Candle getAbsoluteLatest() {
 //        System.out.println("TickerState:getAbsLate");
         // absolute latest across all intervals
         return this.getIntervals().stream()
@@ -42,28 +42,28 @@ public class TickerState <V extends Number> {
                 .get();
     }
 
-    public Position<V> getPosition() {
+    public NAVPosition getPosition() {
         return this.position;
     }
 
-    public TickerState<V> save() {
+    public TickerState save() {
         // makes deep copy view
-        return new TickerState<>(
+        return new TickerState(
                 new HashMap<>(this.priceData),
                 this.position
         );
     }
 
-    TickerState<V> asView() {
+    TickerState asView() {
         // makes shallow copy view (for abstraction)
         return this;
     }
-    MutableTickerState<V> asMutable() {
+    MutableTickerState asMutable() {
         throw new IllegalStateException("not mutable");
     }
 
 
-    public void put(Duration interval, TimeSeries<V> timeSeries) {
+    public void put(Duration interval, TimeSeries timeSeries) {
         this.priceData.put(interval, timeSeries);
     }
 
@@ -82,14 +82,14 @@ public class TickerState <V extends Number> {
         return this.priceData.isEmpty();
     }
 
-    public static class MutableTickerState <V extends Number> extends TickerState<V> {
+    public static class MutableTickerState extends TickerState {
         private Hashtable<Duration, Integer> nonHits; // value = remaining non-hits
         private HashSet<Duration> hits;
         private int nonHitsBeforeClear;
 
         public MutableTickerState(int nonHitsBeforeClear) {
             // start out empty
-            super(new HashMap<>(), Position.empty());
+            super(new HashMap<>(), NAVPosition.makeEmpty());
             this.nonHits = new Hashtable<>();
             this.hits = new HashSet<>();
             this.nonHitsBeforeClear = nonHitsBeforeClear;
@@ -98,11 +98,11 @@ public class TickerState <V extends Number> {
             return this.getPriceData(interval).pointsNotAfter(at);
         }
 
-        public void extendLeft(Duration interval, TimeSeries<V> deltaLeft) {
+        public void extendLeft(Duration interval, TimeSeries deltaLeft) {
             this.priceData.put(interval, this.getPriceData(interval).extendLeft(deltaLeft));
         }
 
-        public void extendRight(Duration interval, TimeSeries<V> deltaRight) {
+        public void extendRight(Duration interval, TimeSeries deltaRight) {
             this.priceData.put(interval, this.getPriceData(interval).extendRight(deltaRight));
         }
 
@@ -110,8 +110,8 @@ public class TickerState <V extends Number> {
             if (count == 0) {
                 return;
             }
-            TimeSeries<V> ts = this.getPriceData(interval);
-            TimeSeries<V> newTs = ts.slice(count, ts.size());
+            TimeSeries ts = this.getPriceData(interval);
+            TimeSeries newTs = ts.slice(count, ts.size());
             if (newTs.isEmpty()) {
                 this.priceData.remove(interval);
             } else {
@@ -121,9 +121,9 @@ public class TickerState <V extends Number> {
         }
 
         public void dropAfter(Duration interval, ZonedDateTime after) {
-            TimeSeries<V> ts = this.getPriceData(interval);
+            TimeSeries ts = this.getPriceData(interval);
             int keep = ts.pointsNotAfter(after);
-            TimeSeries<V> newTs = ts.slice(0, keep);
+            TimeSeries newTs = ts.slice(0, keep);
             if (newTs.isEmpty()) {
                 this.priceData.remove(interval);
             } else {
@@ -132,16 +132,16 @@ public class TickerState <V extends Number> {
             }
         }
 
-        public TickerState<V> asView() {
+        public TickerState asView() {
             // makes shallow copy view (for abstraction)
-            return new TickerState<>(
+            return new TickerState(
                     this.priceData,
                     this.position
             );
         }
 
         @Override
-        MutableTickerState<V> asMutable() {
+        MutableTickerState asMutable() {
             return this;
         }
 
@@ -169,18 +169,18 @@ public class TickerState <V extends Number> {
             this.hits = new HashSet<>();
         }
 
-        Util.Pair<TickerState<V>, TickerState<V>> partition(ZonedDateTime at) {
-            HashMap<Duration, TimeSeries<V>> leftMap = new HashMap<>();
-            HashMap<Duration, TimeSeries<V>> rightMap = new HashMap<>();
+        Util.Pair<TickerState, TickerState> partition(ZonedDateTime at) {
+            HashMap<Duration, TimeSeries> leftMap = new HashMap<>();
+            HashMap<Duration, TimeSeries> rightMap = new HashMap<>();
             for (Duration interval : this.priceData.keySet()) {
-                TimeSeries<V> ts = this.priceData.get(interval);
+                TimeSeries ts = this.priceData.get(interval);
                 int mid = ts.pointsNotAfter(at);
                 leftMap.put(interval, ts.slice(0, mid));
                 rightMap.put(interval, ts.slice(mid, ts.size()));
             }
             return Util.Pair.create(
-                    new TickerState<>(leftMap, this.position),
-                    new TickerState<>(rightMap, this.position)
+                    new TickerState(leftMap, this.position),
+                    new TickerState(rightMap, this.position)
             );
         }
     }

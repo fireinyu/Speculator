@@ -1,24 +1,14 @@
 package engine.drawInstructors;
 
-import java.io.Serializable;
-import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 
 import engine.PriceData.TimeSeries;
-import engine.Serialisation.StateLoader;
-import engine.Serialisation.StateMachine;
 import engine.components.DrawInstruction;
-import engine.components.DrawInstructor;
 
-public class BoundPlotter <T extends Number, V extends Number> extends LinePlotter<T, V> implements Serializable {
+public class BoundPlotter extends LinePlotter {
 
-    public BoundPlotter() {
-        super();
-    }
-
-    public BoundPlotter(ZonedDateTime anchor) {
-        super(anchor);
+    public BoundPlotter(int index) {
+        super(index);
     }
 
     @Override
@@ -27,26 +17,31 @@ public class BoundPlotter <T extends Number, V extends Number> extends LinePlott
     }
 
     @Override
-    List<DrawInstruction.Point> makeUnformattedPrediction(TimeSeries<?> pred) {
-        if (pred.size() == 0) {
-            return List.of();
-        }
-        return new TimeSeries<>(List.of(pred.get(0), pred.get(pred.getMaxIndex()), pred.get(pred.size()-1), pred.get(pred.getMinIndex()), pred.get(0)))
+    protected List<DrawInstruction.Point> plotPreds(TimeSeries pred) {
+         return new TimeSeries(List.of(pred.get(0), pred.get(pred.getMaxIndex()), pred.get(pred.size()-1), pred.get(pred.getMinIndex()), pred.get(0)))
                 .extract((dt, px) -> new DrawInstruction.Point(dt.toEpochSecond(), px));
     }
-
-    @Override
-    public StateLoader<? extends StateMachine<DrawInstructor<T, V>>> getLoader() {
-        return new StateLoader<>() {
-            @Override
-            public DrawInstructor<T, V> load(Map<String, String> state) {
-                return new BoundPlotter<>();
-            }
-
-            @Override
-            public String toString(Map<String, String> state) {
-                return "";
-            }
-        };
-    }
+    //    @Override
+//    List<DrawInstruction.Point> makeUnformattedPrediction(TimeSeries<?> pred) {
+//        if (pred.size() == 0) {
+//            return List.of();
+//        }
+//        return new TimeSeries<>(List.of(pred.get(0), pred.get(pred.getMaxIndex()), pred.get(pred.size()-1), pred.get(pred.getMinIndex()), pred.get(0)))
+//                .extract((dt, px) -> new DrawInstruction.Point(dt.toEpochSecond(), px));
+//    }
+//
+//    @Override
+//    public StateLoader<? extends StateMachine<DrawInstructor>> getLoader() {
+//        return new StateLoader<>() {
+//            @Override
+//            public DrawInstructor load(Map<String, String> state) {
+//                return new BoundPlotter<>();
+//            }
+//
+//            @Override
+//            public String toString(Map<String, String> state) {
+//                return "";
+//            }
+//        };
+//    }
 }

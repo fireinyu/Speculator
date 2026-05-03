@@ -14,8 +14,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import engine.components.Plotter;
-import engine.components.PredictManager;
+import engine.control.PredictManager;
 
 import com.example.speculator.GlobalState;
 import com.example.speculator.MPDrawer;
@@ -34,12 +33,11 @@ public class PredictFragment extends Fragment {
     private FragmentPredictBinding binding;
     private View root;
     private ToggleButton predictToggle;
+    private ToggleButton agentToggle;
     private LineChart chart;
-    private EditText minutesEntry;
-    private EditText secondsEntry;
-    private Button intervalSubmit;
-    private Plotter<Float, Float> plotter;
-    private ScheduledExecutorService clock;
+//    private EditText minutesEntry;
+//    private EditText secondsEntry;
+//    private Button intervalSubmit;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -52,45 +50,41 @@ public class PredictFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.chart = root.findViewById(R.id.predict_chart);
-        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter(new MPDrawer(chart));
+        GlobalState.drawer.setChart(this.chart);
         predictToggle = root.findViewById(R.id.predict_toggle);
-        minutesEntry = root.findViewById(R.id.interval_minutes);
-        secondsEntry = root.findViewById(R.id.interval_seconds);
-        intervalSubmit = root.findViewById(R.id.interval_submit);
-        minutesEntry.setText(String.valueOf(GlobalState.Loop.interval.toMinutes()));
-        secondsEntry.setText(String.valueOf(GlobalState.Loop.interval.get(ChronoUnit.SECONDS)));
-        intervalSubmit.setOnClickListener(btn -> {
-            GlobalState.Loop.interval = Duration
-                    .ofMinutes(Long.parseLong(minutesEntry.getText().toString()))
-                    .plusSeconds(Long.parseLong(secondsEntry.getText().toString()));
-            resetClock();
-        });
-        resetClock();
+        agentToggle = root.findViewById(R.id.agentToggle);
+//        minutesEntry = root.findViewById(R.id.interval_minutes);
+//        secondsEntry = root.findViewById(R.id.interval_seconds);
+//        intervalSubmit = root.findViewById(R.id.interval_submit);
+//        minutesEntry.setText(String.valueOf(GlobalState.Loop.interval.toMinutes()));
+//        secondsEntry.setText(String.valueOf(GlobalState.Loop.interval.get(ChronoUnit.SECONDS)));
+//        intervalSubmit.setOnClickListener(btn -> {
+//            GlobalState.Loop.interval = Duration
+//                    .ofMinutes(Long.parseLong(minutesEntry.getText().toString()))
+//                    .plusSeconds(Long.parseLong(secondsEntry.getText().toString()));
+//            resetClock();
+//        });
+        agentToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
+        predictToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
+        GlobalState.app.predictPlotCycle();
     }
 
     @Override
     public void onDestroyView() {
-        clock.shutdown();
         super.onDestroyView();
         binding = null;
     }
 
-    private void resetClock() {
-        if (clock != null) {
-            clock.shutdown();
+    private void configCycle() {
+        if (predictToggle.isChecked()) {
+            if (agentToggle.isChecked()) {
+                GlobalState.app.predictActCycle();
+            } else {
+                GlobalState.app.predictPlotCycle();
+            }
+        } else {
+            GlobalState.app.endTasks();
         }
-        clock = PredictManager.predictLoop(
-                () -> predictToggle.isChecked() ? GlobalState.Predict.predictManager : GlobalState.Predict.pullManager,
-                () -> GlobalState.Predict.tickerMenu.get(),
-                GlobalState.Loop.interval,
-                results -> getActivity().runOnUiThread(() -> {
-                    this.plotter.unplot();
-                    this.plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
-                    this.plotter.plotAllPredict(
-                            results
-                    );
-                })
-        );
     }
 
 }

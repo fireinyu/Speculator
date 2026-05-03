@@ -4,28 +4,27 @@ import engine.PriceData.Series;
 
 import java.util.List;
 
-public abstract class FeatureExtractor<T extends Number>{
+public abstract class FeatureExtractor{
 
-    private static FeatureExtractor<?> identityInstance = null;
+    private static FeatureExtractor identityInstance = null;
 
-    @SuppressWarnings("unchecked")
-    public static <T extends Number> FeatureExtractor<T> identity() {
+    public static  FeatureExtractor identity() {
         if (identityInstance == null) {
-            identityInstance = new FeatureExtractor.Identity<>();
+            identityInstance = new FeatureExtractor.Identity();
         }
-        return (FeatureExtractor<T>) identityInstance;
+        return (FeatureExtractor) identityInstance;
     }
 
     public FeatureExtractor() {
         
     }
 
-    public abstract List<T> extract (List<? extends Series<T>> input, T baseline);
+    public abstract List<Float> extract (List<? extends Series> input, float baseline);
     //Series end at point of prediction
 
-    private static class Identity <T extends Number> extends FeatureExtractor<T> {
+    private static class Identity  extends FeatureExtractor {
         @Override
-        public List<T> extract(List<? extends Series<T>> input, T baseline) {
+        public List<Float> extract(List<? extends Series> input, float baseline) {
             return input.get(0).get();
         }
     }

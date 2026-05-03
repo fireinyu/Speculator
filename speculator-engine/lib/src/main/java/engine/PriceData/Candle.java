@@ -2,16 +2,16 @@ package engine.PriceData;
 
 import java.time.ZonedDateTime;
 
-public class Candle <Y extends Number> extends Datapoint<Y> implements Timed{
+public class Candle  extends Datapoint implements Timed{
 
     private ZonedDateTime time = ZonedDateTime.now();
 
-    public Candle (ZonedDateTime time, Y price) {
+    public Candle (ZonedDateTime time, float price) {
         super(price);
         this.time = time;
     }
 
-    public Candle (ZonedDateTime time, Datapoint<Y> dp) {
+    public Candle (ZonedDateTime time, Datapoint dp) {
         super(dp.get());
         this.time = time;
     }

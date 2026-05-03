@@ -12,10 +12,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public class TimeSeries <V extends Number> extends Series<V>{
+public class TimeSeries extends Series{
 
-    public static <V extends Number> ZonedDateTime getAnchor(
-            List<? extends TimeSeries<V>> seriesLs
+    public static  ZonedDateTime getAnchor(
+            List<? extends TimeSeries> seriesLs
             ) {
         return seriesLs.stream()
                 .map(TimeSeries::until)
@@ -23,20 +23,20 @@ public class TimeSeries <V extends Number> extends Series<V>{
                 .orElse(null);
     }
 
-    public static <V extends Number> TimeSeries<V> empty() {
-        return new EmptyTimeSeries<>();
+    public static  TimeSeries empty() {
+        return new EmptyTimeSeries();
     }
     private List<ZonedDateTime> times;
 
-    public TimeSeries (List<ZonedDateTime> times, List<V> prices) {
+    public TimeSeries (List<ZonedDateTime> times, List<Float> prices) {
 //        this(List.of());
 //        Log.d("debug_merge", "" + times.size() + ", " + prices.size());
-        this(IntStream.range(0, times.size()).mapToObj(i -> new Candle<>(times.get(i), prices.get(i))).collect(Collectors.toList()));
+        this(IntStream.range(0, times.size()).mapToObj(i -> new Candle(times.get(i), prices.get(i))).collect(Collectors.toList()));
 
 
     }
 
-    public <D extends Datapoint<? extends V> & Timed> TimeSeries (List<D> datapoints) {
+    public <D extends Datapoint & Timed> TimeSeries (List<D> datapoints) {
         super(datapoints);
         this.times = new ArrayList<>();
         for (D dp : datapoints) {
@@ -44,40 +44,40 @@ public class TimeSeries <V extends Number> extends Series<V>{
         }
     }
 
-    public TimeSeries (TimeSeries<V> src) {
+    public TimeSeries (TimeSeries src) {
         super(src);
         this.times = src.times;
     }
 
-    private TimeSeries (Series<V> src, List<ZonedDateTime> times) {
+    private TimeSeries (Series src, List<ZonedDateTime> times) {
         super(src);
         this.times = times;
     }
 
     @Override
-    public TimeSeries<V> slice(int from, int to) {
+    public TimeSeries slice(int from, int to) {
         if (from >= to) {
-            return new EmptyTimeSeries<>();
+            return new EmptyTimeSeries();
         }
         List<ZonedDateTime> slicedTimes = this.times.subList(from, to);
-        if ((this.size()+super.excess)/(double)(from-to) > super.loadRatio) {
+        if ((this.size()+super.excess)/(float)(from-to) > super.loadRatio) {
             slicedTimes = new ArrayList<>(slicedTimes);
         }
-        Series<V> res = super.slice(from, to);
+        Series res = super.slice(from, to);
         System.out.println("slice result: " + from + to + res.size() );
-        return new TimeSeries<>(res, slicedTimes);
+        return new TimeSeries(res, slicedTimes);
     }
 
 
-    public TimeSeries<V> merge (TimeSeries<V> src) {
+    public TimeSeries merge (TimeSeries src) {
         if (src.size() == 0) {
-            return new TimeSeries<>(this);
+            return new TimeSeries(this);
         }
-        ArrayList<Candle<V>> resultCandles = new ArrayList<>();
+        ArrayList<Candle> resultCandles = new ArrayList<>();
         List<ZonedDateTime> times = this.getTimes();
-        List<V> prices = this.get();
+        List<Float> prices = this.get();
         List<ZonedDateTime> newTimes = src.getTimes();
-        List<V> newPrices = src.get();
+        List<Float> newPrices = src.get();
         int thisIndex = 0;
         int srcIndex = 0;
         int thisSize = this.size();
@@ -86,38 +86,38 @@ public class TimeSeries <V extends Number> extends Series<V>{
             ZonedDateTime thisTime = times.get(thisIndex);
             ZonedDateTime srcTime = newTimes.get(srcIndex);
             int compareResult = thisTime.compareTo(srcTime);
-            Candle<V> newCandle = null;
+            Candle newCandle = null;
             if (compareResult < 0) {
-                newCandle = new Candle<>(thisTime, prices.get(thisIndex));
+                newCandle = new Candle(thisTime, prices.get(thisIndex));
                 thisIndex++;
             } else if (compareResult == 0){
-                newCandle = new Candle<>(srcTime, newPrices.get(srcIndex));
+                newCandle = new Candle(srcTime, newPrices.get(srcIndex));
                 thisIndex++;
                 srcIndex++;
 
             } else {
-                newCandle = new Candle<>(srcTime, newPrices.get(srcIndex));
+                newCandle = new Candle(srcTime, newPrices.get(srcIndex));
                 srcIndex++;
             }
             resultCandles.add(newCandle);
         }
         if (thisIndex < thisSize) {
             IntStream.range(thisIndex, thisSize)
-                    .mapToObj(i -> new Candle<>(times.get(i), prices.get(i)))
+                    .mapToObj(i -> new Candle(times.get(i), prices.get(i)))
                     .forEach(resultCandles::add);
         } else if (srcIndex < srcSize) {
             IntStream.range(srcIndex, srcSize)
-                    .mapToObj(i -> new Candle<>(newTimes.get(i), newPrices.get(i)))
+                    .mapToObj(i -> new Candle(newTimes.get(i), newPrices.get(i)))
                     .forEach(resultCandles::add);
         }
-        return new TimeSeries<>(resultCandles);
+        return new TimeSeries(resultCandles);
     }
 
-    public TimeSeries<V> extendLeft (TimeSeries<V> src){
+    public TimeSeries extendLeft (TimeSeries src){
         return src.extendRight(this);
     }
 
-    public TimeSeries<V> extendRight (TimeSeries<V> src){
+    public TimeSeries extendRight (TimeSeries src){
         System.out.println("TSeries::extendRight");
         System.out.println("TSeries::extendRight bug start");
         if (src instanceof EmptyTimeSeries) {
@@ -130,7 +130,7 @@ public class TimeSeries <V extends Number> extends Series<V>{
         }
         int size = this.size();
         this.times.addAll(src.times);
-        TimeSeries<V> res = new TimeSeries<>(
+        TimeSeries res = new TimeSeries(
                 super.extendRight(src),
                 this.times
         );
@@ -151,18 +151,18 @@ public class TimeSeries <V extends Number> extends Series<V>{
         return this.times.get(this.times.size()-1);
     }
 
-    public <R extends Number> TimeSeries<R> map(Function<? super ZonedDateTime, ? extends ZonedDateTime> timeMapper, Function<? super V, ? extends R> priceMapper) {
-        List<V> prices = super.get();
-        return new TimeSeries<>(IntStream.range(0, this.times.size()).boxed()
-                .map(i -> new Candle<>(timeMapper.apply(this.times.get(i)), priceMapper.apply(prices.get(i))))
+    public TimeSeries map(Function<? super ZonedDateTime, ? extends ZonedDateTime> timeMapper, Function<Float, Float> priceMapper) {
+        List<Float> prices = super.get();
+        return new TimeSeries(IntStream.range(0, this.times.size()).boxed()
+                .map(i -> new Candle(timeMapper.apply(this.times.get(i)), priceMapper.apply(prices.get(i))))
                 .collect(Collectors.toList())
         );
 
     }
 
-    public <R> List<R> extract (BiFunction<? super ZonedDateTime, ? super V, ? extends R> extractor) {
+    public <R> List<R> extract (BiFunction<ZonedDateTime, Float, R> extractor) {
 
-        List<V> prices = super.get();
+        List<Float> prices = super.get();
         return IntStream.range(0, this.times.size()).boxed()
                 .map(i -> extractor.apply(this.times.get(i), prices.get(i)))
                 .collect(Collectors.toList());
@@ -189,9 +189,9 @@ public class TimeSeries <V extends Number> extends Series<V>{
         }
     }
 
-    public V priceAt (ZonedDateTime anchor) {
+    public float priceAt (ZonedDateTime anchor) {
         int anchorIndex = Collections.binarySearch(this.times, anchor);
-        V anchorPrice;
+        float anchorPrice;
         if (anchorIndex >= 0) {
             anchorPrice = this.get().get(anchorIndex);
         } else {
@@ -201,22 +201,22 @@ public class TimeSeries <V extends Number> extends Series<V>{
             } else if (anchorIndex == this.size()) {
                 anchorPrice = this.get().get(this.size()-1);
             } else {
-                double leftPrice = this.get().get(anchorIndex - 1).doubleValue();
-                double rightPrice = this.get().get(anchorIndex).doubleValue();
-                double leftMs = this.getTimes().get(anchorIndex - 1).toEpochSecond();
-                double rightMs = this.getTimes().get(anchorIndex).toEpochSecond();
-                double res = leftPrice + (rightPrice-leftPrice) * (anchor.toEpochSecond()-leftMs)/(rightMs-leftMs);
+                float leftPrice = this.get().get(anchorIndex - 1);
+                float rightPrice = this.get().get(anchorIndex);
+                float leftMs = this.getTimes().get(anchorIndex - 1).toEpochSecond();
+                float rightMs = this.getTimes().get(anchorIndex).toEpochSecond();
+                float res = leftPrice + (rightPrice-leftPrice) * (anchor.toEpochSecond()-leftMs)/(rightMs-leftMs);
                 anchorPrice = Util.convertNumber(res, this.get().get(0));
             }
         }
         return anchorPrice;
     }
 
-    public Candle<V> get(int index) {
-        return new Candle<>( this.times.get(index),super.get(index));
+    public Candle get(int index) {
+        return new Candle( this.times.get(index),super.get(index));
     }
 
-    public Candle<V> getLast() {
+    public Candle getLast() {
         System.out.println("TimeSeries::getLast");
         System.out.println(this.size());
         return this.get(this.size()-1);
@@ -226,28 +226,28 @@ public class TimeSeries <V extends Number> extends Series<V>{
         return this.data.isEmpty();
     }
 
-    public static class EmptyTimeSeries <V extends Number> extends TimeSeries<V> {
+    public static class EmptyTimeSeries  extends TimeSeries {
         public EmptyTimeSeries() {
             super(List.of());
         }
 
         @Override
-        public TimeSeries<V> slice(int from, int to) {
-            return new EmptyTimeSeries<>();
+        public TimeSeries slice(int from, int to) {
+            return new EmptyTimeSeries();
         }
 
         @Override
-        public TimeSeries<V> merge(TimeSeries<V> src) {
+        public TimeSeries merge(TimeSeries src) {
             return src;
         }
 
         @Override
-        public TimeSeries<V> extendRight(TimeSeries<V> src) {
+        public TimeSeries extendRight(TimeSeries src) {
             return src;
         }
 
         @Override
-        public TimeSeries<V> extendLeft(TimeSeries<V> src) {
+        public TimeSeries extendLeft(TimeSeries src) {
             return src;
         }
 

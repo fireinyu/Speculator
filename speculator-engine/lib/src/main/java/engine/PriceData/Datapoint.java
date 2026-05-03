@@ -1,14 +1,14 @@
 package engine.PriceData;
 
-public class Datapoint <T extends Number> {
+public class Datapoint {
 
-    private T val;
+    private float val;
 
-    public Datapoint (T val) {
+    public Datapoint (float val) {
         this.val = val;
     }
 
-    public T get () {
+    public float get () {
         return this.val;
     }
 

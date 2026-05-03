@@ -2,6 +2,7 @@ package engine;
 
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
@@ -20,6 +21,27 @@ public class Util {
         private Pair(X first, Y second) {
             this.first = first;
             this.second = second;
+        }
+    }
+
+    public static class Cycle<X> {
+        private List<X> source;
+        private int at;
+        public Cycle(List<X> source) {
+            this.source = source;
+            at = 0;
+        }
+        public X next() {
+            X res = this.source.get(at);
+            at = (at+1)%this.source.size();
+            return res;
+        }
+        public X peek(int i) {
+            i = (at+i)%this.source.size();
+            return this.source.get(i);
+        }
+        public void reset() {
+            this.at = 0;
         }
     }
 

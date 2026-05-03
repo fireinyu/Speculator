@@ -1,12 +1,11 @@
 package engine.upstreams;
 
 
-import engine.PriceData.LongPosition;
-import engine.PriceData.Position;
-import engine.PriceData.ShortPosition;
+import engine.PriceData.NAVPosition;
 import engine.PriceData.Upstream;
 import engine.Serialisation.LocalObject;
 import engine.PriceData.Candle;
+import engine.components.Authenticated;
 import engine.components.Ticker;
 import engine.PriceData.TimeSeries;
 
@@ -23,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -32,16 +32,16 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class Oanda extends Upstream<Float> {
+public class Oanda extends Upstream implements Authenticated {
     private static OkHttpClient client = new OkHttpClient();
 
-    private static LocalObject<String> APIKEY;
-    private static LocalObject<String> USERID;
-
-    public static void authenticate(LocalObject<String> userID, LocalObject<String> apiKey) {
-        Oanda.USERID = userID;
-        Oanda.APIKEY = apiKey;
-    }
+//    private static LocalObject<String> APIKEY;
+//    private static LocalObject<String> USERID;
+//
+//    public static void authenticate(LocalObject<String> userID, LocalObject<String> apiKey) {
+//        Oanda.USERID = userID;
+//        Oanda.APIKEY = apiKey;
+//    }
 
     private static final int FETCH_SIZE = 5000;
 
@@ -55,12 +55,15 @@ public class Oanda extends Upstream<Float> {
         }
     }
 
-    private static JSONObject send(Request.Builder partial) {
+    private String userId = "";
+    private String apiKey = "";
+
+    private JSONObject send(Request.Builder partial) {
 //        System.out.println("debug pm: send: start");
 //        System.out.println("debug pm: send: " + Oanda.APIKEY);
         Request request = null;
         request = partial
-                .addHeader("Authorization", "Bearer " + Oanda.APIKEY.get().get())
+                .addHeader("Authorization", "Bearer " + this.apiKey)
                 .addHeader("Accept-Datetime-Format", "UNIX")
                 .build();
         System.out.println("Oanda::send:" + request);
@@ -80,7 +83,7 @@ public class Oanda extends Upstream<Float> {
     }
 
 
-    List<Candle<Float>> fetchCandles (Ticker ticker, ZonedDateTime from, ZonedDateTime to, Duration interval, Integer count) {
+    List<Candle> fetchCandles (Ticker ticker, ZonedDateTime from, ZonedDateTime to, Duration interval, Integer count) {
 //        System.out.println("Oanda::fetchCandles");
         String f = Optional.ofNullable(from)
                 .map(dt -> dt.toEpochSecond())
@@ -97,19 +100,19 @@ public class Oanda extends Upstream<Float> {
                 .map(i -> String.valueOf(Math.max(i,5))) //account for incomplete last candle
                 .map(str -> "count=" + str + "&")
                 .orElse("");
-        ArrayList<Candle<Float>> candles = new ArrayList<>();
+        ArrayList<Candle> candles = new ArrayList<>();
 
         Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/instruments/%s/candles?%s%s%sgranularity=%s",
-                        Oanda.USERID.get().orElse("noId"),
+                        this.userId,
                         ticker.getAliasFor(this),
                         f,
                         t,
                         c,
                         Oanda.parseInterval(interval)
                 ));
-        JSONObject pxObject = Oanda.send(partial);
+        JSONObject pxObject = this.send(partial);
 
         try {
             JSONArray delta = pxObject.getJSONArray("candles");
@@ -127,7 +130,7 @@ public class Oanda extends Upstream<Float> {
                     continue;
                 }
                 candles.add(
-                        new Candle<>(
+                        new Candle(
                                 ZonedDateTime.ofInstant(Instant.ofEpochSecond(Math.round(Double.parseDouble(candlestick.getString("time")))), ZoneId.systemDefault()),
                                 Float.parseFloat(
                                         candlestick.getJSONObject("mid")
@@ -146,17 +149,21 @@ public class Oanda extends Upstream<Float> {
 
     }
 
+    public Oanda(int index) {
+        super(index);
+    }
+
     @Override
-    public HashMap<Ticker<Float>, Position<Float>> fetchPositionsNow(Set<Ticker<Float>> tickers) {
+    public HashMap<Ticker, NAVPosition> fetchPositionsNow(Set<Ticker> tickers) {
         Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
-                        Oanda.USERID.get().orElse("noId")
+                        this.userId
                 ));
 
 //        System.out.println("debug pm: snapshot: cp0");
 //        System.out.println("debug pm: snapshot: " + partial);
-        JSONObject allPosObj = Oanda.send(partial);
+        JSONObject allPosObj = this.send(partial);
         JSONArray ap = null;
 //        System.out.println("debug pm: snapshot: cp1");
 //        System.out.println("debug pm: snapshot: " + allPosObj);
@@ -168,12 +175,12 @@ public class Oanda extends Upstream<Float> {
 //            System.out.println(allPosObj);
         }
         JSONArray allPos = ap;
-        HashMap<Ticker<Float>, Position<Float>> positionMap = new HashMap<>();
+        HashMap<Ticker, NAVPosition> positionMap = new HashMap<>();
         for (int i = 0; i < allPos.length(); i++) {
             try {
                 JSONObject posObj = allPos.getJSONObject(i);
                 String instrument = posObj.getString("instrument");
-                List<Ticker<Float>> tickerMatchLs = tickers.stream()
+                List<Ticker> tickerMatchLs = tickers.stream()
                         .filter(tk -> tk.getAliasFor(this).equals(instrument))
                         .collect(Collectors.toList());
                 if (!tickerMatchLs.isEmpty()) {
@@ -192,16 +199,16 @@ public class Oanda extends Upstream<Float> {
                                 side.getString("averagePrice")
                         );
                     }
-                    Float avgPrice = netAmount / netUnits;
-                    Ticker<Float> ticker = tickerMatchLs.get(0);
-                    Position<Float> position = Position.empty();
+                    float avgPrice = netAmount / netUnits;
+                    Ticker ticker = tickerMatchLs.get(0);
+                    NAVPosition position = NAVPosition.makeEmpty();
                     if (netUnits < 0) {
-                        position = new ShortPosition<>(
+                        position = NAVPosition.makeShort(
                                 -netUnits,
                                 avgPrice
                         );
                     } else if (netUnits > 0) {
-                        position = new LongPosition<>(
+                        position = NAVPosition.makeLong(
                                 netUnits,
                                 avgPrice
                         );
@@ -216,13 +223,13 @@ public class Oanda extends Upstream<Float> {
     }
 
     @Override
-    public TimeSeries<Float> fetchCountUntilAtLeast(Ticker<Float> ticker, Duration interval, int ld, ZonedDateTime end) {
+    public TimeSeries fetchCountUntilAtLeast(Ticker ticker, Duration interval, int ld, ZonedDateTime end) {
 //        System.out.println("Oanda::fetchPL");
-        ArrayList<Candle<Float>> candles = new ArrayList<>();
+        ArrayList<Candle> candles = new ArrayList<>();
         int count = ld;
         while (count > 0) {
             int increment = Math.min(count, Oanda.FETCH_SIZE);
-            List<Candle<Float>> delta = fetchCandles(ticker, null, end, interval, increment);
+            List<Candle> delta = fetchCandles(ticker, null, end, interval, increment);
 //            System.out.printf("%d %d %d\n",delta.size(), count, increment);
             System.out.println(delta.size());
             end = delta.get(0).getTime().minusSeconds(1);
@@ -232,18 +239,18 @@ public class Oanda extends Upstream<Float> {
 //        System.out.println("debug pm: snapshotcf: " +candles.size());
 //        System.out.println(candles.get(candles.size()-1).getTime());
 //        System.out.println("Oanda::fetchPL end");
-        return new TimeSeries<>(candles);
+        return new TimeSeries(candles);
     }
 
     @Override
-    protected TimeSeries<Float> fetchBetweenAtLeast(Ticker<Float> ticker, Duration interval, ZonedDateTime from, ZonedDateTime to) {
+    protected TimeSeries fetchBetweenAtLeast(Ticker ticker, Duration interval, ZonedDateTime from, ZonedDateTime to) {
 //        System.out.println("Oanda::fetchPR");
         if (to.isAfter(ZonedDateTime.now())) {
             to = ZonedDateTime.now();
         }
-        ArrayList<Candle<Float>> candles = new ArrayList<>();
+        ArrayList<Candle> candles = new ArrayList<>();
         while (!from.isAfter(to)) {
-            List<Candle<Float>> delta = fetchCandles(ticker, from, null, interval, Oanda.FETCH_SIZE);
+            List<Candle> delta = fetchCandles(ticker, from, null, interval, Oanda.FETCH_SIZE);
             if (delta.size() == 0) {
                 break;
             }
@@ -259,6 +266,20 @@ public class Oanda extends Upstream<Float> {
             candles.addAll(delta);
         }
 //        System.out.println("Oanda::fetchPR end");
-        return new TimeSeries<>(candles);
+        return new TimeSeries(candles);
+    }
+
+    @Override
+    public List<String> getFields() {
+        return List.of(
+                "user id",
+                "api key"
+        );
+    }
+
+    @Override
+    public void authenticate(Map<String, String> credentials) {
+        this.userId = credentials.get("user id");
+        this.apiKey = credentials.get("api key");
     }
 }

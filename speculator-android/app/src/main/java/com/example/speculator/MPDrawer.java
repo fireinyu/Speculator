@@ -19,9 +19,14 @@ import java.util.Stack;
 public class MPDrawer extends InstructedDrawer {
     private LineChart chart;
     private ArrayList<LineDataSet> allLines;
-    public MPDrawer (LineChart chart) {
-        this.chart = chart;
+    public MPDrawer () {
         this.allLines = new ArrayList<>();
+    }
+    public void setChart(LineChart chart) {
+        if (!(this.chart == null)) {
+            this.undraw();
+        }
+        this.chart = chart;
     }
 
     @Override
@@ -96,8 +101,7 @@ public class MPDrawer extends InstructedDrawer {
                 lines.forEach(ds -> ds.enableDashedLine(20, 6, 0)); break;
             case DOTTED:
                 lines.forEach(ds -> ds.enableDashedLine(3, 8, 0)); break;
-            case NOLINE:
-                throw new UnsupportedOperationException();
+            case NONE:
             default:
                 throw new UnsupportedOperationException();
         };
@@ -111,6 +115,11 @@ public class MPDrawer extends InstructedDrawer {
         this.chart.notifyDataSetChanged();
         this.chart.invalidate();
         this.allLines.addAll(lines);
+    }
+
+    @Override
+    public void legend(DrawInstruction.DrawMapping mapping) {
+
     }
 
     @Override

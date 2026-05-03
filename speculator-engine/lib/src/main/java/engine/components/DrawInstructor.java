@@ -1,18 +1,66 @@
 package engine.components;
 
+import engine.PriceData.State;
+import engine.PriceData.TickerState;
+import engine.PriceData.TimeSeries;
+import engine.Serialisation.CoreStateMachine;
 import engine.Serialisation.StateMachine;
+import engine.control.PredictManager;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public abstract class DrawInstructor<T extends Number, V extends Number> implements StateMachine<DrawInstructor<T, V>> {
+public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
 
-    public InstructedPlotter<T, V> makePlotter(InstructedDrawer drawer) {
-        return new InstructedPlotter<>(this, drawer);
+    public DrawInstructor(int index) {
+        super(index);
     }
-    protected abstract List<DrawInstruction> drawAllPredict(List<PredictManager.PredictResult<T, V>> results);
 
-    protected abstract List<DrawInstruction> drawAllBacktest(List<PredictManager.BacktestResult<T, V>> results);
-
+    public List<DrawInstruction> plotAllPredict(
+            State state,
+            List<PredictManager.PredictResult> results,
+            DrawInstruction.DrawMapping mapping
+    ) {
+        List<DrawInstruction> res = new ArrayList<>();
+        for (PredictManager.PredictResult result: results) {
+            Ticker ticker = result.getTicker();
+            TickerState tickerState = state.getTickerState(ticker);
+            TimeSeries features = tickerState.getIntervals().stream()
+                            .parallel()
+                            .map(tickerState::getPriceData)
+                            .reduce(
+                                    TimeSeries.empty(),
+                                    TimeSeries::merge,
+                                    TimeSeries::merge
+                            );
+            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), null));
+            for (ModelPredictor model : result.getPrediction().keySet()) {
+                res.add(new DrawInstruction(this.plotPreds(result.getPrediction().get(model)), mapping.color(ticker, model), mapping.style(ticker, model), null));
+            }
+        }
+        return res;
+    }
+    public List<DrawInstruction> plotAllBacktest(
+            State state,
+            State targetState,
+            List<PredictManager.PredictResult> results,
+            DrawInstruction.DrawMapping mapping
+    ) {
+        List<DrawInstruction> res = this.plotAllPredict(state, results, mapping);
+        for (Ticker ticker : targetState.getTickers()) {
+            TickerState tickerState = targetState.getTickerState(ticker);
+            TimeSeries features = tickerState.getIntervals().stream()
+                    .parallel()
+                    .map(tickerState::getPriceData)
+                    .reduce(
+                            TimeSeries.empty(),
+                            TimeSeries::merge,
+                            TimeSeries::merge
+                    );
+            res.add(new DrawInstruction(this.plotTargets(features), mapping.tColor(ticker), mapping.tStyle(ticker), null));
+        }
+        return res;
+    }
     @Override
     public boolean equals(Object obj) {
         if (!obj.getClass().equals(this.getClass())) {
@@ -22,29 +70,8 @@ public abstract class DrawInstructor<T extends Number, V extends Number> impleme
         return this.save().equals(sm.save());
     }
 
-    private static class InstructedPlotter <T extends Number, V extends  Number> extends Plotter <T, V> {
-        private DrawInstructor<T, V> instructor;
-        private InstructedDrawer drawer;
-        public InstructedPlotter(DrawInstructor<T, V> instructor, InstructedDrawer drawer) {
-            this.instructor = instructor;
-            this.drawer = drawer;
+    protected abstract List<DrawInstruction.Point> plotFeatures(TimeSeries data);
+    protected abstract List<DrawInstruction.Point> plotTargets(TimeSeries data);
+    protected abstract List<DrawInstruction.Point> plotPreds(TimeSeries data);
 
-        }
-
-        @Override
-        public void unplot() {
-            this.drawer.undraw();
-        }
-
-        @Override
-        public void plotAllBackTest(List<PredictManager.BacktestResult<T, V>> backtestResults) {
-            this.instructor.drawAllBacktest(backtestResults).forEach(drawInstruction -> drawInstruction.drawBy(this.drawer));
-        }
-
-        @Override
-        public void plotAllPredict(List<PredictManager.PredictResult<T, V>> predictResults) {
-            this.instructor.drawAllPredict(predictResults).forEach(drawInstruction -> drawInstruction.drawBy(this.drawer));
-
-        }
-    }
 }

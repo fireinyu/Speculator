@@ -31,11 +31,6 @@ public class SavedStateMachine <T extends StateMachine<T>> implements Serializab
     }
 
     @Override
-    public String toString() {
-        return this.loader.toString(this.state);
-    }
-
-    @Override
     public boolean equals(Object obj) {
         if (obj instanceof SavedStateMachine) {
             SavedStateMachine other = (SavedStateMachine) obj;

@@ -13,7 +13,7 @@ import java.util.Optional;
 public class LocalObject <T extends Serializable> {
 
     Path path;
-    public LocalObject (Path root, String... tags) {
+    public LocalObject(Path root, String... tags) {
         for (String tag : tags) {
             root = root.resolve(tag);
         }

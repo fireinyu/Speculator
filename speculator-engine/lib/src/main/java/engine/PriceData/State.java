@@ -11,18 +11,22 @@ import java.util.Set;
 import engine.Util;
 import engine.components.Ticker;
 
-public class State<V extends Number> {
+public class State {
 
-    HashMap<Ticker<V>, TickerState<V>> tickerData;
+    HashMap<Ticker, TickerState> tickerData;
 
     public State(
-            HashMap<Ticker<V>, TickerState<V>> tickerData
+            HashMap<Ticker, TickerState> tickerData
     ) {
         // constructor for delta
         this.tickerData = tickerData;
     }
 
-    public TickerState<V> getTickerState(Ticker<V> ticker) {
+    public State() {
+        this.tickerData = new HashMap<>();
+    }
+
+    public TickerState getTickerState(Ticker ticker) {
 //        System.out.println("State::getTS");
 //        System.out.println(this.tickerData.get(ticker));
         return Optional.ofNullable(this.tickerData.get(ticker))
@@ -30,20 +34,25 @@ public class State<V extends Number> {
                 .orElse(null);
     }
 
-    public Set<Ticker<V>> getTickers() {
+    public Set<Ticker> getTickers() {
         return tickerData.keySet();
     }
 
-    public State<V> save() {
+    public State save() {
         // read-only deep copy
-        HashMap<Ticker<V>, TickerState<V>> copyData = new HashMap<>();
+        HashMap<Ticker, TickerState> copyData = new HashMap<>();
         tickerData.keySet().forEach(ticker -> copyData.put(ticker, tickerData.get(ticker).save()));
-        return new State<>(copyData);
+        return new State(copyData);
     }
 
-    public static class MutableState<V extends Number> extends State<V> {
-        Hashtable<Ticker<V>, Integer> nonHits;
-        HashSet<Ticker<V>> hits;
+    public State mergeWith(State s2) {
+        this.tickerData.putAll(s2.tickerData);
+        return this;
+    }
+
+    public static class MutableState<V extends Number> extends State {
+        Hashtable<Ticker, Integer> nonHits;
+        HashSet<Ticker> hits;
         int nonHitsBeforeClear; // also applies until tickerState
         public MutableState(int nonHitsBeforeClear) {
             // start out empty
@@ -57,28 +66,28 @@ public class State<V extends Number> {
             this(3);
         }
 
-        public State<V> asView() {
+        public State asView() {
             // makes shallow copy view (for abstraction)
-            return new State<>(this.tickerData);
+            return new State(this.tickerData);
         }
 
-        public int pointsNotAfter(Ticker<V> ticker, Duration interval, ZonedDateTime at) {
+        public int pointsNotAfter(Ticker ticker, Duration interval, ZonedDateTime at) {
             return this.tickerData.get(ticker).asMutable().pointsNotAfter(interval, at);
         }
 
-        public void extendLeft(Ticker<V> ticker, Duration interval, TimeSeries<V> deltaLeft) {
+        public void extendLeft(Ticker ticker, Duration interval, TimeSeries deltaLeft) {
             this.tickerData.get(ticker).asMutable().extendLeft(interval, deltaLeft);
             this.markHit(ticker, interval);
         }
 
-        public void extendRight(Ticker<V> ticker, Duration interval, TimeSeries<V> deltaRight) {
+        public void extendRight(Ticker ticker, Duration interval, TimeSeries deltaRight) {
             this.tickerData.get(ticker).asMutable().extendRight(interval, deltaRight);
             this.markHit(ticker, interval);
 
         }
 
-        public void dropLeft(Ticker<V> ticker, Duration interval, int count) {
-            TickerState<V> tickerState = this.tickerData.get(ticker);
+        public void dropLeft(Ticker ticker, Duration interval, int count) {
+            TickerState tickerState = this.tickerData.get(ticker);
             tickerState.asMutable().dropLeft(interval, count);
             if (tickerState.isEmpty()) {
                 this.tickerData.remove(ticker);
@@ -87,8 +96,8 @@ public class State<V extends Number> {
             }
         }
 
-        public void dropAfter(Ticker<V> ticker, Duration interval, ZonedDateTime after) {
-            TickerState<V> tickerState = this.tickerData.get(ticker);
+        public void dropAfter(Ticker ticker, Duration interval, ZonedDateTime after) {
+            TickerState tickerState = this.tickerData.get(ticker);
             tickerState.asMutable().dropAfter(interval, after);
             if (tickerState.isEmpty()) {
                 this.tickerData.remove(ticker);
@@ -97,30 +106,30 @@ public class State<V extends Number> {
             }
         }
 
-        public void put(Ticker<V> ticker, Duration interval, TimeSeries<V> timeSeries) {
+        public void put(Ticker ticker, Duration interval, TimeSeries timeSeries) {
             if (timeSeries.isEmpty()) {
                 return;
             }
             if (!this.tickerData.containsKey(ticker)) {
-                this.tickerData.put(ticker, new TickerState.MutableTickerState<>(nonHitsBeforeClear));
+                this.tickerData.put(ticker, new TickerState.MutableTickerState(nonHitsBeforeClear));
             }
             this.tickerData.get(ticker).put(interval, timeSeries);
             this.markHit(ticker, interval);
         }
 
-        public boolean contains(Ticker<V> ticker, Duration interval) {
+        public boolean contains(Ticker ticker, Duration interval) {
             return this.tickerData.containsKey(ticker) && this.tickerData.get(ticker).contains(interval);
         }
 
-        public ZonedDateTime from(Ticker<V> ticker, Duration interval) {
+        public ZonedDateTime from(Ticker ticker, Duration interval) {
             return this.tickerData.get(ticker).from(interval);
         }
 
-        public ZonedDateTime until(Ticker<V> ticker, Duration interval) {
+        public ZonedDateTime until(Ticker ticker, Duration interval) {
             return this.tickerData.get(ticker).until(interval);
         }
 
-        public void markHit(Ticker<V> ticker, Duration interval) {
+        public void markHit(Ticker ticker, Duration interval) {
             if (this.tickerData.containsKey(ticker)) {
                 this.hits.add(ticker);
                 this.tickerData.get(ticker).asMutable().markHit(interval);
@@ -128,17 +137,17 @@ public class State<V extends Number> {
         }
 
         @Override
-        public TickerState<V> getTickerState(Ticker<V> ticker) {
+        public TickerState getTickerState(Ticker ticker) {
             this.hits.add(ticker);
             return super.getTickerState(ticker);
         }
 
         public void cleanUp() {
-            Hashtable<Ticker<V>, Integer> nonHits = new Hashtable<>();
-            for (Ticker<V> ticker : this.tickerData.keySet()) {
+            Hashtable<Ticker, Integer> nonHits = new Hashtable<>();
+            for (Ticker ticker : this.tickerData.keySet()) {
                 if (this.hits.contains(ticker)) {
                     nonHits.put(ticker, this.nonHitsBeforeClear);
-                    TickerState.MutableTickerState<V> ts = this.tickerData.get(ticker).asMutable();
+                    TickerState.MutableTickerState ts = this.tickerData.get(ticker).asMutable();
                     ts.cleanUp();
                     if (ts.isEmpty()) {
                         this.tickerData.remove(ticker);
@@ -156,15 +165,15 @@ public class State<V extends Number> {
             this.hits = new HashSet<>();
         }
 
-        public Util.Pair<State<V>, State<V>> partition(ZonedDateTime at) {
-            HashMap<Ticker<V>, TickerState<V>> leftMap = new HashMap<>();
-            HashMap<Ticker<V>, TickerState<V>> rightMap = new HashMap<>();
-            for (Ticker<V> ticker : this.tickerData.keySet()) {
-                Util.Pair<TickerState<V>, TickerState<V>> pair = this.tickerData.get(ticker).asMutable().partition(at);
+        public Util.Pair<State, State> partition(ZonedDateTime at) {
+            HashMap<Ticker, TickerState> leftMap = new HashMap<>();
+            HashMap<Ticker, TickerState> rightMap = new HashMap<>();
+            for (Ticker ticker : this.tickerData.keySet()) {
+                Util.Pair<TickerState, TickerState> pair = this.tickerData.get(ticker).asMutable().partition(at);
                 leftMap.put(ticker, pair.first);
                 rightMap.put(ticker, pair.second);
             }
-            return Util.Pair.create(new State<>(leftMap), new State<>(rightMap));
+            return Util.Pair.create(new State(leftMap), new State(rightMap));
         }
     }
 

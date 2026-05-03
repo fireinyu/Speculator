@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TimePicker;
 import android.widget.ToggleButton;
@@ -15,12 +16,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import engine.components.PredictManager;
+import engine.control.PredictManager;
 
 import com.example.speculator.GlobalState;
 import com.example.speculator.MPDrawer;
 
-import engine.components.Plotter;
 import engine.components.Ticker;
 
 import com.example.speculator.R;
@@ -46,12 +46,14 @@ public class BacktestFragment extends Fragment {
 
     private ToggleButton dateView;
     private ToggleButton timeView;
+    private Button singleBacktest;
+    private ToggleButton agentToggle;
+    private ToggleButton backtestToggle;
 
     private DatePicker datePicker;
 
     private TimePicker timePicker;
     private ZonedDateTime selectedDateTime;
-    private Plotter<Float, Float> plotter;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -68,12 +70,15 @@ public class BacktestFragment extends Fragment {
         this.selectedDateTime = ZonedDateTime.now();
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
         this.chart = root.findViewById(R.id.backtest_chart);
-        this.chart.setData(new LineData());
-        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
+        GlobalState.drawer.setChart(this.chart);
+//        this.chart.setData(new LineData());
         this.dateView = root.findViewById(R.id.dateBtn);
         this.timeView = root.findViewById(R.id.timeBtn);
         this.datePicker = root.findViewById(R.id.calendarView);
         this.timePicker = root.findViewById(R.id.timeView);
+        this.singleBacktest = root.findViewById(R.id.backtest_predict);
+        this.backtestToggle = root.findViewById(R.id.backtestToggle);
+        this.agentToggle = root.findViewById(R.id.bAgentToggle);
         this.dateView.setOnCheckedChangeListener((btn, checked) -> {
             ToggleButton button = (ToggleButton) btn;
             if (checked) {
@@ -110,9 +115,15 @@ public class BacktestFragment extends Fragment {
                 button.setTextOff(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_TIME));
             }
         });
-        root.findViewById(R.id.backtest_pull).setOnClickListener(this::pull);
-        root.findViewById(R.id.backtest_predict).setOnClickListener(this::predict);
+        this.singleBacktest.setOnClickListener((btn) -> {
+            if (agentToggle.isChecked()) {
+                // TODO
+//                GlobalState.app.bactestAct(this.selectedDateTime);
+            } else {
+                GlobalState.app.backtestPredict(this.selectedDateTime);
 
+            }
+        });
     }
 
     @Override
@@ -134,133 +145,17 @@ public class BacktestFragment extends Fragment {
         root.findViewById(R.id.backtest_pull).refreshDrawableState();
         root.findViewById(R.id.backtest_predict).refreshDrawableState();
     }
-    public void pull(View view) {
-        this.disableNewPlots();
-        this.plotter.unplot();
-        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
-        List<Ticker<Float>> tickers = GlobalState.Predict.tickerMenu.get();
-        CompletableFuture<List<PredictManager.BacktestResult<Float, Float>>> results = GlobalState.Predict.pullManager.backTestAsync(tickers, selectedDateTime);
-        results.thenAcceptAsync(ls -> {
-            getActivity().runOnUiThread(() -> {
-                this.plotter.plotAllPredict(
-                        ls.stream().collect(Collectors.toList())
-                );
-                this.enableNewPlots();
-            });
-        });
-    }
 
-    public void predict(View view) {
-        this.disableNewPlots();
-        this.plotter.unplot();
-        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
-        List<Ticker<Float>> tickers = GlobalState.Predict.tickerMenu.get();
-        CompletableFuture<List<PredictManager.BacktestResult<Float, Float>>> results = GlobalState.Predict.predictManager.backTestAsync(tickers, selectedDateTime);
-        results.thenAcceptAsync(ls -> {
-            getActivity().runOnUiThread(() -> {
-                this.plotter.plotAllBackTest(
-                        ls.stream().collect(Collectors.toList())
-                );
-                this.enableNewPlots();
-            });
-        });
+
+    private void configCycle() {
+        // TODO
+        if (backtestToggle.isChecked()) {
+            if (agentToggle.isChecked()) {
+            } else {
+            }
+        } else {
+            GlobalState.app.endTasks();
+        }
     }
-//
-//    public void predict(List<Ticker<Float>> tickers, List<? extends ModelPredictor<Float, Float>> predictors, ZonedDateTime anchor) {
-//        this.disableNewPlots();
-//        this.plotter.unplot();
-//        plotter = GlobalState.Predict.instructorMenu.get().get(0).makePlotter((new MPDrawer(chart)));
-//
-//        CompletableFuture<? extends List<? extends List<? extends List<? extends Ticker<Float>State<Float>>>>> allTicker<Float>StatesCF = CompletableFuture.supplyAsync(() -> {
-//            // ticker -> predictor -> interval -> tickerState
-//            return tickers.stream().map(ticker -> {
-//                        return predictors.stream().map(predictor -> {
-//                                    return predictor.requestLeftUpstreams(UpstreamAdapters.getAdapterFor(ticker)).stream()
-//                                            .map(up -> ((Snapshottable)up).<Float>snapshot(anchor))
-//                                            .map(state -> state.getTicker<Float>State(ticker))
-//                                            .collect(Collectors.toList());
-//                                })
-//                                .collect(Collectors.toList());
-//                    })
-//                    .collect(Collectors.toList());
-//        });
-//        CompletableFuture<? extends List<? extends List<? extends List<? extends TimeSeries<Float>>>>> allFeaturesCF = allTicker<Float>StatesCF.thenApplyAsync(allTicker<Float>States ->
-//                // ticker -> predictor -> interval -> series
-//                allTicker<Float>States.stream().map(
-//                                allPredTS -> allPredTS.stream().map(
-//                                        allIntervalTS -> allIntervalTS.stream().map(
-//                                                ts ->ts.getPriceData()
-//                                        ).collect(Collectors.toList())
-//                                ).collect(Collectors.toList())
-//                        ).collect(Collectors.toList()));
-//
-//        CompletableFuture<? extends List<? extends Candle<Float>>> allLatestCF = allTicker<Float>StatesCF.thenApplyAsync(allTicker<Float>States ->
-//                // ticker -> latest
-//                allTicker<Float>States.stream().map(
-//                        allPredTS -> allPredTS.stream().map(
-//                                allIntervalTS -> allIntervalTS.stream().map(
-//                                        ts ->ts.getLatest()
-//                                ).max(Comparator.comparing(Candle::getTime)).orElse(null)
-//                        ).max(Comparator.comparing(Candle::getTime)).orElse(null)
-//                ).collect(Collectors.toList()));
-//
-//        CompletableFuture<? extends List<? extends List<? extends List<? extends TimeSeries<Float>>>>> allTargetsCF = CompletableFuture.supplyAsync(() -> {
-//            // ticker -> predictor -> interval -> series
-//            return tickers.stream().map(ticker -> {
-//                        return predictors.stream().map(predictor -> {
-//                                    return predictor.requestRightUpstreams(UpstreamAdapters.getAdapterFor(ticker)).stream()
-//                                            .map(up -> up.<Float>verify(anchor))
-//                                            .map(state -> state.getTicker<Float>State(ticker))
-//                                            .map(tickerState -> tickerState.getPriceData())
-//                                            .collect(Collectors.toList());
-//                                })
-//                                .collect(Collectors.toList());
-//                    })
-//                    .collect(Collectors.toList());
-//        });
-//
-//        CompletableFuture<? extends List<? extends List<? extends List<? extends TimeSeries<Float>>>>> allPredsCF = allFeaturesCF.thenApplyAsync(allFeatures -> {
-//            // ticker -> predictor -> interval -> series
-//            List<? extends Candle<Float>> allLatest = allLatestCF.join();
-//            return Util.combine(allLatest.stream(),allFeatures.stream(), (latest, tickerF) ->
-//                    Util.combine(predictors.stream(), tickerF.stream(), (predictor, intervalF) -> predictor.predict(intervalF, latest)).collect(Collectors.toList())
-//            ).collect(Collectors.toList());
-//        });
-//
-//        allFeaturesCF.thenCombineAsync(allPredsCF, (allFeatures, allPreds) -> {
-//            List<TimeSeries<Float>> plotF = allFeatures.stream()
-//                    .map(tickerF -> tickerF.stream().flatMap(predF -> predF.stream()))
-//                    .map(tickerF -> tickerF.map(x -> (TimeSeries<Float>)x)
-//                            .reduce(
-//                                    new TimeSeries<>(List.of()),
-//                                    (accum, nxt) -> accum.merge(nxt)
-//                            ))
-//                    .collect(Collectors.toList());
-//            List<TimeSeries<Float>> plotP = allPreds.stream()
-//                    .map(tickerP -> tickerP.stream().flatMap(predP -> predP.stream()))
-//                    .map(tickerP -> tickerP.map(x -> (TimeSeries<Float>)x)
-//                            .reduce(
-//                                    new TimeSeries<>(List.of()),
-//                                    (accum, nxt) -> accum.merge(nxt)
-//                            ))
-//                    .collect(Collectors.toList());
-//            Log.d("debug_target","start"); // find!! bug
-//            List<TimeSeries<Float>> plotT = allTargetsCF.join().stream()
-//                    .map(tickerF -> tickerF.stream().flatMap(predF -> predF.stream()))
-//                    .map(tickerF -> tickerF.map(x -> (TimeSeries<Float>)x)
-//                            .reduce(
-//                                    new TimeSeries<>(List.of()),
-//                                    (accum, nxt) -> accum.merge(nxt)
-//                            ))
-//                    .collect(Collectors.toList());
-//            Log.d("debug_target","end"); // find!! bug
-//            getActivity().runOnUiThread(() -> {
-//                plotter.plotAll(tickers, plotF, plotP, plotT);
-//            });
-//            return null;
-//        }).thenRunAsync(() -> getActivity().runOnUiThread(() -> {
-//            this.enableNewPlots();
-//        }));
-//    }
 
 }

@@ -7,11 +7,13 @@ import engine.PriceData.OffsetSeries;
 import engine.PriceData.TickerState;
 import engine.PriceData.TimeSeries;
 import engine.Serialisation.StateLoader;
+import engine.Serialisation.UserStateMachine;
 import engine.Util;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,37 +28,43 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 
 import engine.Serialisation.StateMachine;
 
-public abstract class ModelPredictor<V extends Number, R extends Number> implements StateMachine<ModelPredictor<V, R>> {
+public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
 
-    public static <V extends Number, R extends Number> ModelPredictor<V, R> identity(List<Duration> intervals, List<Integer> leftDependencies) {
-        return new Identity<>(intervals, leftDependencies);
+    public static  ModelPredictor identity(List<Duration> intervals, List<Integer> leftDependencies) {
+        return new Identity(intervals, leftDependencies);
     }
 
-    public static <V extends Number, R extends Number> ModelPredictor<V, R> offset(ModelPredictor<V, R> model, Duration offset) {
-        return new OffsetModel<>(model, offset);
+    public static  ModelPredictor offset(ModelPredictor model, Duration offset) {
+        return new OffsetModel(model, offset);
     }
 
-    protected FeatureExtractor<V> extractor;
-    protected Predictor<V, R> model;
+    protected FeatureExtractor extractor;
+    protected Predictor model;
     Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies;
 
-    public ModelPredictor (FeatureExtractor<V> extractor,
-                           Predictor<V, R> model,
-                           Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies) {
+    public ModelPredictor (FeatureExtractor extractor,
+                           Predictor model,
+                           Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies,
+                           Map<String, String> settings
+    ) {
         // leftDependencies: include latest/now
         // rightDependencies: exclude latest/now
+        super(settings);
         this.extractor = extractor;
         this.model = model;
         this.dependencies = dependencies;
     }
 
-    public ModelPredictor (FeatureExtractor<V> extractor,
-                           Predictor<V, R> model,
+    public ModelPredictor (FeatureExtractor extractor,
+                           Predictor model,
                            List<Duration> intervals,
                            List<Integer> leftDependencies,
-                           List<Integer> rightDependencies) {
+                           List<Integer> rightDependencies,
+                           Map<String, String> settings
+    ) {
         // leftDependencies: include latest/now
         // rightDependencies: exclude latest/now
+        super(settings);
         this.extractor = extractor;
         this.model = model;
         LinkedHashMap<Duration, Integer> left = new LinkedHashMap<>();
@@ -68,7 +76,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         this.dependencies = Util.Pair.create(left, right);
     }
 
-    public List<TimeSeries<R>> predict(TickerState<V> input) {
+    public List<TimeSeries> predict(TickerState input) {
         System.out.println("Model::predict");
         System.out.println("Model::predict bug start");
         input.getIntervals().stream()
@@ -81,15 +89,15 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
                 input.getAbsoluteLatest()
         );
     }
-    public List<TimeSeries<R>> predict (List<? extends TimeSeries<V>> input, Candle<V> latest) {
+    public List<TimeSeries> predict (List<? extends TimeSeries> input, Candle latest) {
         System.out.println("Model:predict");
-        List<V> features = this.extractor.extract(input, latest.get());
-        List<OffsetSeries<R>> output = this.model.predict(features, latest.get());
+        List<Float> features = this.extractor.extract(input, latest.get());
+        List<OffsetSeries> output = this.model.predict(features, latest.get());
         System.out.println("Model:predict end");
         return output.stream().map(ts -> ts.at(latest.getTime())).collect(Collectors.toList());
     }
 
-    public CompletableFuture<? extends List<TimeSeries<R>>> predictAsync (List<? extends TimeSeries<V>> input, Candle<V> latest) {
+    public CompletableFuture<? extends List<TimeSeries>> predictAsync (List<? extends TimeSeries> input, Candle latest) {
         return CompletableFuture.supplyAsync(() -> this.predict(input, latest));
     }
 
@@ -101,45 +109,38 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
         return this.dependencies.first;
     }
 
-    private static class Identity <V extends Number, R extends Number> extends ModelPredictor<V, R> {
+    private static class Identity  extends ModelPredictor {
+
+        @Override
+        public UserStateLoader<? extends StateMachine<ModelPredictor>> getLoader() {
+            return new UserStateLoader<>(List.of()) {
+                @Override
+                public ModelPredictor load(Map<String, String> state) {
+                    return null;
+                }
+            };
+        }
+
         public Identity(List<Duration> intervals, List<Integer> leftDependencies) {
             super(
                     FeatureExtractor.identity(),
                     Predictor.identity(),
                     intervals,
                     leftDependencies,
-                    List.of(0)
+                    List.of(0),
+                    Map.of()
             );
-        }
-
-        @Override
-        public StateLoader<? extends StateMachine<ModelPredictor<V, R>>> getLoader() {
-            return new StateLoader<>() {
-                @Override
-                public Identity<V, R> load(Map<String, String> state) {
-                    return new Identity<>(List.of(), List.of());
-                }
-
-                @Override
-                public String toString(Map<String, String> state) {
-                    return "identity";
-                }
-            };
-        }
-
-        @Override
-        public Map<String, String> save() {
-            return Collections.emptyMap();
         }
 
 
     }
 
-    private static class OffsetModel<V extends Number, R extends Number> extends ModelPredictor<V, R> {
+    private static class OffsetModel extends ModelPredictor {
 
-        private ModelPredictor<V, R> model;
+        private ModelPredictor model;
+
         private Duration offset;
-        private static <V extends Number, R extends Number> LinkedHashMap<Duration, Integer> makeLeft(ModelPredictor<V, R> model, Duration offset) {
+        private static  LinkedHashMap<Duration, Integer> makeLeft(ModelPredictor model, Duration offset) {
             LinkedHashMap<Duration, Integer> original = model.dependencies.first;
             LinkedHashMap<Duration, Integer> updated  = new LinkedHashMap<>();
             for (Duration interval : original.keySet()) {
@@ -148,7 +149,7 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             }
             return updated;
         }
-        private static <V extends Number, R extends Number> LinkedHashMap<Duration, Integer> makeRight(ModelPredictor<V, R> model, Duration offset) {
+        private static  LinkedHashMap<Duration, Integer> makeRight(ModelPredictor model, Duration offset) {
             LinkedHashMap<Duration, Integer> original = model.dependencies.second;
             LinkedHashMap<Duration, Integer> updated  = new LinkedHashMap<>();
             for (Duration interval : original.keySet()) {
@@ -158,42 +159,31 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             return updated;
         }
 
-        public OffsetModel(ModelPredictor<V, R> model, Duration offset) {
+        public OffsetModel(ModelPredictor model, Duration offset) {
             super(
-                    null, null, Util.Pair.create(OffsetModel.makeLeft(model, offset), OffsetModel.makeRight(model, offset)));
+                    null, null, Util.Pair.create(OffsetModel.makeLeft(model, offset), OffsetModel.makeRight(model, offset)), model.save());
             this.model = model;
             this.offset = offset;
         }
 
-        @Override
-        public StateLoader<? extends StateMachine<ModelPredictor<V, R>>> getLoader() {
-            return new OffSetLoader(model);
-        }
 
         @Override
-        public Map<String, String> save() {
-            Map<String, String> state = new HashMap<>(model.save());
-            state.put("_offset", String.valueOf(offset.toMillis()));
-            return state;
-        }
-
-        @Override
-        public List<TimeSeries<R>> predict(List<? extends TimeSeries<V>> input, Candle<V> latest) {
+        public List<TimeSeries> predict(List<? extends TimeSeries> input, Candle latest) {
             ZonedDateTime anchor = latest.getTime().minus(offset);
             List<Integer> anchorIndices = input.stream()
                     .map(ts -> ts.pointsNotAfter(anchor)-1)
                     .collect(Collectors.toList());
-            Candle<V> offsetLatest = Util.combine(
+            Candle offsetLatest = Util.combine(
                     input.stream(),
                     anchorIndices.stream(),
                     TimeSeries::get
             ).max(Comparator.comparing(Candle::getTime)).get();
             System.out.println(anchor);
-            List<TimeSeries<V>> offsetInput = new ArrayList<>();
+            List<TimeSeries> offsetInput = new ArrayList<>();
             int inputIdx = 0;
             for (Duration interval: model.dependencies.first.keySet()) {
                 int ld = model.dependencies.first.get(interval);
-                TimeSeries<V> ts = input.get(inputIdx);
+                TimeSeries ts = input.get(inputIdx);
                 int anchorIndex = anchorIndices.get(inputIdx);
                 offsetInput.add(ts.slice(anchorIndex+1 - ld, anchorIndex+1));
                 inputIdx++;
@@ -201,28 +191,35 @@ public abstract class ModelPredictor<V extends Number, R extends Number> impleme
             return this.model.predict(offsetInput, offsetLatest);
         }
 
-
-    }
-
-    private static class OffSetLoader <V extends Number, R extends Number> implements StateLoader<ModelPredictor<V, R>> {
-        private StateLoader<ModelPredictor<V, R>> loader;
-        public OffSetLoader(ModelPredictor<V, R> template) {
-            super();
-            this.loader = (StateLoader<ModelPredictor<V, R>>)template.getLoader();
+        @Override
+        public UserStateLoader<? extends StateMachine<ModelPredictor>> getLoader() {
+            return new OffSetLoader((UserStateLoader<ModelPredictor>)model.getLoader());
         }
 
         @Override
-        public ModelPredictor<V, R> load(Map<String, String> state) {
-            return new OffsetModel<>(
+        public Map<String, String> save() {
+            Map<String, String> settings = super.save();
+            settings.put("offset", String.valueOf(this.offset.toMillis()));
+            return settings;
+        }
+    }
+
+    public static class OffSetLoader extends UserStateLoader<ModelPredictor> {
+        private UserStateLoader<ModelPredictor> loader;
+        public OffSetLoader(UserStateLoader<ModelPredictor> loader) {
+            super(loader.getOptions());
+            super.addOption("offset");
+            this.loader = (UserStateLoader<ModelPredictor>) loader;
+        }
+
+        @Override
+        public ModelPredictor load(Map<String, String> state) {
+            return new OffsetModel(
                     this.loader.load(state),
-                    Duration.ofMillis(Long.parseLong(state.get("_offset")))
+                    Duration.ofMillis(Long.parseLong(state.get("offset")))
                     );
         }
 
-        @Override
-        public String toString(Map<String, String> state) {
-            return this.loader.toString(state) + "|os:" + state.get("_offset") +"ms";
-        }
 
         @Override
         public String toString() {

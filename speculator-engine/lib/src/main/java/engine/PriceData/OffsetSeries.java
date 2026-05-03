@@ -4,14 +4,14 @@ import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class OffsetSeries<V extends Number>{
+public class OffsetSeries{
 
-    List<? extends OffsetCandle<? extends V>> candles;
-    public OffsetSeries (List<? extends OffsetCandle<? extends V>> candles) {
+    List<? extends OffsetCandle> candles;
+    public OffsetSeries (List<? extends OffsetCandle> candles) {
         this.candles = candles;
     }
 
-    public TimeSeries<V> at(ZonedDateTime anchor) {
-        return new TimeSeries<>(this.candles.stream().map(candle -> candle.at(anchor)).collect(Collectors.toList()));
+    public TimeSeries at(ZonedDateTime anchor) {
+        return new TimeSeries(this.candles.stream().map(candle -> candle.at(anchor)).collect(Collectors.toList()));
     }
 }

@@ -7,29 +7,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import engine.menus.Tickers;
 import engine.PriceData.Upstream;
+import engine.Serialisation.CoreStateMachine;
 import engine.Util.Pair;
 
-public abstract class Ticker <V extends Number>{
+public abstract class Ticker extends CoreStateMachine<Ticker> {
 
-    public static <V extends Number> Ticker<V> of(String name, Map<Upstream<V>, String> aliases) {
-        return new MapTicker<>(name, aliases);
+    public static Ticker of(String name, Map<Upstream, String> aliases, int index) {
+        return new MapTicker(name, aliases,  index);
     }
-    public static <V extends Number> Ticker<V> of(String name, List<Pair<Upstream<V>, String>> aliases) {
-        return new MapTicker<>(
+    public static Ticker of(String name, List<Pair<Upstream, String>> aliases, int index) {
+        return new MapTicker(
                 name,
                 aliases.stream().map(pair -> pair.first).collect(Collectors.toList()),
-                aliases.stream().map(pair -> pair.second).collect(Collectors.toList())
+                aliases.stream().map(pair -> pair.second).collect(Collectors.toList()),
+                index
         );
     }
-    public static <V extends Number> Ticker<V> of(String name, List<Upstream<V>> upstreams, List<String> aliases) {
-        return new MapTicker<>(name, upstreams, aliases);
+    public static Ticker of(String name, List<Upstream> upstreams, List<String> aliases, int index) {
+        return new MapTicker(name, upstreams, aliases, index);
     }
 
 
     private String name;
 
-    public Ticker(String name){
+    public Ticker(String name, int index) {
+        super(index);
         this.name = name;
     }
 
@@ -37,30 +41,45 @@ public abstract class Ticker <V extends Number>{
         return this.name;
     }
 
-    public abstract String getAliasFor(Upstream<V> upstream);
-    public abstract List<Upstream<V>> preferredUpstreams();
-    public abstract boolean canRequestFrom(Upstream<V> upstream);
+    public abstract String getAliasFor(Upstream upstream);
+    public abstract List<Upstream> preferredUpstreams();
+    public abstract boolean canRequestFrom(Upstream upstream);
 
     @Override
     public String toString() {
         return this.name;
     }
-    private static class MapTicker <V extends Number> extends Ticker<V>{
 
-        private Map<Upstream<V>, String> aliases;
-        private LinkedHashSet<Upstream<V>> preferred;
+    @Override
+    public boolean equals(Object obj) {
+        if (! (obj instanceof Ticker)) {
+            return false;
+        }
+        Ticker other = (Ticker) obj;
+        return this.name.equals(other.name);
+    }
 
-        private MapTicker(String name, Map<Upstream<V>, String> aliases) {
-            super(name);
+    @Override
+    public int hashCode() {
+        return this.name.hashCode();
+    }
+
+    private static class MapTicker extends Ticker{
+
+        private Map<Upstream, String> aliases;
+        private LinkedHashSet<Upstream> preferred;
+
+        private MapTicker(String name, Map<Upstream, String> aliases, int index) {
+            super(name, index);
             this.aliases = new HashMap<>();
-            for (Upstream<V> key : aliases.keySet()) {
+            for (Upstream key : aliases.keySet()) {
                 this.aliases.put(key, aliases.get(key));
             }
             this.preferred = new LinkedHashSet<>(aliases.keySet());
         }
 
-        private MapTicker(String name, List<Upstream<V>> upstreams, List<String> aliases) {
-            super(name);
+        private MapTicker(String name, List<Upstream> upstreams, List<String> aliases, int index) {
+            super(name, index);
             this.aliases = new HashMap<>();
             for (int i = 0; i < upstreams.size(); i++) {
                 this.aliases.put(upstreams.get(i), aliases.get(i));
@@ -69,7 +88,7 @@ public abstract class Ticker <V extends Number>{
         }
 
         @Override
-        public String getAliasFor(Upstream<V> upstream) {
+        public String getAliasFor(Upstream upstream) {
             return this.aliases.get(upstream);
 //            Class<?> cls = adapterClass;
 //            String alias = null;
@@ -84,18 +103,18 @@ public abstract class Ticker <V extends Number>{
         }
 
         @Override
-        public List<Upstream<V>> preferredUpstreams() {
+        public List<Upstream> preferredUpstreams() {
             return this.preferred.stream().collect(Collectors.toList());
         }
 
         @Override
-        public boolean canRequestFrom(Upstream<V> upstream) {
+        public boolean canRequestFrom(Upstream upstream) {
             return this.preferred.contains(upstream);
         }
 
         @Override
-        public boolean equals(Object obj) {
-            return this == obj;
+        public CoreStateLoader<Ticker> getLoader() {
+            return new CoreStateLoader<>(Tickers.list);
         }
     }
 }

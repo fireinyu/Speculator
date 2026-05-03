@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -42,10 +43,14 @@ public class ApiFragment extends Fragment {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-         Builders.list.stream()
-                 .map(builder -> builder.makeForm(this.getActivity()))
-                 .map(form -> {form.setLayoutParams(formParams); return form;})
-                 .forEach(form -> allForms.addView(form));
+        GlobalState.app.getAuthTargets().forEach(target -> {
+            // TODO make form UI with submit
+            ...
+            ViewGroup form = new ScrollView(this.getContext());
+            GlobalState.app.getAuthFields(target).forEach(field -> {
+
+            });
+        });
     }
 
     @Override
@@ -54,52 +59,4 @@ public class ApiFragment extends Fragment {
         binding = null;
     }
 
-    private static class Builders {
-        private static List<? extends Builder<?>> list = List.of(
-                //CONFIG
-                new Builders.OandaBuilder()
-        );
-        private static class OandaBuilder extends Builder<List<String>> {
-            private Field<String> userId = new Field<String>() {
-                @Override
-                public String getPrompt() {
-                    return "User ID:";
-                }
-                @Override
-                protected View getInputView(Context root) {
-                    return new EditText(root);
-                }
-                @Override
-                public String get(View src) {
-                    return ((EditText)src).getText().toString();
-
-                }
-            };
-            private Field<String> apiKey = new Field<String>() {
-                @Override
-                public String getPrompt() {
-                    return "API Key:";
-                }
-                @Override
-                protected View getInputView(Context root) {
-                    return new EditText(root);
-                }
-                @Override
-                public String get(View src) {
-                    return ((EditText)src).getText().toString();
-                }
-            };
-            private OandaBuilder() {
-                super("Oanda");
-                super.register(userId, apiKey);
-            }
-
-            @Override
-            public List<String> build(Context context) {
-                GlobalState.Authentication.Oanda.accNo.put(userId.get());
-                GlobalState.Authentication.Oanda.apiKey.put(apiKey.get());
-                return List.of(userId.get(), apiKey.get());
-            }
-        }
-    }
 }

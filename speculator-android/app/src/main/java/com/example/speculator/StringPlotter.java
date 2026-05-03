@@ -1,7 +1,6 @@
 package com.example.speculator;
 
-import engine.components.Plotter;
-import engine.components.PredictManager;
+import engine.control.PredictManager;
 
 import java.util.List;
 
