@@ -34,6 +34,10 @@ public class Menu <T extends StateMachine<T>> implements Serializable {
         this(items, -1);
     }
 
+    public int size() {
+        return this.items.size();
+    }
+
     public LinkedHashSet<Integer> getSelectedIndices() {
         return new LinkedHashSet<>(selected);
     }

@@ -2,15 +2,17 @@ package engine.Serialisation;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
 
     private List<UserStateMachine.UserStateLoader<T>> loaders;
-    private int selectedLoader;
+    private transient int selectedLoader;
 
     public EditMenu(List<UserStateMachine.UserStateLoader<T>> loaders, int limit) {
         super(List.of(), limit);
@@ -42,10 +44,31 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
         this.items.add(new SavedStateMachine<>(item));
         this.labels.add(item.toString());
     }
+
+    public void add(List<String> ls) {
+        Map<String, String> settings = new HashMap<>();
+        List<String> options = this.getOptions();
+        for (int i = 0; i < options.size(); i++) {
+            settings.put(options.get(i), ls.get(i));
+        }
+        this.add(settings);
+    }
+
+    public List<String> loaders() {
+        return loaders.stream()
+                .map(Object::toString)
+                .collect(Collectors.toList());
+    }
+    public void selectLoader(int i) {
+        this.selectedLoader = i;
+    }
     public String selectedLoader() {
         return this.loaders.get(selectedLoader).toString();
     }
-    public Collection<String> getOptions() {
+    public int selectedLoaderIndex() {
+        return selectedLoader;
+    }
+    public List<String> getOptions() {
         return this.loaders.get(selectedLoader).getOptions();
     }
 }

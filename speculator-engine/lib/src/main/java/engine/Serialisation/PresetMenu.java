@@ -15,7 +15,7 @@ public class PresetMenu extends EditMenu<Preset> {
     }
 
     @Override
-    public Collection<String> getOptions() {
+    public List<String> getOptions() {
         return List.of("name");
     }
 

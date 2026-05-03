@@ -5,6 +5,8 @@ import android.content.Context;
 import engine.control.App;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class GlobalState {
     /* TODO LIST
@@ -21,6 +23,7 @@ public class GlobalState {
     static Path appStorageRoot;
     public static App app;
     public static MPDrawer drawer;
+    public static List<Presettable> presettables;
 
 //    static List<Ticker> tickers = List.of(
 //            // CONFIG
@@ -33,6 +36,7 @@ public class GlobalState {
         appStorageRoot = context.getFilesDir().toPath();
         drawer = new MPDrawer();
         app = App.start(GlobalState.appStorageRoot, new AndroidReporter(), drawer);
+        presettables = new ArrayList<>();
 
 //        Authentication.init(context);
 //        Predict.init(context);

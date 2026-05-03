@@ -20,8 +20,12 @@ import com.example.speculator.dynamicUI.Builder;
 import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
 
+import ai.djl.repository.zoo.ModelLoader;
+import engine.Serialisation.EditMenu;
 import engine.components.Agent;
+import engine.components.Executor;
 import engine.menus.Agents;
+import engine.menus.Executors;
 import engine.menus.ModelLoaders;
 import engine.Serialisation.SavedStateMachine;
 import engine.Serialisation.StateLoader;
@@ -32,6 +36,7 @@ import engine.modelPredictors.NN16842;
 
 import com.example.speculator.dynamicUI.ObjectMenu;
 import com.example.speculator.uiComponents.EditMenuView;
+import com.example.speculator.uiComponents.MenuView;
 
 import java.time.Duration;
 import java.util.List;
@@ -46,6 +51,11 @@ public class ModelsAgentsFragment extends Fragment {
     private LinearLayout allBuilders;
     private ViewGroup modelsBox;
     private ViewGroup agentsBox;
+    private ViewGroup executorsBox;
+
+    private EditMenuView<Agent> agentsView;
+    private EditMenuView<ModelPredictor> modelsView;
+    private MenuView<Executor> executorsView;
 
 
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -67,19 +77,24 @@ public class ModelsAgentsFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         this.modelsBox = this.root.findViewById(R.id.modelsBox);
         this.agentsBox = this.root.findViewById(R.id.agentsBox);
+        executorsBox = this.root.findViewById(R.id.executorsBox);
 
-        View modelsView = new EditMenuView<>(this.getContext(), ModelLoaders.menu);
-        View agentsView = new EditMenuView<>(this.getContext(), Agents.menu);
+        modelsView = new EditMenuView<>(this.getContext(), ModelLoaders.menu);
+        agentsView = new EditMenuView<>(this.getContext(), Agents.menu);
+        executorsView = new MenuView<>(this.getContext(), Executors.menu);
 
         ViewGroup.LayoutParams menuParams = new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT
         );
-        modelsView.setLayoutParams(menuParams);
-        agentsView.setLayoutParams(menuParams);
 
-        modelsBox.addView(modelsView);
-        agentsBox.addView(agentsView);
+        modelsBox.addView(modelsView, menuParams);
+        agentsBox.addView(agentsView, menuParams);
+        executorsBox.addView(executorsView, menuParams);
+
+        GlobalState.presettables.add(modelsView);
+        GlobalState.presettables.add(agentsView);
+        GlobalState.presettables.add(executorsView);
 
         this.allBuilders = this.root.findViewById(R.id.model_build);
     }
@@ -87,6 +102,9 @@ public class ModelsAgentsFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        GlobalState.presettables.remove(modelsView);
+        GlobalState.presettables.remove(agentsView);
+        GlobalState.presettables.remove(executorsView);
         binding = null;
     }
 

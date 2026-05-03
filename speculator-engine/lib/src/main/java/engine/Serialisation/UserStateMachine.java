@@ -1,6 +1,6 @@
 package engine.Serialisation;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 public abstract class UserStateMachine<T extends StateMachine<T>> implements StateMachine<T>{
@@ -25,11 +25,11 @@ public abstract class UserStateMachine<T extends StateMachine<T>> implements Sta
 
 //    protected abstract T loadFromSettings(Map<String, String> settings);
     public static abstract class UserStateLoader<T extends StateMachine<T>> implements StateLoader<T> {
-        private Collection<String> options;
-        public UserStateLoader(Collection<String> options) {
+        private List<String> options;
+        public UserStateLoader(List<String> options) {
             this.options = options;
         }
-        public Collection<String> getOptions() {
+        public List<String> getOptions() {
             return this.options;
         }
         protected void addOption(String name) {

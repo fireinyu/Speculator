@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         GlobalState.init(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -78,8 +79,8 @@ public class MainActivity extends AppCompatActivity {
         });
 
         ViewGroup presetsBox = findViewById(R.id.presetsBox);
-        ViewGroup plottersBox = findViewById(R.id.presetsBox);
-        ViewGroup tickersBox = findViewById(R.id.presetsBox);
+        ViewGroup plottersBox = findViewById(R.id.plottersBox);
+        ViewGroup tickersBox = findViewById(R.id.tckersBox);
         ViewGroup upstreamsBox = findViewById(R.id.upstreamsBox);
 
         tickersView = new MenuView<>(this, Tickers.menu);
@@ -101,40 +102,10 @@ public class MainActivity extends AppCompatActivity {
         plottersBox.addView(plottersView);
         upstreamsBox.addView(upstreamsView);
 
-        /// TODO: move to PresetMenuView class
-
-        newPreset.setOnClickListener(btn -> {
-            Preset<Float, Float> preset = new Preset<>(
-                    newPresetName.getText().toString(),
-                    GlobalState.Predict.selectedPredictors,
-                    GlobalState.Predict.tickerMenu.get().stream()
-                            .map(Ticker::getName)
-                            .collect(Collectors.toList()),
-                    GlobalState.Predict.instructorMenu.get().stream()
-                            .map(SavedStateMachine::new)
-                            .collect(Collectors.toList())
-            );
-            GlobalState.Presets.presets.add(preset);
-            GlobalState.Presets.presetMenu.add(preset);
-        });
-        removePreset.setOnClickListener(btn -> {
-            GlobalState.Presets.presetMenu.get().stream().
-                    peek(ps -> {
-                        if (GlobalState.Presets.defaultPreset.equals(ps)) {
-                            GlobalState.Presets.defaultPreset.delete();
-                        }
-                    }).
-                    forEach(GlobalState.Presets.presets::remove);
-            GlobalState.Presets.presetMenu.removeSelected();
-        });
-        defaultPreset.setOnClickListener(btn -> {
-            List<Preset<Float, Float>> presets = GlobalState.Presets.presetMenu.get();
-            if (presets.isEmpty()) {
-                return;
-            }
-            GlobalState.Presets.defaultPreset.put(GlobalState.Presets.presetMenu.get().get(0));
-        });
-
+        GlobalState.presettables.add(upstreamsView);
+        GlobalState.presettables.add(tickersView);
+        GlobalState.presettables.add(plottersView);
+        GlobalState.presettables.add(presetsView);
 
     }
 
@@ -152,4 +123,13 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        GlobalState.presettables.remove(presetsView);
+        GlobalState.presettables.remove(tickersView);
+        GlobalState.presettables.remove(upstreamsView);
+        GlobalState.presettables.remove(plottersView);
+        binding = null;
+    }
 }
