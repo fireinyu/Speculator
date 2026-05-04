@@ -12,31 +12,20 @@ import android.widget.DatePicker;
 import android.widget.TimePicker;
 import android.widget.ToggleButton;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import engine.control.PredictManager;
-
 import com.example.speculator.GlobalState;
-import com.example.speculator.MPDrawer;
-
-import engine.components.Ticker;
 
 import com.example.speculator.R;
 
 import com.example.speculator.databinding.FragmentBacktestBinding;
 import com.github.mikephil.charting.charts.LineChart;
-import com.github.mikephil.charting.data.LineData;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class BacktestFragment extends Fragment {
 
@@ -56,7 +45,7 @@ public class BacktestFragment extends Fragment {
     private ZonedDateTime selectedDateTime;
 
 
-    public View onCreateView(@NonNull LayoutInflater inflater,
+    public View onCreateView( LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
 
         binding = FragmentBacktestBinding.inflate(inflater, container, false);
@@ -65,7 +54,7 @@ public class BacktestFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+    public void onViewCreated(View view,  Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.selectedDateTime = ZonedDateTime.now();
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
@@ -76,8 +65,8 @@ public class BacktestFragment extends Fragment {
         this.timeView = root.findViewById(R.id.timeBtn);
         this.datePicker = root.findViewById(R.id.calendarView);
         this.timePicker = root.findViewById(R.id.timeView);
-        this.singleBacktest = root.findViewById(R.id.backtest_predict);
-        this.backtestToggle = root.findViewById(R.id.backtestToggle);
+        this.singleBacktest = root.findViewById(R.id.bPredict);
+        this.backtestToggle = null;
         this.agentToggle = root.findViewById(R.id.bAgentToggle);
         this.dateView.setOnCheckedChangeListener((btn, checked) -> {
             ToggleButton button = (ToggleButton) btn;
@@ -118,7 +107,7 @@ public class BacktestFragment extends Fragment {
         this.singleBacktest.setOnClickListener((btn) -> {
             if (agentToggle.isChecked()) {
                 // TODO
-//                GlobalState.app.bactestAct(this.selectedDateTime);
+//                GlobalState.app.backtestAct(this.selectedDateTime);
             } else {
                 GlobalState.app.backtestPredict(this.selectedDateTime);
 
@@ -133,18 +122,18 @@ public class BacktestFragment extends Fragment {
     }
 
 
-    public void disableNewPlots() {
-        root.findViewById(R.id.backtest_pull).setEnabled(false);
-        root.findViewById(R.id.backtest_predict).setEnabled(false);
-        root.findViewById(R.id.backtest_pull).refreshDrawableState();
-        root.findViewById(R.id.backtest_predict).refreshDrawableState();
-    }
-    public void enableNewPlots() {
-        root.findViewById(R.id.backtest_pull).setEnabled(true);
-        root.findViewById(R.id.backtest_predict).setEnabled(true);
-        root.findViewById(R.id.backtest_pull).refreshDrawableState();
-        root.findViewById(R.id.backtest_predict).refreshDrawableState();
-    }
+//    public void disableNewPlots() {
+//        root.findViewById(R.id.backtest_pull).setEnabled(false);
+//        root.findViewById(R.id.backtest_predict).setEnabled(false);
+//        root.findViewById(R.id.backtest_pull).refreshDrawableState();
+//        root.findViewById(R.id.backtest_predict).refreshDrawableState();
+//    }
+//    public void enableNewPlots() {
+//        root.findViewById(R.id.backtest_pull).setEnabled(true);
+//        root.findViewById(R.id.backtest_predict).setEnabled(true);
+//        root.findViewById(R.id.backtest_pull).refreshDrawableState();
+//        root.findViewById(R.id.backtest_predict).refreshDrawableState();
+//    }
 
 
     private void configCycle() {

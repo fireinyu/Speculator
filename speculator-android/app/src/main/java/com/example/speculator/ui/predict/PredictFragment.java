@@ -6,27 +6,18 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
-import engine.control.PredictManager;
-
 import com.example.speculator.GlobalState;
-import com.example.speculator.MPDrawer;
 
 import com.example.speculator.R;
 
 import com.example.speculator.databinding.FragmentPredictBinding;
 import com.github.mikephil.charting.charts.LineChart;
-
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class PredictFragment extends Fragment {
 
@@ -51,7 +42,7 @@ public class PredictFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         this.chart = root.findViewById(R.id.predict_chart);
         GlobalState.drawer.setChart(this.chart);
-        predictToggle = root.findViewById(R.id.predict_toggle);
+        predictToggle = root.findViewById(R.id.predictToggle);
         agentToggle = root.findViewById(R.id.agentToggle);
 //        minutesEntry = root.findViewById(R.id.interval_minutes);
 //        secondsEntry = root.findViewById(R.id.interval_seconds);

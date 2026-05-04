@@ -272,14 +272,14 @@ public class Oanda extends Upstream implements Authenticated {
     @Override
     public List<String> getFields() {
         return List.of(
-                "user id",
-                "api key"
+                "Oanda user id",
+                "Oanda api key"
         );
     }
 
     @Override
     public void authenticate(Map<String, String> credentials) {
-        this.userId = credentials.get("user id");
-        this.apiKey = credentials.get("api key");
+        this.userId = credentials.get("Oanda user id");
+        this.apiKey = credentials.get("Oanda api key");
     }
 }

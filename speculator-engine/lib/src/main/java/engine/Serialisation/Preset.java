@@ -10,7 +10,8 @@ import java.util.stream.Collectors;
 
 import engine.control.App;
 
-public class Preset extends UserStateMachine<Preset> {
+public class
+Preset extends UserStateMachine<Preset> {
     private LinkedHashSet<Integer> agents;
     private LinkedHashSet<Integer> plotters;
     private LinkedHashSet<Integer> executors;

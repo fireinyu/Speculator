@@ -78,10 +78,10 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        ViewGroup presetsBox = findViewById(R.id.presetsBox);
-        ViewGroup plottersBox = findViewById(R.id.plottersBox);
-        ViewGroup tickersBox = findViewById(R.id.tckersBox);
-        ViewGroup upstreamsBox = findViewById(R.id.upstreamsBox);
+        ViewGroup presetBox = findViewById(R.id.presetBox);
+        ViewGroup plotterBox = findViewById(R.id.plotterBox);
+        ViewGroup tickerBox = findViewById(R.id.tickerBox);
+        ViewGroup upstreamBox = findViewById(R.id.upstreamBox);
 
         tickersView = new MenuView<>(this, Tickers.menu);
         presetsView = new PresetMenuView(this, GlobalState.app.getPresets());
@@ -97,10 +97,10 @@ public class MainActivity extends AppCompatActivity {
         plottersView.setLayoutParams(menuParams);
         upstreamsView.setLayoutParams(menuParams);
 
-        tickersBox.addView(tickersView);
-        presetsBox.addView(presetsView);
-        plottersBox.addView(plottersView);
-        upstreamsBox.addView(upstreamsView);
+        tickerBox.addView(tickersView);
+        presetBox.addView(presetsView);
+        plotterBox.addView(plottersView);
+        upstreamBox.addView(upstreamsView);
 
         GlobalState.presettables.add(upstreamsView);
         GlobalState.presettables.add(tickersView);

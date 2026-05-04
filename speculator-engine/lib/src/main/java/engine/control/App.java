@@ -107,8 +107,14 @@ public class App implements Serializable {
     public List<String> getAuthFields(String target) {
         return this.AM.getFields(target);
     }
-    public void authenticate(String target, String field, String cred) {
-        this.AM.auth(target, field, cred);
+    public List<String> getAuthFields() {
+        return this.AM.getFields();
+    }
+    public boolean isAuthFilled(String field) {
+        return this.AM.isFilled(field);
+    }
+    public void authenticate(Map<String, String> creds) {
+        this.AM.auth(creds);
     }
 
 

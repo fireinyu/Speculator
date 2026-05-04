@@ -48,7 +48,6 @@ public class ModelsAgentsFragment extends Fragment {
 
     private View root;
 
-    private LinearLayout allBuilders;
     private ViewGroup modelsBox;
     private ViewGroup agentsBox;
     private ViewGroup executorsBox;
@@ -96,7 +95,6 @@ public class ModelsAgentsFragment extends Fragment {
         GlobalState.presettables.add(agentsView);
         GlobalState.presettables.add(executorsView);
 
-        this.allBuilders = this.root.findViewById(R.id.model_build);
     }
 
     @Override
