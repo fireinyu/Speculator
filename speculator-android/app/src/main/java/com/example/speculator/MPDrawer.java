@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.Stack;
 
 public class MPDrawer extends InstructedDrawer {
-    private LineChart chart;
+    private transient LineChart chart;
     private ArrayList<LineDataSet> allLines;
     public MPDrawer () {
         this.allLines = new ArrayList<>();

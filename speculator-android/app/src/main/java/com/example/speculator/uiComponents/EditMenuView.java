@@ -76,15 +76,23 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
 
         }
         loaderView.setOnCheckedChangeListener((grp, id) -> {
+            if (!listening) {
+                return;
+            }
             menu.selectLoader(loaderIdx.get(id));
             this.refreshForm();
         });
-        this.refreshForm();
-
     }
 
     private void refreshForm() {
         listening = false;
+        int selectedLoaderIdx = menu.selectedLoaderIndex();
+        if (selectedLoaderIdx == -1) {
+            loaderView.clearCheck();
+            return;
+        }
+        System.out.println(menu.selectedLoaderIndex());
+        System.out.println(loaderView.getChildCount());
         loaderView.check(loaderView.getChildAt(menu.selectedLoaderIndex()).getId());
         formView.removeAllViews();
         menu.getOptions().forEach(option -> {

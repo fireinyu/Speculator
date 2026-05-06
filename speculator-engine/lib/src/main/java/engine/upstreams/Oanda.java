@@ -278,6 +278,11 @@ public class Oanda extends Upstream implements Authenticated {
     }
 
     @Override
+    public String toString() {
+        return "Oanda upstream";
+    }
+
+    @Override
     public void authenticate(Map<String, String> credentials) {
         this.userId = credentials.get("Oanda user id");
         this.apiKey = credentials.get("Oanda api key");

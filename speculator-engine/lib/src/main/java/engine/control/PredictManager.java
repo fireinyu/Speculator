@@ -185,13 +185,6 @@ public class PredictManager {
     public List<PredictResult> predict(State state) {
         List<PredictResult> results =  new ArrayList<>();
         for (Ticker ticker : state.getTickers()) {
-            TickerState tickerState = state.getTickerState(ticker);
-            TimeSeries features = cachedDependencies.first.keySet().stream()
-                    .map(tickerState::getPriceData)
-                    .reduce(
-                            TimeSeries.empty(),
-                            TimeSeries::merge
-                    );
             Map<ModelPredictor, TimeSeries> predictions = new HashMap<>();
             for (ModelPredictor model : this.predictors.getSelection()) {
 //                System.out.println("PM::predictFS bug start");

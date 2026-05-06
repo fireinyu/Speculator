@@ -11,6 +11,7 @@ import engine.menus.Tickers;
 import engine.PriceData.Upstream;
 import engine.Serialisation.CoreStateMachine;
 import engine.Util.Pair;
+import engine.menus.Upstreams;
 
 public abstract class Ticker extends CoreStateMachine<Ticker> {
 
@@ -114,7 +115,14 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
 
         @Override
         public CoreStateLoader<Ticker> getLoader() {
-            return new CoreStateLoader<>(Tickers.list);
+            return new TickerLoader();
+        }
+
+        private static class TickerLoader extends CoreStateLoader<Ticker> {
+            @Override
+            public List<Ticker> getSource() {
+                return Tickers.list;
+            }
         }
     }
 }

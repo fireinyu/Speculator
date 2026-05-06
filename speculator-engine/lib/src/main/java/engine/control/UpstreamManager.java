@@ -38,7 +38,7 @@ public class UpstreamManager {
                 .collect(Collectors.toList());
     }
 
-    public Map<Upstream, ArrayList<Ticker>> groupByUpstream() {
+    private Map<Upstream, ArrayList<Ticker>> groupByUpstream() {
         if (!tickers.hasBeenSeenBy(this) || !upstreams.hasBeenSeenBy(this)) {
             HashMap<Upstream, Util.Pair<Integer, Integer>> grouping = new HashMap<>();
             Set<Upstream> selectedUpstreams = new HashSet<>(upstreams.getSelection());

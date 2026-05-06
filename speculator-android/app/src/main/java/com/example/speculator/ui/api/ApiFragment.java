@@ -80,6 +80,7 @@ public class ApiFragment extends Fragment {
     private void refresh() {
         for (int i = 0 ; i < form.getChildCount(); i++) {
             ViewGroup row = (ViewGroup) form.getChildAt(i);
+            System.out.println("given: "+row.<TextView>findViewWithTag("label").getText().toString());
             if (GlobalState.app.isAuthFilled(row.<TextView>findViewWithTag("label").getText().toString())) {
                 row.<EditText>findViewWithTag("field").setHint("(filled)");
             } else {

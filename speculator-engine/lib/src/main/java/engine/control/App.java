@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,17 +41,26 @@ import engine.menus.Upstreams;
 public class App implements Serializable {
     public static App start(Path root, ExecutionReporter reporter, InstructedDrawer drawer) {
         LocalObject<App> res = new LocalObject<>(root, "_App");
-        return res.get().orElseGet(() -> new App(root, reporter, drawer));
+        return res.get().map(app -> {
+            app.AM.init(
+                    Agents.list,
+                    DrawInstructors.list,
+                    Executors.list,
+                    ModelLoaders.list,
+                    Tickers.list,
+                    Upstreams.list);
+            app.root = root;
+            return app;
+        }).orElseGet(() -> new App(root, reporter, drawer));
     }
 
     public Menu<Ticker> tickers = Tickers.menu;
     public Menu<Upstream> upstreams = Upstreams.menu;
-    public Menu<DrawInstructor> plotters = DrawInstructors.menu;
+    public transient Menu<DrawInstructor> plotters = DrawInstructors.menu;
     public Menu<Executor> executors = Executors.menu;
     public EditMenu<ModelPredictor> models = ModelLoaders.menu;
     public EditMenu<Agent> agents = Agents.menu;
     private PresetMenu presets;
-    public Path root;
     public ExecutionReporter reporter;
     public InstructedDrawer drawer;
     private AuthManager AM;
@@ -62,12 +70,14 @@ public class App implements Serializable {
     private transient ScheduledExecutorService cycleService;
     private transient Map<String, Future<?>> running;
     private transient Simulator simulator;
+    public transient Path root;
+
 
     /// meta
     private App(Path root, ExecutionReporter reporter, InstructedDrawer drawer) {
+        this.root = root;
         this.reporter = reporter;
         this.drawer = drawer;
-        this.root = root;
         this.presets = new PresetMenu(this);
         this.AM = new AuthManager(
                 Agents.list,
@@ -78,7 +88,6 @@ public class App implements Serializable {
                 Upstreams.list
         );
         this._init();
-
     }
     private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
         // 1. Perform default restoration for non-transient fields
@@ -252,7 +261,6 @@ public class App implements Serializable {
         }
         this.running.put("backtestPredict", CompletableFuture.runAsync(() -> {
             Util.Pair<Map<Duration,Integer>,Map<Duration,Integer>> deps = PM.getDependencies();
-            Map<Upstream, ArrayList<Ticker>> groups = UM.groupByUpstream();
             Util.Pair<State, State> states = UM.snapshot(deps.first, deps.second, at);
             List<PredictManager.PredictResult> results = PM.predict(states.first);
             DM.drawBacktest(states.first, states.second, results);

@@ -5,6 +5,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,7 +22,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
 
     @Override
     public CoreStateLoader<? extends StateMachine<Upstream>> getLoader() {
-        return new CoreStateLoader<>(Upstreams.list);
+        return new UpstreamLoader();
     }
 
     public Upstream(int index) {
@@ -178,6 +179,13 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
     // include until
     // at least leftDependency
     protected abstract TimeSeries fetchBetweenAtLeast(Ticker ticker, Duration interval ,ZonedDateTime from, ZonedDateTime to);
+
+    private static class UpstreamLoader extends CoreStateLoader<Upstream> {
+        @Override
+        public List<Upstream> getSource() {
+            return Upstreams.list;
+        }
+    }
     // fetch minimal range: exclude from, include until
 
 

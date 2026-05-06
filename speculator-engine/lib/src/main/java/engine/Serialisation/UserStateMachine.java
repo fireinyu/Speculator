@@ -1,5 +1,6 @@
 package engine.Serialisation;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,7 +28,7 @@ public abstract class UserStateMachine<T extends StateMachine<T>> implements Sta
     public static abstract class UserStateLoader<T extends StateMachine<T>> implements StateLoader<T> {
         private List<String> options;
         public UserStateLoader(List<String> options) {
-            this.options = options;
+            this.options = new ArrayList<>(options);
         }
         public List<String> getOptions() {
             return this.options;

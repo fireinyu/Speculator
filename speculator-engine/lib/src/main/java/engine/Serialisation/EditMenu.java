@@ -12,12 +12,12 @@ import java.util.stream.Collectors;
 public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
 
     private List<UserStateMachine.UserStateLoader<T>> loaders;
-    private transient int selectedLoader;
+    private int selectedLoader;
 
     public EditMenu(List<UserStateMachine.UserStateLoader<T>> loaders, int limit) {
         super(List.of(), limit);
         this.loaders = loaders;
-        this.selectedLoader = 0;
+        this.selectedLoader = -1;
     }
     public EditMenu(List<UserStateMachine.UserStateLoader<T>> loaders) {
         this(loaders, -1);
@@ -62,7 +62,13 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
     public void selectLoader(int i) {
         this.selectedLoader = i;
     }
+    public void unselectLoader() {
+        this.selectedLoader = -1;
+    }
     public String selectedLoader() {
+        if (selectedLoader == -1) {
+            return null;
+        }
         return this.loaders.get(selectedLoader).toString();
     }
     public int selectedLoaderIndex() {

@@ -107,6 +107,7 @@ public class BacktestFragment extends Fragment {
         this.singleBacktest.setOnClickListener((btn) -> {
             if (agentToggle.isChecked()) {
                 // TODO
+                GlobalState.app.save();
 //                GlobalState.app.backtestAct(this.selectedDateTime);
             } else {
                 GlobalState.app.backtestPredict(this.selectedDateTime);

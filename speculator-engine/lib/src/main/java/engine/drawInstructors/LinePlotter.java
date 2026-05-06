@@ -128,11 +128,6 @@ public class LinePlotter extends DrawInstructor {
 //    }
 
     @Override
-    public CoreStateLoader<? extends StateMachine<DrawInstructor>> getLoader() {
-        return new CoreStateLoader<>(DrawInstructors.list);
-    }
-
-    @Override
     public Map<String, String> save() {
         return Map.of();
     }

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -17,8 +18,8 @@ import engine.components.Authenticated;
 public class AuthManager implements Serializable {
     private LinkedHashMap<String, String> creds = new LinkedHashMap<>();
     private LinkedHashMap<String, LinkedHashSet<String>> fields = new LinkedHashMap<>();
-    private LinkedHashMap<String, LinkedHashSet<String>> targetsByField;
-    private LinkedHashMap<String, Authenticated> targets;
+    private LinkedHashMap<String, LinkedHashSet<String>> targetsByField = new LinkedHashMap<>();
+    private transient LinkedHashMap<String, Authenticated> targets;
 //    public AuthManager(List<Authenticated> targets) {
 //        this.targets = new LinkedHashMap<>();
 //        targets.forEach(target -> this.targets.put(target.toString(), target));
@@ -27,20 +28,33 @@ public class AuthManager implements Serializable {
 //                .forEach(field -> this.creds.get(target.toString()).put(field,"")));
 //    }
     public AuthManager(List<?>... objects) {
-        this.targets = new LinkedHashMap<>();
         for (List<?> ls : objects) {
             List<Authenticated> targets =  ls.stream()
                 .filter(x -> x instanceof Authenticated)
                 .map(x -> (Authenticated)x)
                 .collect(Collectors.toList());
-            targets.forEach(target -> this.targets.put(target.toString(), target));
             targets.forEach(target -> this.fields.put(target.toString(), new LinkedHashSet<>(target.getFields())));
             targets.forEach(target -> target.getFields()
                     .stream()
-                    .peek(field -> targetsByField.get(field).add(target.toString()))
+                    .peek(field -> {
+                        if (!targetsByField.containsKey(field)) {
+                            targetsByField.put(field, new LinkedHashSet<>());
+                        }
+                        targetsByField.get(field).add(target.toString());
+                    })
                     .forEach(field -> this.creds.put(field,"")));
 
         }
+        this.init(objects);
+    }
+
+    void init(Collection<?>... objects) {
+        targets = new LinkedHashMap<>();
+        Arrays.stream(objects)
+                .flatMap(Collection::stream)
+                .filter(x -> x instanceof Authenticated)
+                .map(x -> (Authenticated)x)
+                .forEach(x -> targets.put(x.toString(), x));
     }
     public void auth(Map<String, String> creds) {
         this.creds.putAll(creds);
@@ -49,11 +63,13 @@ public class AuthManager implements Serializable {
                 .flatMap(Collection::stream)
                 .distinct()
                 .forEach(target -> {
+                    // creds.forEach((k,v) -> System.out.println(k + "|-> " + v));
                     targets.get(target).authenticate(
                             fields.get(target).stream()
+                                    //.peek(System.out::println)
                                     .collect(Collectors.toMap(
                                             field -> field,
-                                            creds::get
+                                            this.creds::get
                                     ))
                     );
                 });
@@ -68,10 +84,12 @@ public class AuthManager implements Serializable {
         return new ArrayList<>(this.fields.get(target));
     }
     public List<String> getFields() {
-        return new ArrayList<>(this.fields.keySet());
+        this.creds.forEach((k, v) -> System.out.println(k + " |-> " + v));
+        return new ArrayList<>(this.creds.keySet());
     }
 
     public boolean isFilled(String field) {
+        // this.creds.keySet().forEach(System.out::println);
         return !this.creds.get(field).isBlank();
     }
 
