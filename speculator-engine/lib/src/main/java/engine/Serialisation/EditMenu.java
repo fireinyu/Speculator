@@ -23,7 +23,31 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
         this(loaders, -1);
     }
 
-
+    public void remove(List<Integer> rm) {
+        LinkedHashSet<Integer> finalSelected = new LinkedHashSet<>();
+        int offset = 0;
+        for (int i = this.size()-1; i >= 0; i--) {
+            if (rm.contains(i)) {
+                offset ++;
+            } else if (selected.contains(i)) {
+                finalSelected.add(i - offset);
+            }
+        }
+        ArrayList<SavedStateMachine<T>> newItems = new ArrayList<>();
+        ArrayList<String> newLabels = new ArrayList<>();
+        for (int i = 0; i<items.size(); i++) {
+            if (!rm.contains(i)) {
+                newItems.add(items.get(i));
+                newLabels.add(labels.get(i));
+            }
+        }
+        this.items = newItems;
+        this.labels = newLabels;
+        if (offset > 0) {
+            this.seenBy = new HashSet<>();
+        }
+        this.selected = finalSelected;
+    }
 
     public void removeSelected() {
         ArrayList<SavedStateMachine<T>> newItems = new ArrayList<>();

@@ -6,60 +6,29 @@ package org.example;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
+import engine.Serialisation.EditMenu;
+import engine.Serialisation.Menu;
 import engine.control.App;
+import engine.menus.Tickers;
 
 public class Main{
     private static Consumer<List<String>> INVALID = cmd -> System.out.println("invalid command");
+    
     private static String prompt = "Speculator >>>";
     private static String errorMessage = "Bad arguments:";
-    private static Consumer<List<String>> dispatch(Map<String, Consumer<List<String>>> funcs) {
-        return command -> {
-            if (command.isEmpty() || !funcs.containsKey(command.get(0))) {
-                funcs.getOrDefault("", INVALID).accept(command.subList(0, command.size()));
-            } else {
-                funcs.getOrDefault(command.get(0), INVALID).accept(command.subList(1, command.size()));
-            }
-        };
-    }
-    private App app;
-    private Map<String, Consumer<List<String>>> commands = Map.of(
-        "exit", args -> app.save(),
-        "auth", dispatch(Map.of(
-                "", cmd -> {
-                    String field = cmd.get(0);
-                    String cred = cmd.get(1);
-                    System.out.println("bug start: "+ field + " " + cred);
-                    app.authenticate(Map.of(field, cred));
-                },
-                "list", dispatch(Map.of(
-                    "", cmd -> {
-                        StringBuilder res = new StringBuilder();
-                        app.getAuthFields().stream()
-                            .peek(res::append)
-                            .peek(field -> {
-                                if (app.isAuthFilled(field)) {
-                                    res.append(" (filled)");
-                                } else {
-                                    res.append(" (empty)");
-                                }
-                            })
-                            .forEach(field -> res.append(", "));
-                        System.out.println(res.toString());
-                    }
-                ))
-            ))
-        );
-    public Main(Path root) {
-        app = App.start(root, new TestReporter(), new TestDrawer());
-    }
-    private List<String> parseCommand(String command) {
+    private static List<String> parseCommand(String command) {
         command = command + " ";
         List<String> args = new ArrayList<>();
         StringBuilder word = new StringBuilder();
@@ -89,6 +58,136 @@ public class Main{
         }
         return args;
     }
+    private static void list(List<?> items) {
+        StringBuilder res = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            res.append(i + ":: " + items.get(i) + '\n');
+        }
+        System.out.println(res.toString());
+    }
+    private static Consumer<List<String>> dispatch(Map<String, Consumer<List<String>>> funcs) {
+        return command -> {
+            if (command.isEmpty() || !funcs.containsKey(command.get(0))) {
+                funcs.getOrDefault("", INVALID).accept(command.subList(0, command.size()));
+            } else {
+                funcs.getOrDefault(command.get(0), INVALID).accept(command.subList(1, command.size()));
+            }
+        };
+    }
+    private static Consumer<List<String>> dispatchMenu(Menu<?> menu) {
+        return dispatch(Map.of(
+            "ls", cmd -> {
+                Set<Integer> selected = menu.getSelectedIndices();
+                List<String> labels = menu.getLabels();
+                List<String> res = new ArrayList();
+                for (int i = 0; i<labels.size(); i++) {
+                    if (selected.contains(i)) {
+                        res.add(labels.get(i) + " (selected)");
+                    } else {
+                        res.add(labels.get(i));
+                    }
+                }
+                list(res);
+            },
+            "sel", cmd -> menu.selectAll(cmd.stream().map(Integer::parseInt).collect(Collectors.toList())),
+            "usel", dispatch(Map.of(
+                "", cmd -> cmd.stream().map(Integer::parseInt).forEach(menu::unselect),
+                "a", cmd -> menu.unselectAll()
+            ))
+        ));
+    }
+    private App app;
+    private Map<String, Consumer<List<String>>> commands;
+    private Map<EditMenu<?>, Map<String, String>> savedConfigs = new HashMap<>();
+    private boolean agentActive = false;
+    
+    private Consumer<List<String>> dispatchEditMenu(EditMenu<?> menu) {
+        return dispatch(Map.of(
+            "", dispatchMenu(menu),
+            "base", dispatch(Map.of(
+                "ls", cmd -> {
+                    int selected = menu.selectedLoaderIndex();
+                    List<String> labels = menu.loaders();
+                    List<String> res = new ArrayList();
+                    for (int i = 0; i<labels.size(); i++) {
+                        if (selected == i) {
+                            res.add(labels.get(i) + " (selected)");
+                        } else {
+                            res.add(labels.get(i));
+                        }
+                    }
+                list(res);
+                },
+                "sel", cmd -> {
+                    menu.selectLoader(Integer.parseInt(cmd.get(0)));
+                    savedConfigs.put(menu, menu.getOptions().stream().collect(Collectors.toMap(opt -> opt, opt -> "")));
+                }
+            )),
+            "mk", cmd -> {
+                menu.add(savedConfigs.get(menu));
+            },
+            "rm", cmd -> {
+                menu.remove(cmd.stream().map(Integer::parseInt).collect(Collectors.toList()));
+            },
+            "conf", dispatch(Map.of(
+                "", cmd -> {
+                    if (! savedConfigs.containsKey(menu)) {
+                        savedConfigs.put(menu, menu.getOptions().stream().collect(Collectors.toMap(opt -> opt, opt -> "")));
+                    }
+                    savedConfigs.get(menu).put(menu.getOptions().get(Integer.parseInt(cmd.get(0))), cmd.get(1));
+                },
+                "ls", cmd -> {
+                    list(menu.getOptions().stream().map(opt -> opt + ": " + savedConfigs.getOrDefault(menu, Map.of()).getOrDefault(opt, "(empty)")).collect(Collectors.toList()));
+                }
+            ))
+
+        ));
+    }
+
+    public Main(Path root) {
+        app = App.start(root, new TestReporter(), new TestDrawer());
+        commands = new HashMap<>();
+        commands.putAll(Map.of(
+            "exit", args -> {
+                app.save();
+                System.out.println("---/ Speculator CLI (test) ---");
+            },
+            "auth", dispatch(Map.of(
+                "", cmd -> {
+                    String field = app.getAuthFields().get(Integer.parseInt(cmd.get(0)));
+                    String cred = cmd.get(1);
+                    app.authenticate(Map.of(field, cred));
+                },
+                "ls", dispatch(Map.of(
+                    "", cmd -> list(app.getAuthFields().stream().map(f -> f+(app.isAuthFilled(f) ? " (filled)"  : " (empty)")).collect(Collectors.toList()))
+                ))
+            )),
+            "tic", dispatchMenu(app.getTickers()),
+            "ups", dispatchMenu(app.getUpstreams()),
+            "plt", dispatchMenu(app.getPlotters()),
+            "exe", dispatchMenu(app.getExecutors()),
+            "mod", dispatchEditMenu(app.getModels()),
+            "pre", dispatchEditMenu(app.getPresets()),
+            "agt", dispatch(Map.of(
+                "", dispatchEditMenu(app.getAgents()),
+                "t", cmd -> {
+                    agentActive = !agentActive;
+                    System.out.println("agents" + (agentActive?" active":" inactive"));
+                }
+            )),
+            "pull", cmd -> {
+
+            }
+
+        ));
+        commands.putAll(Map.of(
+            "btst", cmd -> {
+            },
+            "pred", cmd -> {
+            } 
+        ));
+    }
+
     private void mainLoop() {
         Scanner scanner = new Scanner(System.in);
         while (true) {
@@ -109,7 +208,7 @@ public class Main{
 
     public static void main(String[] args) {
         Main app = new Main(Path.of(".live"));
-        System.out.println("---Speculator CLI (test)---");
+        System.out.println("--- Speculator CLI (test) ---");
         app.mainLoop();
     }
 

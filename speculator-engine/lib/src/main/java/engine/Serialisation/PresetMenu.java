@@ -27,6 +27,7 @@ public class PresetMenu extends EditMenu<Preset> {
 
     public PresetMenu(App app) {
         super(List.of(new Preset.PresetLoader()), 1);
+        super.selectLoader(0);
         this.app = app;
     }
 }

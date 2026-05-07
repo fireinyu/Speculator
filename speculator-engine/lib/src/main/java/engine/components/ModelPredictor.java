@@ -198,7 +198,7 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
 
         @Override
         public Map<String, String> save() {
-            Map<String, String> settings = super.save();
+            Map<String, String> settings = new HashMap<>(super.save());
             settings.put("offset", String.valueOf(this.offset.toMillis()));
             return settings;
         }

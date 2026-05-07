@@ -21,6 +21,7 @@ import engine.PriceData.Upstream;
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.LocalObject;
 import engine.Serialisation.Menu;
+import engine.Serialisation.Preset;
 import engine.Util;
 import engine.components.Agent;
 import engine.components.DrawInstructor;
@@ -56,7 +57,7 @@ public class App implements Serializable {
 
     public Menu<Ticker> tickers = Tickers.menu;
     public Menu<Upstream> upstreams = Upstreams.menu;
-    public transient Menu<DrawInstructor> plotters = DrawInstructors.menu;
+    public Menu<DrawInstructor> plotters = DrawInstructors.menu;
     public Menu<Executor> executors = Executors.menu;
     public EditMenu<ModelPredictor> models = ModelLoaders.menu;
     public EditMenu<Agent> agents = Agents.menu;
@@ -127,10 +128,27 @@ public class App implements Serializable {
     }
 
 
-    /// Presets
-
+    /// menus
     public PresetMenu getPresets() {
         return this.presets;
+    }
+    public Menu<Ticker> getTickers() {
+        return this.tickers;
+    }
+    public Menu<Upstream> getUpstreams() {
+        return this.upstreams;
+    }
+    public Menu<DrawInstructor> getPlotters() {
+        return plotters;
+    }
+    public EditMenu<ModelPredictor> getModels() {
+        return models;
+    }
+    public Menu<Executor> getExecutors() {
+        return executors;
+    }
+    public EditMenu<Agent> getAgents() {
+        return agents;
     }
 //    public List<String> getPresets() {
 //        return this.presets.stream()

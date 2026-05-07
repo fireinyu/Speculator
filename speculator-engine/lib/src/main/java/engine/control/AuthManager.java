@@ -84,7 +84,7 @@ public class AuthManager implements Serializable {
         return new ArrayList<>(this.fields.get(target));
     }
     public List<String> getFields() {
-        this.creds.forEach((k, v) -> System.out.println(k + " |-> " + v));
+        // this.creds.forEach((k, v) -> System.out.println(k + " |-> " + v));
         return new ArrayList<>(this.creds.keySet());
     }
 
