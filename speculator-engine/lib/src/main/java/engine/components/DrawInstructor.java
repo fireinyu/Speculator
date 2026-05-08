@@ -19,6 +19,25 @@ public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
         super(index);
     }
 
+    public List<DrawInstruction> plotAll(
+            State state,
+            DrawInstruction.DrawMapping mapping
+    ) {
+        List<DrawInstruction> res = new ArrayList<>();
+        for (Ticker ticker: state.getTickers()) {
+            TickerState tickerState = state.getTickerState(ticker);
+            TimeSeries features = tickerState.getIntervals().stream()
+                    .parallel()
+                    .map(tickerState::getPriceData)
+                    .reduce(
+                            TimeSeries.empty(),
+                            TimeSeries::merge,
+                            TimeSeries::merge
+                    );
+            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), "features"));
+        }
+        return res;
+    }
     public List<DrawInstruction> plotAllPredict(
             State state,
             List<PredictManager.PredictResult> results,

@@ -50,12 +50,12 @@ public class MPDrawer extends InstructedDrawer {
         ascending.add(prevPoint);
         for (int i = 1; i < points.size(); i++) {
             DrawInstruction.Point point = points.get(i);
-            if (point.getX().doubleValue() >= prevPoint.getX().doubleValue()) { // sorted correctly
+            if (point.getX() >= prevPoint.getX()) { // sorted correctly
                 if (!descending.isEmpty()) {
                     LineDataSet line = new LineDataSet(new ArrayList<>(),label);
                     while (!descending.isEmpty()) {
                         DrawInstruction.Point p = descending.pop();
-                        line.addEntry(new Entry(p.getX().floatValue(), p.getY().floatValue()));
+                        line.addEntry(new Entry(p.getX(), p.getY()));
                     }
                     lines.add(line);
                     ascending.add(prevPoint);
@@ -66,7 +66,7 @@ public class MPDrawer extends InstructedDrawer {
                     LineDataSet line = new LineDataSet(new ArrayList<>(),label);
                     while (!ascending.isEmpty()) {
                         DrawInstruction.Point p = ascending.poll();
-                        line.addEntry(new Entry(p.getX().floatValue(), p.getY().floatValue()));
+                        line.addEntry(new Entry(p.getX(), p.getY()));
                     }
                     lines.add(line);
                     descending.add(prevPoint);
@@ -79,7 +79,7 @@ public class MPDrawer extends InstructedDrawer {
             LineDataSet line = new LineDataSet(new ArrayList<>(),label);
             while (!descending.isEmpty()) {
                 DrawInstruction.Point p = descending.pop();
-                line.addEntry(new Entry(p.getX().floatValue(), p.getY().floatValue()));
+                line.addEntry(new Entry(p.getX(), p.getY()));
             }
             lines.add(line);
         }
@@ -87,7 +87,7 @@ public class MPDrawer extends InstructedDrawer {
             LineDataSet line = new LineDataSet(new ArrayList<>(),label);
             while (!ascending.isEmpty()) {
                 DrawInstruction.Point p = ascending.poll();
-                line.addEntry(new Entry(p.getX().floatValue(), p.getY().floatValue()));
+                line.addEntry(new Entry(p.getX(), p.getY()));
             }
             lines.add(line);
         }

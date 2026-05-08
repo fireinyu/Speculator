@@ -42,6 +42,7 @@ public class Menu <T extends StateMachine<T>> implements Serializable {
         return new LinkedHashSet<>(selected);
     }
     public List<T> getSelection() {
+//        System.out.println("get selection: ");
         return selected.stream().map(items::get).map(SavedStateMachine::get).collect(Collectors.toList());
     }
     public List<String> getLabels() {

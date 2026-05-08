@@ -10,13 +10,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import engine.PriceData.Position;
 import engine.PriceData.State;
+import engine.PriceData.TimeSeries;
 import engine.PriceData.Upstream;
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.LocalObject;
@@ -182,10 +185,49 @@ public class App implements Serializable {
 
     /// app cycle
 
-    public void predictPlotCycle() {
-        if (running.containsKey("predictPlotCycle") && !running.get("predictPlotCycle").isDone()) {
-            return;
+    public void pullPlot(Duration interval) {
+        for (String taskLabel : new String[]{
+                "predictPlot",
+                "predictAct",
+                "predictPlotCycle",
+                "predictActCycle"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
         }
+        this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
+            Map<Duration, Integer> ld = Map.of(interval, 100);
+            State state = UM.update(ld);
+            DM.draw(state);
+        }));
+    }
+
+    public void pullPlotCycle(Duration interval) {
+//        if (running.containsKey("pullPlotCycle") && !running.get("pullPlotCycle").isDone()) {
+//            return;
+//        }
+        for (String taskLabel : new String[]{
+                "predictPlot",
+                "predictAct",
+                "predictPlotCycle",
+                "predictActCycle"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
+        }
+
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(() -> pullPlot(interval), 300, 300, TimeUnit.MILLISECONDS);
+        running.put("predictPlotCycle", task);
+    }
+
+    public void predictPlotCycle() {
+//        if (running.containsKey("predictPlotCycle") && !running.get("predictPlotCycle").isDone()) {
+//            return;
+//        }
         for (String taskLabel : new String[]{
                 "predictPlot",
                 "predictAct",
@@ -203,9 +245,9 @@ public class App implements Serializable {
     }
 
     public void predictActCycle() {
-        if (running.containsKey("predictActCycle") && !running.get("predictActCycle").isDone()) {
-            return;
-        }
+//        if (running.containsKey("predictActCycle") && !running.get("predictActCycle").isDone()) {
+//            return;
+//        }
         for (String taskLabel : new String[]{
                 "predictPlot",
                 "predictAct",
@@ -234,8 +276,6 @@ public class App implements Serializable {
             }
         }
         this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
-            Agent agent = this.agents.getSelection().get(0);
-            Executor executor = this.executors.getSelection().get(0);
             Map<Duration, Integer> ld = PM.getDependencies().first;
             State state = UM.update(ld);
             List<PredictManager.PredictResult> predictions = PM.predict(state);
@@ -293,6 +333,18 @@ public class App implements Serializable {
     public void endTasks() {
         this.running.values().forEach(task -> task.cancel(true));
         this.running = new HashMap<>();
+    }
+
+    public void completeTasks() {
+        this.running.values().forEach(task -> {
+            try {
+                task.get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     

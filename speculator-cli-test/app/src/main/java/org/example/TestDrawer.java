@@ -13,10 +13,12 @@ public class TestDrawer extends InstructedDrawer{
     public void undraw() {}
     @Override
     public void draw(List<Point> points, Color color, Style style, String label) {
-
+        StringBuilder res = new StringBuilder();
+        res.append(String.format("%s (%s %s):", label, color.name(), style.name()));
+        points.forEach(pt -> res.append(" " + pt));
+        System.out.println(res.toString());
     }
     @Override
     public void legend(DrawMapping mapping) {
-        
     }
 }

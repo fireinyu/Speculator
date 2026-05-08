@@ -1,5 +1,6 @@
 package engine.components;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -26,17 +27,23 @@ public class DrawInstruction {
     }
 
     public static class Point {
-        private Number x;
-        private Number y;
-        public Point(Number x, Number y) {
+        private float x;
+        private float y;
+        public Point(float x, float y) {
             this.x = x;
             this.y = y;
         }
-        public Number getX() {
+        public float getX() {
             return x;
         }
-        public Number getY() {
+        public float getY() {
             return y;
+        }
+
+        @Override
+        public String toString() {
+//            return "p";
+            return String.format("(%.4g, %.4g)", x, y);
         }
     }
 
@@ -71,6 +78,12 @@ public class DrawInstruction {
         }
         public Style style(Ticker ticker, ModelPredictor model) {
             return this.pMap.get(ticker).get(model).second;
+        }
+        public Collection<Ticker> tickers() {
+            return this.fMap.keySet();
+        }
+        public Collection<ModelPredictor> models() {
+            return this.pMap.getOrDefault(pMap.keySet().stream().findAny().get(), Map.of()).keySet();
         }
     }
 

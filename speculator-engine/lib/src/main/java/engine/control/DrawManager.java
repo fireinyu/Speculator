@@ -32,6 +32,28 @@ public class DrawManager{
         this.modelMenu = modelMenu;
         this.drawer = drawer;
     }
+
+    public void draw(State state) {
+        colors.reset();
+        Map<Ticker, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>> fMap = new HashMap<>();
+        Map<Ticker, Map<ModelPredictor, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>>> pMap = new HashMap<>();
+        Map<Ticker, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>> tMap = new HashMap<>();
+        List<Ticker> tickers = tickerMenu.getSelection();
+        tickers
+            .forEach(ticker -> {
+                DrawInstruction.Color mainColor = colors.next();
+                fMap.put(ticker, Util.Pair.create(mainColor, DrawInstruction.Style.SOLID));
+                pMap.put(ticker, Map.of());
+                tMap.put(ticker, Util.Pair.create(mainColor, DrawInstruction.Style.DOTTED));
+            });
+        DrawInstruction.DrawMapping mapping = new DrawInstruction.DrawMapping(fMap, pMap, tMap);
+        this.plotterMenu.getSelection().stream()
+                .map(plotter -> plotter.plotAll(state, mapping))
+                .forEach(ls -> ls.forEach(inst -> inst.drawBy(this.drawer)
+                ));
+        this.drawer.legend(mapping);
+
+    }
     public void draw(State state, List<PredictManager.PredictResult> predictions) {
         DrawInstruction.DrawMapping mapping = this.getMapping(tickerMenu.getSelection(), modelMenu.getSelection());
         this.plotterMenu.getSelection().stream()

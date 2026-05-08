@@ -4,6 +4,9 @@
 package org.example;
 
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -170,21 +173,43 @@ public class Main{
             "pre", dispatchEditMenu(app.getPresets()),
             "agt", dispatch(Map.of(
                 "", dispatchEditMenu(app.getAgents()),
-                "t", cmd -> {
-                    agentActive = !agentActive;
-                    System.out.println("agents" + (agentActive?" active":" inactive"));
+                "on", cmd -> {
+                    agentActive = true;
+                },
+                "off", cmd -> {
+                    agentActive = false;
                 }
+
             )),
             "pull", cmd -> {
-
+                app.pullPlot(Duration.ofHours(Long.parseLong(cmd.get(0)))
+                    .plusMinutes(Long.parseLong(cmd.get(1)))
+                    .plusSeconds(Long.parseLong(cmd.get(2))));
             }
 
         ));
         commands.putAll(Map.of(
             "btst", cmd -> {
+                ZonedDateTime at = ZonedDateTime.of(
+                    Integer.parseInt(cmd.get(0)),
+                    Integer.parseInt(cmd.get(1)),
+                    Integer.parseInt(cmd.get(2)),
+                    Integer.parseInt(cmd.get(3)),
+                    0, 0, 0, ZoneId.systemDefault()
+                );
+                if (agentActive) {
+                } else {
+                    app.backtestPredict(at);
+                }
             },
             "pred", cmd -> {
-            } 
+                if (agentActive) {
+                    app.predictAct();
+                } else {
+                    app.predictPlot();
+                }
+            },
+            "force", cmd -> app.completeTasks() 
         ));
     }
 

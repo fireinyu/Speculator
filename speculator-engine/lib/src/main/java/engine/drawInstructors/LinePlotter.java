@@ -126,9 +126,4 @@ public class LinePlotter extends DrawInstructor {
 //        }
 //        return instructions;
 //    }
-
-    @Override
-    public Map<String, String> save() {
-        return Map.of();
-    }
 }

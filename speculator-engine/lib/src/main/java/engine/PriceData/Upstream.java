@@ -179,6 +179,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
     // include until
     // at least leftDependency
     protected abstract TimeSeries fetchBetweenAtLeast(Ticker ticker, Duration interval ,ZonedDateTime from, ZonedDateTime to);
+    // at least all points in the interval [from, to]
 
     private static class UpstreamLoader extends CoreStateLoader<Upstream> {
         @Override

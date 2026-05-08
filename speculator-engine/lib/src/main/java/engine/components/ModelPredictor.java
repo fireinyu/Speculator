@@ -30,8 +30,8 @@ import engine.Serialisation.StateMachine;
 
 public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
 
-    public static  ModelPredictor identity(List<Duration> intervals, List<Integer> leftDependencies) {
-        return new Identity(intervals, leftDependencies);
+    public static  ModelPredictor identity(Duration interval, int count) {
+        return new Identity(List.of(interval), List.of(count));
     }
 
     public static  ModelPredictor offset(ModelPredictor model, Duration offset) {
@@ -77,8 +77,8 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
     }
 
     public List<TimeSeries> predict(TickerState input) {
-        System.out.println("Model::predict");
-        System.out.println("Model::predict bug start");
+//        System.out.println("Model::predict");
+//        System.out.println("Model::predict bug start");
         input.getIntervals().stream()
                 .peek(System.out::println)
                 .forEach(ts -> System.out.println(input.getPriceData(ts).size()));
@@ -90,10 +90,10 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
         );
     }
     public List<TimeSeries> predict (List<? extends TimeSeries> input, Candle latest) {
-        System.out.println("Model:predict");
+//        System.out.println("Model:predict");
         List<Float> features = this.extractor.extract(input, latest.get());
         List<OffsetSeries> output = this.model.predict(features, latest.get());
-        System.out.println("Model:predict end");
+//        System.out.println("Model:predict end");
         return output.stream().map(ts -> ts.at(latest.getTime())).collect(Collectors.toList());
     }
 

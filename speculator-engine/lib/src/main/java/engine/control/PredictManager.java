@@ -67,40 +67,40 @@ public class PredictManager {
         );
     }
 
-    private Map<Upstream, ArrayList<Ticker>> groupByUpstream(Collection<? extends Ticker> tickers) {
-        HashMap<Upstream, Util.Pair<Integer, Integer>> upstreams = new HashMap<>();
-        for (Ticker ticker : tickers) {
-            List<Upstream> tickerUpstreams = ticker.preferredUpstreams();
-            for (int i = 0; i < tickerUpstreams.size() ; i++) {
-                Upstream upstream = tickerUpstreams.get(i);
-                if (upstreams.containsKey(upstream)) {
-                    upstreams.put(upstream, Util.Pair.create(upstreams.get(upstream).first + 1, upstreams.get(upstream).second - i));
-                } else {
-                    upstreams.put(upstream, Util.Pair.create(1, -i));
-                }
-            }
-        }
-        PriorityQueue<Upstream> upstreamPQ = new PriorityQueue<>(Comparator
-                .comparing(up -> upstreams.get(up).first)
-                .thenComparing(up -> upstreams.get(up).second)
-        );
-        upstreamPQ.addAll(upstreams.keySet());
-        ArrayList<Ticker> tickerList = new ArrayList<>(tickers);
-        HashMap<Upstream, ArrayList<Ticker>> groups = new HashMap<>();
-        while (!tickerList.isEmpty()) {
-            Upstream upstream = upstreamPQ.poll();
-            ArrayList<Ticker> group = new ArrayList<>();
-            for (int i = tickerList.size()-1; i > -1; i--) {
-                Ticker ticker = tickerList.get(i);
-                if (ticker.canRequestFrom(upstream)) {
-                    tickerList.remove(i);
-                    group.add(ticker);
-                }
-            }
-            groups.put(upstream, group);
-        }
-        return groups;
-    }
+//    private Map<Upstream, ArrayList<Ticker>> groupByUpstream(Collection<? extends Ticker> tickers) {
+//        HashMap<Upstream, Util.Pair<Integer, Integer>> upstreams = new HashMap<>();
+//        for (Ticker ticker : tickers) {
+//            List<Upstream> tickerUpstreams = ticker.preferredUpstreams();
+//            for (int i = 0; i < tickerUpstreams.size() ; i++) {
+//                Upstream upstream = tickerUpstreams.get(i);
+//                if (upstreams.containsKey(upstream)) {
+//                    upstreams.put(upstream, Util.Pair.create(upstreams.get(upstream).first + 1, upstreams.get(upstream).second - i));
+//                } else {
+//                    upstreams.put(upstream, Util.Pair.create(1, -i));
+//                }
+//            }
+//        }
+//        PriorityQueue<Upstream> upstreamPQ = new PriorityQueue<>(Comparator
+//                .comparing(up -> upstreams.get(up).first)
+//                .thenComparing(up -> upstreams.get(up).second)
+//        );
+//        upstreamPQ.addAll(upstreams.keySet());
+//        ArrayList<Ticker> tickerList = new ArrayList<>(tickers);
+//        HashMap<Upstream, ArrayList<Ticker>> groups = new HashMap<>();
+//        while (!tickerList.isEmpty()) {
+//            Upstream upstream = upstreamPQ.poll();
+//            ArrayList<Ticker> group = new ArrayList<>();
+//            for (int i = tickerList.size()-1; i > -1; i--) {
+//                Ticker ticker = tickerList.get(i);
+//                if (ticker.canRequestFrom(upstream)) {
+//                    tickerList.remove(i);
+//                    group.add(ticker);
+//                }
+//            }
+//            groups.put(upstream, group);
+//        }
+//        return groups;
+//    }
 //    private Map<Ticker, PredictResult> predictFromState(Collection<? extends Ticker> tickers, State state) {
 ////        System.out.println("PM::predictFS");
 //        Map<Ticker, PredictResult> results =  new HashMap<>();
@@ -175,8 +175,10 @@ public class PredictManager {
 
     public Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> getDependencies() {
         if (!this.predictors.hasBeenSeenBy(this)) {
-            this.cachedDependencies.first = this.combineLD(this.predictors.getSelection());
-            this.cachedDependencies.second = this.combineRD(this.predictors.getSelection());
+            this.cachedDependencies = Util.Pair.create(
+                    this.combineLD(this.predictors.getSelection()),
+                    this.combineRD(this.predictors.getSelection())
+            );
         }
         this.predictors.markSeen(this);
         return this.cachedDependencies;
