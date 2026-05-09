@@ -14,14 +14,14 @@ import java.util.stream.IntStream;
 
 public class TimeSeries extends Series{
 
-    public static  ZonedDateTime getAnchor(
-            List<? extends TimeSeries> seriesLs
-            ) {
-        return seriesLs.stream()
-                .map(TimeSeries::until)
-                .min(ZonedDateTime::compareTo)
-                .orElse(null);
-    }
+//    public static ZonedDateTime getAnchor(
+//            List<? extends TimeSeries> seriesLs
+//            ) {
+//        return seriesLs.stream()
+//                .map(TimeSeries::until)
+//                .min(ZonedDateTime::compareTo)
+//                .orElse(null);
+//    }
 
     public static  TimeSeries empty() {
         return new EmptyTimeSeries();

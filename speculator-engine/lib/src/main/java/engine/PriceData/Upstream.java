@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import engine.menus.Upstreams;
 import engine.Serialisation.CoreStateMachine;
@@ -43,7 +44,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
             ZonedDateTime at
     ) {
         try {
-            Map<Duration, Pair<Integer, Duration>> dependencies = new HashMap<>(); //overall dependency
+            Map<Duration, Pair<Integer, Duration>> dependencies = new ConcurrentHashMap<>(); //overall dependency
             // combine left and right dependencies
             Collection<Duration> intervals = new HashSet<>();
             intervals.addAll(leftDependencies.keySet());

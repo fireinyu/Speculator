@@ -6,11 +6,13 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Set;
 
 import engine.Util;
 
 public class TickerState {
+
     HashMap<Duration,TimeSeries> priceData;
     NAVPosition position;
 
@@ -25,6 +27,16 @@ public class TickerState {
 
     public Set<Duration> getIntervals() {
         return this.priceData.keySet();
+    }
+    public TimeSeries getPriceData() {
+        return this.priceData.keySet().stream()
+                .parallel()
+                .map(this::getPriceData)
+                .reduce(
+                        TimeSeries.empty(),
+                        TimeSeries::merge,
+                        TimeSeries::merge
+                );
     }
 
     public TimeSeries getPriceData(Duration interval) {

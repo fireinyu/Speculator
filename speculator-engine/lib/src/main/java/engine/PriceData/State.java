@@ -2,11 +2,14 @@ package engine.PriceData;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import engine.Util;
 import engine.components.Ticker;
@@ -14,39 +17,58 @@ import engine.components.Ticker;
 public class State {
 
     HashMap<Ticker, TickerState> tickerData;
+    Set<Ticker> mask;
 
     public State(
             HashMap<Ticker, TickerState> tickerData
     ) {
+        this(tickerData, tickerData.keySet());
+    }
+
+    public State(
+            HashMap<Ticker, TickerState> tickerData,
+            Collection<Ticker> mask
+    ) {
         // constructor for delta
         this.tickerData = tickerData;
+        this.mask = mask.stream().filter(tickerData::containsKey).collect(Collectors.toSet());
     }
 
     public State() {
-        this.tickerData = new HashMap<>();
+        this(new HashMap<>());
     }
-
+    public ZonedDateTime getAnchor(){
+        return mask.stream()
+                .map(this::getTickerState)
+                .map(TickerState::getAbsoluteLatest)
+                .map(Candle::getTime)
+                .min(ZonedDateTime::compareTo)
+                .orElse(null);
+    }
     public TickerState getTickerState(Ticker ticker) {
 //        System.out.println("State::getTS");
 //        System.out.println(this.tickerData.get(ticker));
-        return Optional.ofNullable(this.tickerData.get(ticker))
+        return Optional.of(ticker)
+                .filter(mask::contains)
+                .map(tickerData::get)
                 .map(TickerState::asView)
                 .orElse(null);
     }
 
     public Set<Ticker> getTickers() {
-        return tickerData.keySet();
+        return mask;
     }
 
     public State save() {
         // read-only deep copy
         HashMap<Ticker, TickerState> copyData = new HashMap<>();
         tickerData.keySet().forEach(ticker -> copyData.put(ticker, tickerData.get(ticker).save()));
-        return new State(copyData);
+        return new State(copyData, new HashSet<>(mask));
     }
 
     public State mergeWith(State s2) {
         this.tickerData.putAll(s2.tickerData);
+        this.mask.addAll(s2.mask);
         return this;
     }
 
@@ -69,6 +91,10 @@ public class State {
         public State asView() {
             // makes shallow copy view (for abstraction)
             return new State(this.tickerData);
+        }
+
+        public State asView(Collection<Ticker> mask) {
+            return new State(this.tickerData, mask);
         }
 
         public int pointsNotAfter(Ticker ticker, Duration interval, ZonedDateTime at) {

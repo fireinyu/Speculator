@@ -108,11 +108,11 @@ public class TestDrawer extends InstructedDrawer{
                 this.chart.removeSeries(seriesName);
             }
         }
-        if (this.frame != null) {
-            this.frame.dispose();
-            this.frame = null;
-        }
-        this.wrapper = null;
+        // if (this.frame != null) {
+        //     this.frame.dispose();
+        //     this.frame = null;
+        // }
+        // this.wrapper = null;
     }
 
     @Override
