@@ -26,7 +26,7 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
     public void remove(List<Integer> rm) {
         LinkedHashSet<Integer> finalSelected = new LinkedHashSet<>();
         int offset = 0;
-        for (int i = this.size()-1; i >= 0; i--) {
+        for (int i = 0; i < items.size(); i++) {
             if (rm.contains(i)) {
                 offset ++;
             } else if (selected.contains(i)) {
@@ -44,7 +44,6 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
         this.items = newItems;
         this.labels = newLabels;
         if (offset > 0) {
-            this.seenBy = new HashSet<>();
         }
         this.selected = finalSelected;
     }
@@ -61,7 +60,6 @@ public class EditMenu <T extends UserStateMachine<T>> extends Menu<T> {
         this.items = newItems;
         this.labels = newLabels;
         this.selected = new LinkedHashSet<>();
-        this.seenBy = new HashSet<>();
     }
     public void add(Map<String, String> settings) {
         T item = loaders.get(selectedLoader).load(settings);

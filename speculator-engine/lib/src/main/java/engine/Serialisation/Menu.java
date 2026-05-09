@@ -17,7 +17,6 @@ public class Menu <T extends StateMachine<T>> implements Serializable {
     ArrayList<String> labels;
     LinkedHashSet<Integer> selected;
     int limit;
-    transient Set<Object> seenBy;
 
     public Menu(List<T> items, int limit) {
         this.items = new ArrayList<>();
@@ -27,7 +26,6 @@ public class Menu <T extends StateMachine<T>> implements Serializable {
                 .map(SavedStateMachine::new)
                 .forEach(this.items::add);
         this.selected = new LinkedHashSet<>();
-        this.seenBy = new HashSet<>();
         this.limit = limit;
     }
     public Menu(List<T> items) {
@@ -53,30 +51,15 @@ public class Menu <T extends StateMachine<T>> implements Serializable {
             this.selected = new LinkedHashSet<>(new ArrayList<>(selected).subList(1, selected.size()));
         }
         selected.add(i);
-        this.seenBy = new HashSet<>();
     }
     public void unselect(int i) {
         selected.remove(i);
-        this.seenBy = new HashSet<>();
     }
     public void selectAll(Collection<Integer> indices) {
         indices.forEach(this::select);
-        this.seenBy = new HashSet<>();
     }
     public void unselectAll() {
         this.selected = new LinkedHashSet<>();
-        this.seenBy = new HashSet<>();
-    }
-    public boolean hasBeenSeenBy(Object o) {
-        return this.seenBy.contains(o);
     }
 
-    private void readObject(ObjectInputStream ois) throws IOException, ClassNotFoundException {
-        ois.defaultReadObject();
-        this.seenBy = new HashSet<>();
-    }
-
-    public void markSeen(Object o) {
-        this.seenBy.add(o);
-    }
 }

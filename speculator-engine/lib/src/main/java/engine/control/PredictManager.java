@@ -17,6 +17,7 @@ import engine.PriceData.Upstream;
 import engine.Serialisation.Menu;
 import engine.Util;
 import engine.components.ModelPredictor;
+import engine.components.Predictor;
 import engine.components.Ticker;
 
 public class PredictManager {
@@ -45,13 +46,13 @@ public class PredictManager {
 //        },0, interval.toMillis(), TimeUnit.MILLISECONDS);
 //        return clock;
 //    }
-    private Menu<ModelPredictor> predictors;
+//    private Menu<ModelPredictor> predictors;
 
-    private Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> cachedDependencies;
+//    private Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> cachedDependencies;
 
-    public PredictManager(Menu<ModelPredictor> predictors) {
-        this.predictors = predictors;
-    }
+//    public PredictManager(Menu<ModelPredictor> predictors) {
+//        this.predictors = predictors;
+//    }
 
     private Map<Duration, Integer> combineLD(List<ModelPredictor> models) {
         return PredictManager.unionCommon(models.stream()
@@ -173,22 +174,18 @@ public class PredictManager {
 //        return results;
 //    }
 
-    public Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> getDependencies() {
-        if (!this.predictors.hasBeenSeenBy(this)) {
-            this.cachedDependencies = Util.Pair.create(
-                    this.combineLD(this.predictors.getSelection()),
-                    this.combineRD(this.predictors.getSelection())
-            );
-        }
-        this.predictors.markSeen(this);
-        return this.cachedDependencies;
+    public Util.Pair<Map<Duration, Integer>, Map<Duration, Integer>> getDependencies(List<ModelPredictor> models) {
+        return Util.Pair.create(
+                combineLD(models),
+                combineRD(models)
+        );
     }
 
-    public List<PredictResult> predict(State state) {
+    public List<PredictResult> predict(State state, List<Ticker> tickers, List<ModelPredictor> models) {
         List<PredictResult> results =  new ArrayList<>();
-        for (Ticker ticker : state.getTickers()) {
+        for (Ticker ticker : tickers) {
             Map<ModelPredictor, TimeSeries> predictions = new HashMap<>();
-            for (ModelPredictor model : this.predictors.getSelection()) {
+            for (ModelPredictor model : models) {
 //                System.out.println("PM::predictFS bug start");
                 TimeSeries prediction = model.predict(state.getTickerState(ticker)).stream()
                         .reduce(

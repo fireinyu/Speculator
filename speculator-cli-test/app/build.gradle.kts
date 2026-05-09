@@ -29,6 +29,7 @@ dependencies {
     // runtimeOnly("ai.djl.android:pytorch-native")
     // runtimeOnly("ai.djl.android:onnxruntime")
     implementation("speculator.engine:lib:1.0.0")
+    implementation("org.knowm.xchart:xchart:3.8.8")
 
 }
 

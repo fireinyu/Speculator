@@ -9,5 +9,5 @@ public class Executors {
     public static List<Executor> list = List.of(
             /// CONFIG
     );
-    public static Menu<Executor> menu = new Menu<>(list);
+    public static Menu<Executor> menu = new Menu<>(list, 1);
 }

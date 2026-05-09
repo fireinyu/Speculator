@@ -24,7 +24,7 @@ public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
             DrawInstruction.DrawMapping mapping
     ) {
         List<DrawInstruction> res = new ArrayList<>();
-        for (Ticker ticker: state.getTickers()) {
+        for (Ticker ticker: mapping.tickers()) {
             TickerState tickerState = state.getTickerState(ticker);
             TimeSeries features = tickerState.getIntervals().stream()
                     .parallel()

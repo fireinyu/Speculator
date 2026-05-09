@@ -12,6 +12,7 @@ import engine.Util;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -199,7 +200,7 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
         @Override
         public Map<String, String> save() {
             Map<String, String> settings = new HashMap<>(super.save());
-            settings.put("offset", String.valueOf(this.offset.toMillis()));
+            settings.put("offset", String.valueOf(this.offset.get(ChronoUnit.SECONDS)));
             return settings;
         }
     }
@@ -216,7 +217,7 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
         public ModelPredictor load(Map<String, String> state) {
             return new OffsetModel(
                     this.loader.load(state),
-                    Duration.ofMillis(Long.parseLong(state.get("offset")))
+                    Duration.ofSeconds(Long.parseLong(state.get("offset")))
                     );
         }
 
