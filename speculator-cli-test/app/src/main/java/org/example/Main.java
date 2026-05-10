@@ -204,6 +204,7 @@ public class Main{
                     0, 0, 0, ZoneId.systemDefault()
                 );
                 if (agentActive) {
+                    app.backTestAct(at);
                 } else {
                     app.backtestPredict(at);
                 }
@@ -218,7 +219,7 @@ public class Main{
                 },
                 "loop", cmd -> {
                     if (agentActive) {
-                        app.predictActCycle();
+                        app.predictActCycle(Duration.ofSeconds(Long.parseLong(cmd.get(0))));
                     } else {
                         app.predictPlotCycle();
                     }

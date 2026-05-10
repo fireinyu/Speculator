@@ -30,21 +30,25 @@ public class UpstreamManager {
 //        this.upstreams = upstreams;
 //    }
 
-    public List<Ticker> availableTickers(List<Upstream> upstreams) {
-        Set<Upstream> ref = new HashSet<>(upstreams);
-        return Tickers.list.stream()
-                .filter(tk -> tk.preferredUpstreams().stream().anyMatch(ref::contains))
-                .collect(Collectors.toList());
-    }
+//    public List<Ticker> availableTickers(List<Upstream> upstreams) {
+//        Set<Upstream> ref = new HashSet<>(upstreams);
+//        return Tickers.list.stream()
+//                .filter(tk -> tk.preferredUpstreams().stream().anyMatch(ref::contains))
+//                .collect(Collectors.toList());
+//    }
 
-    private Map<Upstream, ArrayList<Ticker>> groupByUpstream(List<Upstream> upstreams, List<Ticker> tickers) {
+    private Map<Upstream, List<Ticker>> groupByUpstream(List<Upstream> upstreams, List<Ticker> tickers, ZonedDateTime at) {
         HashMap<Upstream, Util.Pair<Integer, Integer>> grouping = new HashMap<>();
+        List<Ticker> groupedTickers = new ArrayList<>();
         Set<Upstream> selectedUpstreams = new HashSet<>(upstreams);
         for (Ticker ticker : tickers) {
-            List<Upstream> tickerUpstreams = ticker.preferredUpstreams()
+            List<Upstream> tickerUpstreams = ticker.preferredUpstreams(at)
                     .stream()
                     .filter(selectedUpstreams::contains)
                     .collect(Collectors.toList());
+            if (!tickerUpstreams.isEmpty()) {
+                groupedTickers.add(ticker);
+            }
             for (int i = 0; i < tickerUpstreams.size() ; i++) {
                 Upstream upstream = tickerUpstreams.get(i);
                 if (grouping.containsKey(upstream)) {
@@ -59,15 +63,14 @@ public class UpstreamManager {
                 .thenComparing(up -> grouping.get(up).second)
         );
         upstreamPQ.addAll(grouping.keySet());
-        ArrayList<Ticker> tickerList = new ArrayList<>(tickers);
-        HashMap<Upstream, ArrayList<Ticker>> groups = new HashMap<>();
-        while (!tickerList.isEmpty()) {
+        HashMap<Upstream, List<Ticker>> groups = new HashMap<>();
+        while (!groupedTickers.isEmpty()) {
             Upstream upstream = upstreamPQ.poll();
-            ArrayList<Ticker> group = new ArrayList<>();
-            for (int i = tickerList.size()-1; i > -1; i--) {
-                Ticker ticker = tickerList.get(i);
+            List<Ticker> group = new ArrayList<>();
+            for (int i = groupedTickers.size()-1; i > -1; i--) {
+                Ticker ticker = groupedTickers.get(i);
                 if (ticker.canRequestFrom(upstream)) {
-                    tickerList.remove(i);
+                    groupedTickers.remove(i);
                     group.add(ticker);
                 }
             }
@@ -77,7 +80,7 @@ public class UpstreamManager {
     }
 
     public State update(Map<Duration, Integer> ld, List<Upstream> upstreams, List<Ticker> tickers) {
-        Map<Upstream, ArrayList<Ticker>> groups = this.groupByUpstream(upstreams, tickers);
+        Map<Upstream, List<Ticker>> groups = this.groupByUpstream(upstreams, tickers, ZonedDateTime.now());
         return groups.keySet().stream()
                 .parallel()
                 .map(up -> up.update(groups.get(up), ld))
@@ -89,7 +92,7 @@ public class UpstreamManager {
     }
 
     public Util.Pair<State, State> snapshot(Map<Duration, Integer> ld, Map<Duration, Integer> rd, ZonedDateTime at, List<Upstream> upstreams, List<Ticker> tickers) {
-        Map<Upstream, ArrayList<Ticker>> groups = this.groupByUpstream(upstreams, tickers);
+        Map<Upstream, List<Ticker>> groups = this.groupByUpstream(upstreams, tickers, at);
         return groups.keySet().stream()
                 .parallel()
                 .map(up -> up.snapshot(groups.get(up), ld, rd, at))

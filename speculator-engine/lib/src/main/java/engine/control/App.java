@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,8 @@ import engine.Serialisation.LocalObject;
 import engine.Serialisation.Menu;
 import engine.Util;
 import engine.components.Agent;
-import engine.components.DrawInstruction;
 import engine.components.DrawInstructor;
-import engine.components.ExecutionReporter;
+import engine.components.Reporter;
 import engine.components.Executor;
 import engine.components.InstructedDrawer;
 import engine.components.ModelPredictor;
@@ -41,7 +41,7 @@ import engine.menus.Tickers;
 import engine.menus.Upstreams;
 
 public class App implements Serializable {
-    public static App start(Path root, ExecutionReporter reporter, InstructedDrawer drawer) {
+    public static App start(Path root, Reporter reporter, InstructedDrawer drawer) {
         LocalObject<App> res = new LocalObject<>(root, "_App");
         return res.get().map(app -> {
             app.AM.init(
@@ -63,7 +63,7 @@ public class App implements Serializable {
     public EditMenu<ModelPredictor> models = ModelLoaders.menu;
     public EditMenu<Agent> agents = Agents.menu;
     private PresetMenu presets;
-    public ExecutionReporter reporter;
+    public Reporter reporter;
     public InstructedDrawer drawer;
     private AuthManager AM;
     private transient PredictManager PM;
@@ -76,7 +76,7 @@ public class App implements Serializable {
 
 
     /// meta
-    private App(Path root, ExecutionReporter reporter, InstructedDrawer drawer) {
+    private App(Path root, Reporter reporter, InstructedDrawer drawer) {
         this.root = root;
         this.reporter = reporter;
         this.drawer = drawer;
@@ -103,7 +103,7 @@ public class App implements Serializable {
         this.UM = new UpstreamManager();
         this.PM = new PredictManager();
         this.DM = new DrawManager(drawer);
-        this.simulator = new Simulator();
+//        this.simulator = new Simulator();
     }
 
     public void save() {
@@ -220,7 +220,7 @@ public class App implements Serializable {
         running.put("predictPlotCycle", task);
     }
 
-    public void predictActCycle() {
+    public void predictActCycle(Duration step) {
 //        if (running.containsKey("predictActCycle") && !running.get("predictActCycle").isDone()) {
 //            return;
 //        }
@@ -236,7 +236,7 @@ public class App implements Serializable {
             }
         }
 
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, 1000, TimeUnit.MILLISECONDS);
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, step.toMillis(), TimeUnit.MILLISECONDS);
         running.put("predictActCycle", task);
     }
     public void predictPlot() {
@@ -258,7 +258,7 @@ public class App implements Serializable {
         this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
             Map<Duration, Integer> ld = PM.getDependencies(selModels).first;
             State state = UM.update(ld, selUpstreams, selTickers);
-            List<PredictManager.PredictResult> predictions = PM.predict(state, selTickers, selModels);
+            List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
             DM.drawPredict(state, predictions, selPlotters);
         }));
     }
@@ -284,7 +284,7 @@ public class App implements Serializable {
         this.running.put("predictAct", CompletableFuture.runAsync(() -> {
             Map<Duration, Integer> ld = PM.getDependencies(selModels).first;
             State state = UM.update(ld, selUpstreams, selTickers);
-            List<PredictManager.PredictResult> predictions = PM.predict(state, selTickers, selModels);
+            List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
             DM.drawPredict(state, predictions, selPlotters);
             selAgents.stream()
                     .map(agent -> agent.suggest(state, predictions))
@@ -309,14 +309,79 @@ public class App implements Serializable {
         this.running.put("backtestPredict", CompletableFuture.runAsync(() -> {
             Util.Pair<Map<Duration,Integer>,Map<Duration,Integer>> deps = PM.getDependencies(selModels);
             Util.Pair<State, State> states = UM.snapshot(deps.first, deps.second, at, selUpstreams, selTickers);
-            List<PredictManager.PredictResult> results = PM.predict(states.first, selTickers, selModels);
+            List<PredictManager.PredictResult> results = PM.predict(states.first, states.first.getTickers(), selModels);
             DM.drawBacktest(states.first, states.second, results, selPlotters);
         }));
 
     }
+    public void backTestAct(ZonedDateTime at) {
 
-    public void backtestPlotCycle(ZonedDateTime from, Duration simInterval, Duration actualInterval) {
-
+    }
+    public void simulate(ZonedDateTime from, ZonedDateTime to, Duration step) {
+        List<Ticker> selTickers = tickers.getSelection();
+        List<Upstream> selUpstreams = upstreams.getSelection();
+        List<ModelPredictor> selModels = models.getSelection();
+        List<DrawInstructor> selPlotters = plotters.getSelection();
+        List<Agent> selAgents = agents.getSelection();
+        for (String taskLabel : new String[]{
+//                "backtestPredict",
+//                "backtestAct"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
+        }
+        running.put("simulate", CompletableFuture.runAsync(() -> {
+            Simulator sim = new Simulator(from, step);
+            List<Simulator.SimResult> results = new ArrayList<>();
+            while (!sim.step().isAfter(to)) {
+                Util.Pair<Map<Duration,Integer>,Map<Duration,Integer>> deps = PM.getDependencies(selModels);
+                State state = UM.snapshot(deps.first,Map.of(),sim.step(), selUpstreams, selTickers).first;
+                List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
+                Map<Ticker, Position> action = selAgents.stream()
+                        .map(agent -> agent.suggest(state, predictions))
+                        .parallel()
+                        .reduce(new HashMap<>(),
+                                (m1, m2) -> {m1.putAll(m2); return m1;},
+                                (m1, m2) -> {m1.putAll(m2); return m1;}
+                        );
+                results.add(sim.act(state, action));
+            }
+            reporter.report(results);
+        }));
+    }
+    public void simulateCycle(Duration step) {
+        List<Ticker> selTickers = tickers.getSelection();
+        List<Upstream> selUpstreams = upstreams.getSelection();
+        List<ModelPredictor> selModels = models.getSelection();
+        List<DrawInstructor> selPlotters = plotters.getSelection();
+        List<Agent> selAgents = agents.getSelection();
+        for (String taskLabel : new String[]{
+//                "backtestPredict",
+//                "backtestAct"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
+        }
+        Simulator sim = new Simulator.nowSimulator();
+        List<Simulator.SimResult> results = new ArrayList<>();
+        running.put("simulateCycle", cycleService.scheduleWithFixedDelay(() -> {
+            Util.Pair<Map<Duration,Integer>,Map<Duration,Integer>> deps = PM.getDependencies(selModels);
+            State state = UM.snapshot(deps.first,Map.of(),sim.step(), selUpstreams, selTickers).first;
+            List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
+            Map<Ticker, Position> action = selAgents.stream()
+                    .map(agent -> agent.suggest(state, predictions))
+                    .parallel()
+                    .reduce(new HashMap<>(),
+                            (m1, m2) -> {m1.putAll(m2); return m1;},
+                            (m1, m2) -> {m1.putAll(m2); return m1;}
+                    );
+            results.add(sim.act(state, action));
+            reporter.report(results);
+        }, 0, step.toMillis(), TimeUnit.MILLISECONDS));
     }
 
     public void endTasks() {

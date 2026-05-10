@@ -2,10 +2,12 @@ package engine.PriceData;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,7 +33,7 @@ public class State {
     ) {
         // constructor for delta
         this.tickerData = tickerData;
-        this.mask = mask.stream().filter(tickerData::containsKey).collect(Collectors.toSet());
+        this.mask = mask.stream().filter(tickerData::containsKey).collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     public State() {
@@ -55,8 +57,8 @@ public class State {
                 .orElse(null);
     }
 
-    public Set<Ticker> getTickers() {
-        return mask;
+    public List<Ticker> getTickers() {
+        return new ArrayList<>(mask);
     }
 
     public State save() {

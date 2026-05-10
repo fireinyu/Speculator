@@ -13,7 +13,7 @@ public abstract class Agent extends UserStateMachine<Agent> {
     public Agent(Map<String, String> settings) {
         super(settings);
     }
-    public abstract List<Position> suggest(State state, Collection<? extends PredictManager.PredictResult> predictions);
+    public abstract Map<Ticker, Position> suggest(State state, Collection<? extends PredictManager.PredictResult> predictions);
 
     // returns delta positions (in order of recommendation)
 }

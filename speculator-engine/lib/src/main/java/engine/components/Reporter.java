@@ -1,0 +1,12 @@
+package engine.components;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+
+import engine.PriceData.Position;
+
+public abstract class Reporter implements Serializable {
+    public abstract void report(Map<Ticker, Position> actions, Executor.ExecutionResult result);
+    public abstract void report(List<Simulator.SimResult> result);
+}

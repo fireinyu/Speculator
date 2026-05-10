@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import engine.PriceData.Upstream;
 import kotlin.jvm.functions.Function3;
 
 public class Util {
@@ -44,6 +45,7 @@ public class Util {
             this.at = 0;
         }
     }
+
 
     @SuppressWarnings("unchecked")
     public static <S extends Number, T extends Number> T convertNumber (S input, T templateVal) {

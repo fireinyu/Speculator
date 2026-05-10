@@ -1,11 +1,10 @@
 package engine.components;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import engine.PriceData.Position;
 import engine.Serialisation.CoreStateMachine;
-import engine.Serialisation.StateMachine;
 import engine.menus.Executors;
 
 public abstract class Executor extends CoreStateMachine<Executor> {
@@ -20,11 +19,11 @@ public abstract class Executor extends CoreStateMachine<Executor> {
         return new ExecutorLoader();
     }
 
-    public Executor(int index, ExecutionReporter reporter) {
+    public Executor(int index, Reporter reporter) {
         super(index);
     }
 
-    public abstract ExecutionResult execute(List<Position> actions);
+    public abstract ExecutionResult execute(Map<Ticker, Position> actions);
 
     private static class ExecutorLoader extends CoreStateLoader<Executor> {
         @Override
