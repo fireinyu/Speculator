@@ -64,7 +64,7 @@ public class TimeSeries extends Series{
             slicedTimes = new ArrayList<>(slicedTimes);
         }
         Series res = super.slice(from, to);
-        System.out.println("slice result: " + from + to + res.size() );
+        // System.out.println("slice result: " + from + to + res.size() );
         return new TimeSeries(res, slicedTimes);
     }
 
@@ -118,13 +118,13 @@ public class TimeSeries extends Series{
     }
 
     public TimeSeries extendRight (TimeSeries src){
-        System.out.println("TSeries::extendRight");
-        System.out.println("TSeries::extendRight bug start");
+        // System.out.println("TSeries::extendRight");
+        // System.out.println("TSeries::extendRight bug start");
         if (src instanceof EmptyTimeSeries) {
             return this;
         }
         assert src.from().isAfter(this.until());
-        System.out.println("TSeries::extendRight bug end");
+        // System.out.println("TSeries::extendRight bug end");
         if (!super.original) {
             this.times =  new ArrayList<>(this.times);
         }
@@ -135,7 +135,7 @@ public class TimeSeries extends Series{
                 this.times
         );
         this.times = this.times.subList(0, size);
-        System.out.println("TSeries::extendRight end");
+        // System.out.println("TSeries::extendRight end");
         return res;
     }
 
@@ -217,8 +217,8 @@ public class TimeSeries extends Series{
     }
 
     public Candle getLast() {
-        System.out.println("TimeSeries::getLast");
-        System.out.println(this.size());
+        // System.out.println("TimeSeries::getLast");
+        // System.out.println(this.size());
         return this.get(this.size()-1);
     }
 

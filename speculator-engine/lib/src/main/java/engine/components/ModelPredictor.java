@@ -80,9 +80,9 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
     public List<TimeSeries> predict(TickerState input) {
 //        System.out.println("Model::predict");
 //        System.out.println("Model::predict bug start");
-        input.getIntervals().stream()
-                .peek(System.out::println)
-                .forEach(ts -> System.out.println(input.getPriceData(ts).size()));
+//        input.getIntervals().stream()
+//                .peek(System.out::println)
+//                .forEach(ts -> System.out.println(input.getPriceData(ts).size()));
         return this.predict(this.dependencies.first.keySet().stream()
                 .map(dep -> Util.Pair.create(dep, input.getPriceData(dep)))
                 .map(pair -> pair.second.slice(pair.second.size() - this.dependencies.first.get(pair.first), pair.second.size()))
@@ -179,7 +179,7 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
                     anchorIndices.stream(),
                     TimeSeries::get
             ).max(Comparator.comparing(Candle::getTime)).get();
-            System.out.println(anchor);
+            // System.out.println(anchor);
             List<TimeSeries> offsetInput = new ArrayList<>();
             int inputIdx = 0;
             for (Duration interval: model.dependencies.first.keySet()) {

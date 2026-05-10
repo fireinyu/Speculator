@@ -151,35 +151,7 @@ public class App implements Serializable {
     public EditMenu<Agent> getAgents() {
         return agents;
     }
-//    public List<String> getPresets() {
-//        return this.presets.stream()
-//                .map(Objects::toString)
-//                .collect(Collectors.toList());
-//    }
-//    public void savePreset(String name) {
-//        for (int i = 0 ;i < presets.size(); i++) {
-//            if (presets.get(i).toString().equals(name)) {
-//                presets.set(i, new Preset(name, this));
-//                return;
-//            }
-//        }
-//        this.presets.add(new Preset(name, this));
-//    }
-//    public void removePreset(String name) {
-//        for (int i = presets.size()-1 ;i > -1; i--) {
-//            if (presets.get(i).toString().equals(name)) {
-//                presets.remove(i);
-//                return;
-//            }
-//        }
-//    }
 
-//    public void usePreset(String name) {
-//        this.presets.stream()
-//                .filter(preset -> preset.toString().equals(name))
-//                .findAny()
-//                .ifPresent(preset -> preset.apply(this));
-//    }
     /// info
 //    public List<Ticker> availableTickers() {
 //        return UM.availableTickers();
@@ -191,10 +163,10 @@ public class App implements Serializable {
         List<Upstream> selUpstreams = upstreams.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -213,10 +185,10 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -224,7 +196,7 @@ public class App implements Serializable {
             }
         }
 
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(() -> pullPlot(interval), 300, 300, TimeUnit.MILLISECONDS);
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(() -> pullPlot(interval), 0, 1000, TimeUnit.MILLISECONDS);
         running.put("predictPlotCycle", task);
     }
 
@@ -233,10 +205,10 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -244,7 +216,7 @@ public class App implements Serializable {
             }
         }
 
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictPlot, 300, 300, TimeUnit.MILLISECONDS);
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictPlot, 0, 1000, TimeUnit.MILLISECONDS);
         running.put("predictPlotCycle", task);
     }
 
@@ -253,10 +225,10 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -264,7 +236,7 @@ public class App implements Serializable {
             }
         }
 
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 300, 300, TimeUnit.MILLISECONDS);
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, 1000, TimeUnit.MILLISECONDS);
         running.put("predictActCycle", task);
     }
     public void predictPlot() {
@@ -273,10 +245,10 @@ public class App implements Serializable {
         List<ModelPredictor> selModels = models.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -299,10 +271,10 @@ public class App implements Serializable {
         List<Agent> selAgents = agents.getSelection();
         Executor selExecutor = executors.getSelection().get(0);
         for (String taskLabel : new String[]{
-                "predictPlot",
-                "predictAct",
-                "predictPlotCycle",
-                "predictActCycle"
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);
@@ -326,8 +298,8 @@ public class App implements Serializable {
         List<ModelPredictor> selModels = models.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
-                "backtestPredict",
-                "backtestAct"
+//                "backtestPredict",
+//                "backtestAct"
         }) {
             if (running.containsKey(taskLabel)) {
                 running.get(taskLabel).cancel(true);

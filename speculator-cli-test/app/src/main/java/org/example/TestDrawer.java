@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.awt.BasicStroke;
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
 
 import engine.components.InstructedDrawer;
 import engine.components.DrawInstruction.Color;
@@ -20,6 +21,7 @@ public class TestDrawer extends InstructedDrawer{
     private transient XYChart chart;
     private transient SwingWrapper<XYChart> wrapper;
     private transient JFrame frame;
+    private transient boolean frameOpening;
     private int lineIdx;
 
     /// Point API:
@@ -100,13 +102,57 @@ public class TestDrawer extends InstructedDrawer{
         }
     }
 
+    private static void runOnEdtAndWait(Runnable action) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            action.run();
+            return;
+        }
+        try {
+            SwingUtilities.invokeAndWait(action);
+        } catch (Exception exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    private void ensureChartShown(XYChart chart) {
+        if (this.wrapper == null) {
+            this.wrapper = new SwingWrapper<>(chart);
+        }
+        if (this.frame != null && this.frame.isDisplayable()) {
+            this.wrapper.repaintChart();
+            showChart();
+            return;
+        }
+        if (this.frameOpening) {
+            return;
+        }
+        this.frameOpening = true;
+        Runnable openFrame = () -> {
+            try {
+                this.frame = this.wrapper.displayChart();
+                showChart();
+            } finally {
+                this.frameOpening = false;
+            }
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            Thread thread = new Thread(openFrame, "speculator-chart-open");
+            thread.setDaemon(true);
+            thread.start();
+        } else {
+            openFrame.run();
+        }
+    }
+
     @Override
     public void undraw() {
         lineIdx = 0;
         if (this.chart != null) {
-            for (String seriesName : new ArrayList<>(this.chart.getSeriesMap().keySet())) {
-                this.chart.removeSeries(seriesName);
-            }
+            runOnEdtAndWait(() -> {
+                for (String seriesName : new ArrayList<>(this.chart.getSeriesMap().keySet())) {
+                    this.chart.removeSeries(seriesName);
+                }
+            });
         }
         // if (this.frame != null) {
         //     this.frame.dispose();
@@ -120,7 +166,7 @@ public class TestDrawer extends InstructedDrawer{
         if (points == null || points.isEmpty() || style == Style.NONE || color == Color.NONE) {
             return;
         }
-        label = label + lineIdx++;
+        final String seriesLabel = label + lineIdx++;
         XYChart chart = chart();
 
         List<Double> xData = new ArrayList<>(points.size());
@@ -130,21 +176,15 @@ public class TestDrawer extends InstructedDrawer{
             yData.add((double) point.getY());
         }
 
-        XYSeries series = chart.addSeries(label, xData, yData);
-        series.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
-        series.setMarker(SeriesMarkers.NONE);
-        series.setLineColor(toAwtColor(color));
-        series.setLineStyle(toStroke(style));
+        runOnEdtAndWait(() -> {
+            XYSeries series = chart.addSeries(seriesLabel, xData, yData);
+            series.setXYSeriesRenderStyle(XYSeries.XYSeriesRenderStyle.Line);
+            series.setMarker(SeriesMarkers.NONE);
+            series.setLineColor(toAwtColor(color));
+            series.setLineStyle(toStroke(style));
+        });
 
-        if (this.wrapper == null) {
-            this.wrapper = new SwingWrapper<>(chart);
-            this.frame = this.wrapper.displayChart();
-        } else if (this.frame == null || !this.frame.isDisplayable()) {
-            this.frame = this.wrapper.displayChart();
-        } else {
-            this.wrapper.repaintChart();
-        }
-        showChart();
+        ensureChartShown(chart);
     }
 
     @Override

@@ -165,7 +165,7 @@ public class TickerState {
 
         void cleanUp() {
             Hashtable<Duration, Integer> nonHits = new Hashtable<>();
-            for (Duration interval : this.priceData.keySet()) {
+            for (Duration interval : new HashSet<>(this.priceData.keySet())) {
                 if (this.hits.contains(interval)) {
                     nonHits.put(interval, this.nonHitsBeforeClear);
                 } else {

@@ -31,17 +31,6 @@ public class DrawManager{
 
     public void draw(State state, List<Ticker> tickers, List<DrawInstructor> plotters) {
         this.drawer.undraw();
-//        Map<Ticker, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>> fMap = new HashMap<>();
-//        Map<Ticker, Map<ModelPredictor, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>>> pMap = new HashMap<>();
-//        Map<Ticker, Util.Pair<DrawInstruction.Color, DrawInstruction.Style>> tMap = new HashMap<>();
-////        List<Ticker> tickers = tickerMenu.getSelection();
-//        tickers
-//            .forEach(ticker -> {
-//                DrawInstruction.Color mainColor = colors.next();
-//                fMap.put(ticker, Util.Pair.create(mainColor, DrawInstruction.Style.SOLID));
-//                pMap.put(ticker, Map.of());
-//                tMap.put(ticker, Util.Pair.create(mainColor, DrawInstruction.Style.DOTTED));
-//            });
         DrawInstruction.DrawMapping mapping = getMapping(tickers, List.of());
         plotters.stream()
                 .map(plotter -> plotter.plotAll(state, mapping))
@@ -103,67 +92,4 @@ public class DrawManager{
         return new DrawInstruction.DrawMapping(fMap, pMap, tMap);
     }
 
-/// /// TODO
-//        List<Ticker> tickers = results.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList());
-//        List<TimeSeries> featuresLs = results.stream().map(PredictManager.PredictResult::getFeatures).collect(Collectors.toList());
-//
-//        List<TimeSeries> targetsLs = results.stream().map(PredictManager.BacktestResult::getTargets).collect(Collectors.toList());
-//
-//        ZonedDateTime anchor = TimeSeries.getAnchor(featuresLs);
-//        ArrayList<DrawInstruction> instructions = new ArrayList<>();
-//        if (tickers.size() == 1) {
-//            List<TimeSeries> predsLs = new ArrayList<>(results.get(0).getPrediction().values());
-//            double anchorPrice = featuresLs.get(0).priceAt(anchor).doubleValue();
-//            featuresLs.stream()
-//                    .map(this::makeUnformattedFeatures)
-//                    .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
-//                    .forEach(line -> instructions.add(new DrawInstruction(line, lineColors.get(0), DrawInstruction.Style.SOLID, "features")));
-//            Iterator<DrawInstruction.Color> colorsP = LinePlotter.lineColors.iterator();
-//            predsLs.stream()
-//                    .map(this::makeUnformattedPrediction)
-//                    .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
-//                    .forEach(line -> instructions.add(new DrawInstruction(line, colorsP.next(), DrawInstruction.Style.DASHED, "prediction")));
-//            targetsLs.stream()
-//                    .map(this::makeUnformattedTargets)
-//                    .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
-//                    .forEach(line -> instructions.add(new DrawInstruction(line, lineColors.get(0), DrawInstruction.Style.DOTTED, "targets")));
-//        } else {
-//            List<List<TimeSeries>> allPredLs = results.stream()
-//                    .map(PredictManager.PredictResult::getPrediction)
-//                    .map(Map::values)
-//                    .map(ArrayList::new)
-//                    .collect(Collectors.toList());
-//            System.out.println("end");
-//
-//            for (int i = 0; i < tickers.size(); i++) {
-//                DrawInstruction.Color color = lineColors.get(i);
-//                TimeSeries f = featuresLs.get(i);
-//                List<TimeSeries> predsLs = allPredLs.get(i);
-//                double anchorPrice = f.priceAt(anchor).doubleValue();
-//                instructions.add(new DrawInstruction(
-//                        this.makeUnformattedFeatures(f).stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()),
-//                        color,
-//                        DrawInstruction.Style.SOLID,
-//                        "features"
-//
-//                ));
-//
-//                predsLs.stream()
-//                        .map(this::makeUnformattedPrediction)
-//                        .map(line -> line.stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()))
-//                        .forEach(line -> instructions.add(new DrawInstruction(line, color, DrawInstruction.Style.DASHED, "prediction")));
-//
-//                if (i < targetsLs.size()) {
-//                    TimeSeries t =  targetsLs.get(i);
-//                    instructions.add(new DrawInstruction(
-//                            this.makeUnformattedTargets(t).stream().map(point -> new DrawInstruction.Point(point.getX().doubleValue() - anchor.toEpochSecond(), point.getY().doubleValue()/ anchorPrice)).collect(Collectors.toList()),
-//                            color,
-//                            DrawInstruction.Style.DOTTED,
-//                            "targets"
-//
-//                    ));
-//                }
-//            }
-//        }
-//        return instructions;
 }

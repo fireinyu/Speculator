@@ -181,11 +181,17 @@ public class Main{
                 }
 
             )),
-            "pull", cmd -> {
+            "pull", dispatch(Map.of(
+                "", cmd -> {
                 app.pullPlot(Duration.ofHours(Long.parseLong(cmd.get(0)))
                     .plusMinutes(Long.parseLong(cmd.get(1)))
                     .plusSeconds(Long.parseLong(cmd.get(2))));
-            }
+                },
+                "loop", cmd -> app.pullPlotCycle(Duration.ofHours(Long.parseLong(cmd.get(0)))
+                    .plusMinutes(Long.parseLong(cmd.get(1)))
+                    .plusSeconds(Long.parseLong(cmd.get(2)))
+                )
+            )) 
 
         ));
         commands.putAll(Map.of(
@@ -202,14 +208,24 @@ public class Main{
                     app.backtestPredict(at);
                 }
             },
-            "pred", cmd -> {
-                if (agentActive) {
-                    app.predictAct();
-                } else {
-                    app.predictPlot();
+            "pred", dispatch(Map.of(
+                "", cmd -> {
+                    if (agentActive) {
+                        app.predictAct();
+                    } else {
+                        app.predictPlot();
+                    }
+                },
+                "loop", cmd -> {
+                    if (agentActive) {
+                        app.predictActCycle();
+                    } else {
+                        app.predictPlotCycle();
+                    }
                 }
-            },
-            "force", cmd -> app.completeTasks() 
+            )) ,
+            "_f", cmd -> app.completeTasks() ,
+            "stop", cmd -> app.endTasks()
         ));
     }
 

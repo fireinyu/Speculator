@@ -170,7 +170,7 @@ public class State {
 
         public void cleanUp() {
             Hashtable<Ticker, Integer> nonHits = new Hashtable<>();
-            for (Ticker ticker : this.tickerData.keySet()) {
+            for (Ticker ticker : new HashSet<>(this.tickerData.keySet())) {
                 if (this.hits.contains(ticker)) {
                     nonHits.put(ticker, this.nonHitsBeforeClear);
                     TickerState.MutableTickerState ts = this.tickerData.get(ticker).asMutable();
