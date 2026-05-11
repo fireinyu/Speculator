@@ -30,9 +30,7 @@ public class Simulator {
         for (Ticker ticker : actions.keySet()) {
             Position position = actions.get(ticker);
             float price = state.getTickerState(ticker).getAbsoluteLatest().get();
-            double units = last.getOrDefault(ticker, NAVPosition.makeEmpty()).getUnits() + position.getUnits();
-            double cost = last.getOrDefault(ticker, NAVPosition.makeEmpty()).getTotalCost() + position.getUnits()*price;
-            last.put(ticker, new NAVPosition(units, cost/units));
+            last.put(ticker, last.getOrDefault(ticker, NAVPosition.makeEmpty()).apply(NAVPosition.from(position, price)));
         }
         return new SimResult(at, last, state);
     }

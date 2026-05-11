@@ -22,6 +22,6 @@ public class DoNothing extends Executor {
 
     @Override
     public ExecutionResult executeMarketOrder(Ticker ticker, Position action) {
-        return new ExecutionResult(ticker, CompletionStatus.SUCCESS, new NAVPosition(action.getUnits(), Double.NaN));
+        return new ExecutionResult(ticker, CompletionStatus.SUCCESS, NAVPosition.from(action, Double.NaN));
     }
 }

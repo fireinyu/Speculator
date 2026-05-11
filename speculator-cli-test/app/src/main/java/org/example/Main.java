@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.management.RuntimeErrorException;
 
 import org.apache.commons.codec.StringDecoder;
+import org.example.startupScripts.TestScript1;
 
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.Menu;
@@ -291,7 +292,7 @@ public class Main{
     }
 
     public static void main(String[] args) {
-        Main app = new Main(Path.of(".live"));
+        Main app = new Main(Path.of(".live"), true, new TestScript1());
         if (args.length > 0) {
             try {
                 Files.readAllLines(Paths.get(args[0])).stream()

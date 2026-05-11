@@ -6,32 +6,38 @@ public class NAVPosition extends Position{
     public static NAVPosition makeEmpty() {
         return new NAVPosition(0, 0);
     }
+
+    public static NAVPosition from(Position position, double price) {
+        return new NAVPosition(position.getUnits(), price * position.getUnits());
+    }
     public static NAVPosition makeLong(double units, double price){
-        return new NAVPosition(units, price);
+        return new NAVPosition(units, price*units);
     }
     public static NAVPosition makeShort(double units, double price) {
-        return new NAVPosition(-units, price);
+        return new NAVPosition(-units, -price*units);
     }
-    private double avgCostPerUnit;
+    private double cost;
 
-    public NAVPosition(double units, double avgCostPerUnit) {
+    private NAVPosition(double units, double cost) {
         super(units);
-        this.avgCostPerUnit = avgCostPerUnit;
+        this.cost = cost;
     }
 
     public double getTotalCost () {
-        Double rawCost = this.avgCostPerUnit * super.getUnits();
-        return Util.convertNumber(rawCost, this.avgCostPerUnit);
+        return cost;
     }
 
     public double getTotalValue (double price) {
-        Double rawValue = price * super.getUnits();
-        return Util.convertNumber(rawValue, this.avgCostPerUnit);
+        return price * getUnits();
+
     }
 
     public double getNetValue (double price) {
-        Double rawValue = this.getTotalValue(price) - this.getTotalCost();
-        return Util.convertNumber(rawValue, this.avgCostPerUnit);
+        return price * getUnits() - cost;
+    }
+
+    public NAVPosition apply(NAVPosition delta) {
+        return new NAVPosition(getUnits() + delta.getUnits(), cost + delta.cost);
     }
 
 }
