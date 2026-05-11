@@ -1,0 +1,29 @@
+package org.example.startupScripts;
+
+import java.util.List;
+import java.util.stream.Stream;
+
+import org.example.Main;
+import org.example.StartupScript;
+
+import engine.control.App;
+
+public class TestScript1 implements StartupScript{
+    @Override
+    public void onStartUp(Main app) {
+        Stream.of(
+            "agt on",
+            "tic sel 0 1",
+            "ups sel 1",
+            "plt sel 1",
+            "exe sel 0",
+            "mod base sel 0",
+            "mod conf 0 0",
+            "mod conf 1 0",
+            "mod mk",
+            "mod sel 0"
+            
+        ).forEach(app::run); 
+    }
+    
+}

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import engine.menus.Executors;
 import engine.menus.Tickers;
 import engine.PriceData.Upstream;
 import engine.Serialisation.CoreStateMachine;
@@ -32,8 +33,8 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
 //        return new MapTicker(name, upstreams, aliases, index);
 //    }
 //
-    public static Ticker of(String name, List<TickerSource> sources, int index) {
-        return new MapTicker(name, sources, index);
+    public static Ticker of(String name, List<TickerSource> sources, List<TickerOutput> outputs, int index) {
+        return new MapTicker(name, sources, outputs, index);
     }
 
 
@@ -51,6 +52,8 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
     public abstract String getAliasFor(Upstream upstream);
     public abstract List<Upstream> preferredUpstreams(ZonedDateTime at);
     public abstract boolean canRequestFrom(Upstream upstream);
+    public abstract String getAliasFor(Executor executor);
+    public abstract List<Executor> preferredExecutors(ZonedDateTime at);
 
     @Override
     public String toString() {
@@ -74,12 +77,14 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
     private static class MapTicker extends Ticker{
 
         private LinkedHashMap<Upstream, TickerSource> sources;
+        private LinkedHashMap<Executor, TickerOutput> outputs;
 
-        private MapTicker(String name, List<TickerSource> sources, int index) {
+        private MapTicker(String name, List<TickerSource> sources, List<TickerOutput> outputs, int index) {
             super(name, index);
             this.sources = new LinkedHashMap<>();
             sources.forEach(src -> this.sources.put(src.getUpstream(), src));
-
+            this.outputs = new LinkedHashMap<>();
+            outputs.forEach(src -> this.outputs.put(src.getExecutor(), src));
         }
 
         @Override
@@ -111,6 +116,19 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
         }
 
         @Override
+        public String getAliasFor(Executor executor) {
+            return outputs.get(executor).getAlias();
+        }
+
+        @Override
+        public List<Executor> preferredExecutors(ZonedDateTime at) {
+            return this.outputs.values().stream()
+                    .filter(src -> src.getTradingSchedule().isTrading(at))
+                    .map(TickerOutput::getExecutor)
+                    .collect(Collectors.toList());
+        }
+
+        @Override
         public CoreStateLoader<Ticker> getLoader() {
             return new TickerLoader();
         }
@@ -120,6 +138,30 @@ public abstract class Ticker extends CoreStateMachine<Ticker> {
             public List<Ticker> getSource() {
                 return Tickers.list;
             }
+        }
+    }
+
+    public static class TickerOutput {
+        private Executor executor;
+        private String alias;
+        private TradingSchedule tradingSchedule;
+
+        public TickerOutput(String alias, TradingSchedule tradingSchedule, Executor executor) {
+            this.alias = alias;
+            this.executor = executor;
+            this.tradingSchedule = tradingSchedule;
+        }
+
+        public String getAlias() {
+            return alias;
+        }
+
+        public Executor getExecutor() {
+            return executor;
+        }
+
+        public TradingSchedule getTradingSchedule() {
+            return tradingSchedule;
         }
     }
 

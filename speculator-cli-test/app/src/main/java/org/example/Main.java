@@ -3,7 +3,14 @@
  */
 package org.example;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -20,6 +27,10 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+
+import javax.management.RuntimeErrorException;
+
+import org.apache.commons.codec.StringDecoder;
 
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.Menu;
@@ -147,8 +158,20 @@ public class Main{
         ));
     }
 
-    public Main(Path root) {
-        app = App.start(root, new TestReporter(), new TestDrawer());
+    public Main(Path root, boolean reset) {
+        if (reset) {
+            app = App.startNew(root, new TestReporter(), new TestDrawer());
+        } else {
+            app = App.start(root, new TestReporter(), new TestDrawer());
+            
+        }
+        initCommands();
+    }
+    public Main(Path root, boolean reset, StartupScript script) {
+        this(root, reset);
+        script.onStartUp(this);
+    }
+    private void initCommands() {
         commands = new HashMap<>();
         commands.putAll(Map.of(
             "exit", args -> {
@@ -225,6 +248,21 @@ public class Main{
                     }
                 }
             )) ,
+            "sim", dispatch(Map.of(
+                "", cmd -> {
+                    ZonedDateTime start = ZonedDateTime.now().minus(Duration.ofHours(Long.parseLong(cmd.get(0))));
+                    ZonedDateTime end = ZonedDateTime.now().minus(Duration.ofHours(Long.parseLong(cmd.get(1))));
+                    Duration step = Duration.ofSeconds(Long.parseLong(cmd.get(0)));
+                    app.simulate(
+                        start,
+                        end,
+                        step
+                    );
+                },
+                "loop", cmd -> {
+                    app.simulateCycle(Duration.ofSeconds(Long.parseLong(cmd.get(0))));
+                }
+            )),
             "_f", cmd -> app.completeTasks() ,
             "stop", cmd -> app.endTasks()
         ));
@@ -248,8 +286,22 @@ public class Main{
         scanner.close();
     }
 
+    public void run(String command) {
+        dispatch(commands).accept(parseCommand(command));
+    }
+
     public static void main(String[] args) {
         Main app = new Main(Path.of(".live"));
+        if (args.length > 0) {
+            try {
+                Files.readAllLines(Paths.get(args[0])).stream()
+                    .map(Main::parseCommand)
+                    .forEach(cmd -> dispatch(app.commands).accept(cmd));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         System.out.println("--- Speculator CLI (test) ---");
         app.mainLoop();
     }

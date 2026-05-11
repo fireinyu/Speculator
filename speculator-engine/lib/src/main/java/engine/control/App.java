@@ -8,8 +8,10 @@ import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -54,6 +56,10 @@ public class App implements Serializable {
             app.root = root;
             return app;
         }).orElseGet(() -> new App(root, reporter, drawer));
+    }
+
+    public static App startNew(Path root, Reporter reporter, InstructedDrawer drawer) {
+        return new App(root, reporter, drawer);
     }
 
     public Menu<Ticker> tickers = Tickers.menu;
@@ -200,45 +206,7 @@ public class App implements Serializable {
         running.put("predictPlotCycle", task);
     }
 
-    public void predictPlotCycle() {
-//        if (running.containsKey("predictPlotCycle") && !running.get("predictPlotCycle").isDone()) {
-//            return;
-//        }
-        for (String taskLabel : new String[]{
-//                "predictPlot",
-//                "predictAct",
-//                "predictPlotCycle",
-//                "predictActCycle"
-        }) {
-            if (running.containsKey(taskLabel)) {
-                running.get(taskLabel).cancel(true);
-                running.remove(taskLabel);
-            }
-        }
 
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictPlot, 0, 1000, TimeUnit.MILLISECONDS);
-        running.put("predictPlotCycle", task);
-    }
-
-    public void predictActCycle(Duration step) {
-//        if (running.containsKey("predictActCycle") && !running.get("predictActCycle").isDone()) {
-//            return;
-//        }
-        for (String taskLabel : new String[]{
-//                "predictPlot",
-//                "predictAct",
-//                "predictPlotCycle",
-//                "predictActCycle"
-        }) {
-            if (running.containsKey(taskLabel)) {
-                running.get(taskLabel).cancel(true);
-                running.remove(taskLabel);
-            }
-        }
-
-        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, step.toMillis(), TimeUnit.MILLISECONDS);
-        running.put("predictActCycle", task);
-    }
     public void predictPlot() {
         List<Ticker> selTickers = tickers.getSelection();
         List<Upstream> selUpstreams = upstreams.getSelection();
@@ -263,13 +231,33 @@ public class App implements Serializable {
         }));
     }
 
+    public void predictPlotCycle() {
+//        if (running.containsKey("predictPlotCycle") && !running.get("predictPlotCycle").isDone()) {
+//            return;
+//        }
+        for (String taskLabel : new String[]{
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
+        }
+
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictPlot, 0, 1000, TimeUnit.MILLISECONDS);
+        running.put("predictPlotCycle", task);
+    }
+
     public void predictAct() {
         List<Ticker> selTickers = tickers.getSelection();
         List<Upstream> selUpstreams = upstreams.getSelection();
         List<ModelPredictor> selModels = models.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         List<Agent> selAgents = agents.getSelection();
-        Executor selExecutor = executors.getSelection().get(0);
+        Set<Executor> selExecutors = new HashSet<>(executors.getSelection());
         for (String taskLabel : new String[]{
 //                "predictPlot",
 //                "predictAct",
@@ -288,9 +276,36 @@ public class App implements Serializable {
             DM.drawPredict(state, predictions, selPlotters);
             selAgents.stream()
                     .map(agent -> agent.suggest(state, predictions))
-                    .forEach(action -> reporter.report(action, selExecutor.execute(action)));
+                    .forEach(actions -> actions.forEach((ticker, action) -> {
+                        ticker.preferredExecutors(ZonedDateTime.now()).stream()
+                                .filter(selExecutors::contains)
+                                .findFirst()
+                                .map(exe -> exe.executeMarketOrder(ticker, action))
+                                .ifPresent(result -> reporter.report(result));
+                    }));
         }));
     }
+    public void predictActCycle(Duration step) {
+//        if (running.containsKey("predictActCycle") && !running.get("predictActCycle").isDone()) {
+//            return;
+//        }
+        for (String taskLabel : new String[]{
+//                "predictPlot",
+//                "predictAct",
+//                "predictPlotCycle",
+//                "predictActCycle"
+        }) {
+            if (running.containsKey(taskLabel)) {
+                running.get(taskLabel).cancel(true);
+                running.remove(taskLabel);
+            }
+        }
+
+        Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, step.toMillis(), TimeUnit.MILLISECONDS);
+        running.put("predictActCycle", task);
+    }
+
+
 
     public void backtestPredict(ZonedDateTime at) {
         List<Ticker> selTickers = tickers.getSelection();

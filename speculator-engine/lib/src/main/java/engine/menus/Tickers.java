@@ -1,6 +1,7 @@
 package engine.menus;
 
 
+import static engine.menus.Executors.doNothing;
 import static engine.menus.Upstreams.oanda;
 import static engine.menus.Upstreams.random;
 
@@ -14,8 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 public class Tickers {
-    /// CONFIG
-    /// all possible Tickers; including those not currently displayed in menu
+
     private static Ticker.TradingSchedule oandaSchedule = new Ticker.TradingSchedule(
             new Ticker.TradingSession(LocalTime.of(7,0), LocalTime.of(6,0)),
             Map.of(
@@ -30,16 +30,25 @@ public class Tickers {
             Map.of(),
             Map.of()
     );
-    public static Ticker XNG = Ticker.of("XNGUSD", List.of(
-            /// in descending order of preference
-            new Ticker.TickerSource("NATGAS_USD", oandaSchedule, oanda),
-            new Ticker.TickerSource("NATGAS_USD", fullSchedule, random)
-    ),0);
 
-    public static Ticker SGD = Ticker.of("USDSGD", List.of(
-            new Ticker.TickerSource("USD_SGD", oandaSchedule, oanda),
-            new Ticker.TickerSource("USD_SGD", fullSchedule, random)
-    ),1);
+    /// CONFIG
+    /// all possible Tickers; including those not currently displayed in menu
+    public static Ticker XNG = Ticker.of("XNGUSD",
+            List.of(
+            /// in descending order of preference
+                new Ticker.TickerSource("NATGAS_USD", oandaSchedule, oanda),
+                new Ticker.TickerSource("NATGAS_USD", fullSchedule, random)
+            ), List.of(
+                    new Ticker.TickerOutput("NATGAS_USD", fullSchedule, doNothing)
+            ), 0);
+
+    public static Ticker SGD = Ticker.of("USDSGD",
+            List.of(
+                new Ticker.TickerSource("USD_SGD", oandaSchedule, oanda),
+                new Ticker.TickerSource("USD_SGD", fullSchedule, random)
+            ), List.of(
+                new Ticker.TickerOutput("USD_SGD", fullSchedule, doNothing)
+            ),1);
 
     public static List<Ticker> list = List.of(
             /// CONFIG
