@@ -66,7 +66,7 @@ public class Oanda extends Upstream implements Authenticated {
                 .addHeader("Authorization", "Bearer " + this.apiKey)
                 .addHeader("Accept-Datetime-Format", "UNIX")
                 .build();
-        System.out.println("Oanda::send:" + request);
+//        System.out.println("Oanda::send:" + request);
         JSONObject res = null;
         Response response = null;
         try {
@@ -74,8 +74,10 @@ public class Oanda extends Upstream implements Authenticated {
             try {
                 res = new JSONObject(response.body().string());
             } catch (JSONException e) {
+                e.printStackTrace();
             }
         } catch (IOException e) {
+            e.printStackTrace();
         } finally {
             Optional.ofNullable(response).ifPresent(Response::close);
         }
@@ -116,7 +118,7 @@ public class Oanda extends Upstream implements Authenticated {
 
         try {
             JSONArray delta = pxObject.getJSONArray("candles");
-            System.out.println(delta);
+//            System.out.println(delta);
             for (int i = 0; i < delta.length(); i++) {
                 JSONObject candlestick = delta.getJSONObject(i);
 
@@ -216,7 +218,7 @@ public class Oanda extends Upstream implements Authenticated {
                     positionMap.put(ticker, position);
                 }
             } catch (JSONException e) {
-                System.out.println("CRITICAL WARNING");
+                System.err.println("CRITICAL WARNING");
             };
         }
         return positionMap;
@@ -231,14 +233,17 @@ public class Oanda extends Upstream implements Authenticated {
             int increment = Math.min(count, Oanda.FETCH_SIZE);
             List<Candle> delta = fetchCandles(ticker, null, end, interval, increment);
 //            System.out.printf("%d %d %d\n",delta.size(), count, increment);
-            System.out.println(delta.size());
+//            System.out.println(delta.size());
             end = delta.get(0).getTime().minusSeconds(1);
+            Collections.reverse(delta);
             candles.addAll(delta);
             count -= delta.size();
         }
 //        System.out.println("debug pm: snapshotcf: " +candles.size());
 //        System.out.println(candles.get(candles.size()-1).getTime());
 //        System.out.println("Oanda::fetchPL end");
+        Collections.reverse(candles);
+        candles.stream().map(Candle::getTime).forEach(System.out::println);
         return new TimeSeries(candles);
     }
 

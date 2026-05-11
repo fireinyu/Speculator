@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,6 +48,13 @@ public class State {
                 .min(ZonedDateTime::compareTo)
                 .orElse(null);
     }
+    public State asView() {
+        // makes shallow copy view (for abstraction)
+        return this;
+    }
+    public State asView(Collection<Ticker> mask) {
+        return new State(this.tickerData, mask);
+    }
     public TickerState getTickerState(Ticker ticker) {
 //        System.out.println("State::getTS");
 //        System.out.println(this.tickerData.get(ticker));
@@ -61,6 +69,10 @@ public class State {
         return new ArrayList<>(mask);
     }
 
+    public boolean isEmpty() {
+        return this.mask.isEmpty();
+    }
+
     public State save() {
         // read-only deep copy
         HashMap<Ticker, TickerState> copyData = new HashMap<>();
@@ -68,13 +80,16 @@ public class State {
         return new State(copyData, new HashSet<>(mask));
     }
 
-    public State mergeWith(State s2) {
-        this.tickerData.putAll(s2.tickerData);
-        this.mask.addAll(s2.mask);
-        return this;
+    public State merge(State s2) {
+        HashMap<Ticker, TickerState> td = new HashMap<>();
+        this.getTickers().stream().forEach(t -> td.put(t, tickerData.get(t)));
+        s2.getTickers().stream().forEach(t -> td.put(t, s2.tickerData.get(t)));
+        Set<Ticker> m = new HashSet<>(this.mask);
+        m.addAll(s2.mask);
+        return new State(td, m);
     }
 
-    public static class MutableState<V extends Number> extends State {
+    public static class MutableState extends State {
         Hashtable<Ticker, Integer> nonHits;
         HashSet<Ticker> hits;
         int nonHitsBeforeClear; // also applies until tickerState
@@ -90,13 +105,12 @@ public class State {
             this(3);
         }
 
-        public State asView() {
-            // makes shallow copy view (for abstraction)
-            return new State(this.tickerData);
-        }
 
+        @Override
         public State asView(Collection<Ticker> mask) {
-            return new State(this.tickerData, mask);
+//            HashMap<Ticker, TickerState> viewData = new HashMap<>();
+//            tickerData.forEach((ticker, tickerState) -> viewData.put(ticker, tickerState.asView()));
+            return new State(tickerData, mask);
         }
 
         public int pointsNotAfter(Ticker ticker, Duration interval, ZonedDateTime at) {

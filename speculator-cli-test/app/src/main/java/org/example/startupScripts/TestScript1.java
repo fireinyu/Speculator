@@ -12,9 +12,11 @@ public class TestScript1 implements StartupScript{
     @Override
     public void onStartUp(Main app) {
         Stream.of(
+            "auth 0 xxx",
+            "auth 1 xxx",
             "agt on",
             "tic sel 0 1",
-            "ups sel 1",
+            "ups sel 0",
             "plt sel 1",
             "exe sel 0",
             "mod base sel 0",
@@ -23,7 +25,7 @@ public class TestScript1 implements StartupScript{
             "mod mk",
             "mod sel 0",
             "agt base sel 0",
-            "agt conf 0 0.2",
+            "agt conf 0 0",
             "agt conf 1 10",
             "agt mk",
             "agt sel 0"

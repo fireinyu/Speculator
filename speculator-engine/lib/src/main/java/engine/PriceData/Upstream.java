@@ -28,7 +28,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
 
     public Upstream(int index) {
         super(index);
-        this.cache = new State.MutableState<>();
+        this.cache = new State.MutableState();
     }
 
     public State update(
@@ -151,7 +151,8 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
-        return cache.partition(at);
+        Pair<State, State> states = cache.partition(at);
+        return Pair.create(states.first.asView(tickers), states.second.asView(tickers));
     }
 
     public TimeSeries fetchCountUntil(Ticker ticker, Duration interval, int leftDependency, ZonedDateTime until) {

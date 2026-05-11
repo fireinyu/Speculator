@@ -182,7 +182,7 @@ public class App implements Serializable {
         this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
             Map<Duration, Integer> ld = Map.of(interval, 100);
             State state = UM.update(ld, selUpstreams, selTickers);
-            DM.draw(state, selTickers, selPlotters);
+            DM.draw(state, selPlotters);
         }));
     }
 

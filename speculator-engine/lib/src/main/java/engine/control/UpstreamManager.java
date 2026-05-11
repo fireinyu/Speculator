@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -15,10 +14,8 @@ import java.util.stream.Collectors;
 
 import engine.PriceData.State;
 import engine.PriceData.Upstream;
-import engine.Serialisation.Menu;
 import engine.Util;
 import engine.components.Ticker;
-import engine.menus.Tickers;
 
 public class UpstreamManager {
 //    private Menu<Ticker> tickers;
@@ -86,8 +83,8 @@ public class UpstreamManager {
                 .map(up -> up.update(groups.get(up), ld))
                 .reduce(
                         new State(),
-                        (s1, s2) -> s1.mergeWith(s2),
-                        (s1, s2) -> s1.mergeWith(s2)
+                        (s1, s2) -> s1.merge(s2),
+                        (s1, s2) -> s1.merge(s2)
                 );
     }
 
@@ -98,8 +95,8 @@ public class UpstreamManager {
                 .map(up -> up.snapshot(groups.get(up), ld, rd, at))
                 .reduce(
                         Util.Pair.create(new State(), new State()),
-                        (p1, p2) -> Util.Pair.create(p1.first.mergeWith(p2.first), p1.second.mergeWith(p2.second)),
-                        (p1, p2) -> Util.Pair.create(p1.first.mergeWith(p2.first), p1.second.mergeWith(p2.second))
+                        (p1, p2) -> Util.Pair.create(p1.first.merge(p2.first), p1.second.merge(p2.second)),
+                        (p1, p2) -> Util.Pair.create(p1.first.merge(p2.first), p1.second.merge(p2.second))
                 );
     }
 }

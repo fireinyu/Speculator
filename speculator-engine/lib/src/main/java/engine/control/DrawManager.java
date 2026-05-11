@@ -29,9 +29,9 @@ public class DrawManager{
         this.drawer = drawer;
     }
 
-    public void draw(State state, List<Ticker> tickers, List<DrawInstructor> plotters) {
+    public void draw(State state, List<DrawInstructor> plotters) {
         this.drawer.undraw();
-        DrawInstruction.DrawMapping mapping = getMapping(tickers, List.of());
+        DrawInstruction.DrawMapping mapping = getMapping(state.getTickers(), List.of());
         plotters.stream()
                 .map(plotter -> plotter.plotAll(state, mapping))
                 .forEach(ls -> ls.forEach(inst -> inst.drawBy(this.drawer)
@@ -40,6 +40,9 @@ public class DrawManager{
 
     }
     public void drawPredict(State state, List<PredictManager.PredictResult> predictions, List<DrawInstructor> plotters) {
+        if (state.isEmpty()) {
+            return;
+        }
         this.drawer.undraw();
         DrawInstruction.DrawMapping mapping = this.getMapping(
                 predictions.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList()),
@@ -53,6 +56,9 @@ public class DrawManager{
     }
 
     public void drawBacktest(State state, State targetState, List<PredictManager.PredictResult> results, List<DrawInstructor> plotters) {
+        if (state.isEmpty()) {
+            return;
+        }
         this.drawer.undraw();
         DrawInstruction.DrawMapping mapping = this.getMapping(
                 results.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList()),
