@@ -7,6 +7,8 @@ import com.example.speculator.GlobalState;
 import com.example.speculator.Presettable;
 import com.google.android.material.chip.ChipGroup;
 
+import java.util.Optional;
+
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.Preset;
 import engine.Serialisation.PresetMenu;
@@ -20,7 +22,8 @@ public class PresetMenuView extends EditMenuView<Preset>{
             if (!listening) {
                 return;
             }
-            menu.select(getSelection().get(0));
+//            getSelection().forEach(menu::select);
+
             GlobalState.presettables.forEach(Presettable::refresh);
         });
     }

@@ -329,7 +329,7 @@ public class App implements Serializable {
         }));
 
     }
-    public void backTestAct(ZonedDateTime at) {
+    public void backtestAct(ZonedDateTime at) {
 
     }
     public void simulate(ZonedDateTime from, ZonedDateTime to, Duration step) {

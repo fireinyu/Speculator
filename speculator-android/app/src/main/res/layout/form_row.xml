@@ -3,15 +3,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="35dp">
 
     <EditText
         android:id="@+id/editTextText"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:autoSizeMaxTextSize="50dp"
+        android:autoSizeMinTextSize="5dp"
+        android:autoSizeStepGranularity="0.5dp"
+        android:autoSizeTextType="uniform"
         android:ems="10"
         android:inputType="text"
         android:tag="field"
+        android:textSize="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline6"
@@ -21,8 +26,11 @@
         android:id="@+id/tv"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:gravity="center"
         android:tag="label"
         android:text="TextView"
+        android:textAlignment="center"
+        android:textSize="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/guideline6"
         app:layout_constraintStart_toStartOf="parent"

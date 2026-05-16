@@ -228,7 +228,7 @@ public class Main{
                     0, 0, 0, ZoneId.systemDefault()
                 );
                 if (agentActive) {
-                    app.backTestAct(at);
+                    app.backtestAct(at);
                 } else {
                     app.backtestPredict(at);
                 }

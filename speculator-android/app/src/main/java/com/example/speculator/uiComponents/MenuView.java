@@ -1,6 +1,7 @@
 package com.example.speculator.uiComponents;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 import android.widget.ScrollView;
@@ -35,14 +36,9 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         this.listening = true;
         this.inflate();
         listView = findViewWithTag("list");
-        listView.setOnCheckedStateChangeListener((self, selected) -> {
-            if (!this.listening) {
-                return;
-            }
-            menu.unselectAll();
-            menu.selectAll(getSelection());
-            this.refresh();
-        });
+//        listView.setOnCheckedStateChangeListener((self, selected) -> {
+//
+//        });
         this.populate();
         this.refresh();
     }
@@ -61,8 +57,23 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         for (int i = 0; i < menu.size(); i++) {
             String label = labels.get(i);
             Chip item = new Chip(context);
+            item.setCheckable(true);
+            item.setId(generateViewId());
             chipIdx.put(item.getId(), i);
             item.setText(label);
+            item.setOnCheckedChangeListener((btn, checked) -> {
+                if (!this.listening) {
+                    return;
+                }
+                menu.unselectAll();
+                menu.selectAll(getSelection());
+                if (checked) {
+                    menu.select(chipIdx.get(btn.getId()));
+                } else {
+                    menu.unselect(chipIdx.get(btn.getId()));
+                }
+                this.refresh();
+            });
             item.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             listView.addView(item);
         }
@@ -78,7 +89,7 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
             ((Chip)listView.getChildAt(i)).setChecked(false);
         }
         for (int index : menu.getSelectedIndices()) {
-            ((ToggleButton)listView.getChildAt(index)).setChecked(true);
+            ((Chip)listView.getChildAt(index)).setChecked(true);
         }
         this.listening = true;
     }

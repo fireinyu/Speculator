@@ -1,6 +1,9 @@
 package engine;
 
 
+import org.json.JSONArray;
+
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -75,5 +78,15 @@ public class Util {
         Iterator<T> s2Iter = s2.iterator();
         Iterator<U> s3Iter = s3.iterator();
         return s1.map(s -> combiner.invoke(s, s2Iter.next(), s3Iter.next()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> List<T> jsonToList(JSONArray jsonArray) {
+        List<T> list = new ArrayList<>();
+        for (int i = 0; i < jsonArray.length(); i++) {
+            list.add((T)jsonArray.get(i));
+        }
+        return list;
+
     }
 }

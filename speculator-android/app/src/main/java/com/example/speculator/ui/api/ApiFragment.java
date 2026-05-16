@@ -54,8 +54,7 @@ public class ApiFragment extends Fragment {
             ViewGroup row = (ViewGroup)getLayoutInflater().inflate(R.layout.form_row, form, false);
             row.<TextView>findViewWithTag("label").setText(field);
             form.addView(
-                    row,
-                    new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    row
             );
         });
         submit.setOnClickListener(btn -> {

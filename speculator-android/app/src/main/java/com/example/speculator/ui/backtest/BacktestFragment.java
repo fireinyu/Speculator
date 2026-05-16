@@ -14,6 +14,7 @@ import android.widget.ToggleButton;
 
 import androidx.fragment.app.Fragment;
 
+import com.example.speculator.Defaults;
 import com.example.speculator.GlobalState;
 
 import com.example.speculator.R;
@@ -21,11 +22,13 @@ import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentBacktestBinding;
 import com.github.mikephil.charting.charts.LineChart;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 
 public class BacktestFragment extends Fragment {
 
@@ -37,10 +40,7 @@ public class BacktestFragment extends Fragment {
     private ToggleButton timeView;
     private Button singleBacktest;
     private ToggleButton agentToggle;
-    private ToggleButton backtestToggle;
-
     private DatePicker datePicker;
-
     private TimePicker timePicker;
     private ZonedDateTime selectedDateTime;
 
@@ -54,19 +54,19 @@ public class BacktestFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(View view,  Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        this.selectedDateTime = ZonedDateTime.now();
+    public void onResume() {
+        this.selectedDateTime = Defaults.backtestAt.truncatedTo(ChronoUnit.SECONDS);
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
         this.chart = root.findViewById(R.id.backtest_chart);
         GlobalState.drawer.setChart(this.chart);
 //        this.chart.setData(new LineData());
         this.dateView = root.findViewById(R.id.dateBtn);
         this.timeView = root.findViewById(R.id.timeBtn);
+        dateView.setText(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE));
+        timeView.setText(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_TIME));
         this.datePicker = root.findViewById(R.id.calendarView);
         this.timePicker = root.findViewById(R.id.timeView);
         this.singleBacktest = root.findViewById(R.id.bPredict);
-        this.backtestToggle = null;
         this.agentToggle = root.findViewById(R.id.bAgentToggle);
         this.dateView.setOnCheckedChangeListener((btn, checked) -> {
             ToggleButton button = (ToggleButton) btn;
@@ -107,13 +107,13 @@ public class BacktestFragment extends Fragment {
         this.singleBacktest.setOnClickListener((btn) -> {
             if (agentToggle.isChecked()) {
                 // TODO
-                GlobalState.app.save();
-//                GlobalState.app.backtestAct(this.selectedDateTime);
+                GlobalState.app.backtestAct(this.selectedDateTime);
             } else {
                 GlobalState.app.backtestPredict(this.selectedDateTime);
 
             }
         });
+        super.onResume();
     }
 
     @Override
@@ -136,16 +136,5 @@ public class BacktestFragment extends Fragment {
 //        root.findViewById(R.id.backtest_predict).refreshDrawableState();
 //    }
 
-
-    private void configCycle() {
-        // TODO
-        if (backtestToggle.isChecked()) {
-            if (agentToggle.isChecked()) {
-            } else {
-            }
-        } else {
-            GlobalState.app.endTasks();
-        }
-    }
 
 }

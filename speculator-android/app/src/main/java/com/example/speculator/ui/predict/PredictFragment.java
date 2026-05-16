@@ -6,12 +6,15 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import com.example.speculator.Defaults;
 import com.example.speculator.GlobalState;
 
 import com.example.speculator.R;
@@ -19,12 +22,17 @@ import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentPredictBinding;
 import com.github.mikephil.charting.charts.LineChart;
 
+import java.time.Duration;
+
 public class PredictFragment extends Fragment {
 
     private FragmentPredictBinding binding;
     private View root;
     private ToggleButton predictToggle;
     private ToggleButton agentToggle;
+    private EditText minField;
+    private EditText secField;
+    private Duration interval = Defaults.appCycleInterval;
     private LineChart chart;
 //    private EditText minutesEntry;
 //    private EditText secondsEntry;
@@ -44,6 +52,8 @@ public class PredictFragment extends Fragment {
         GlobalState.drawer.setChart(this.chart);
         predictToggle = root.findViewById(R.id.predictToggle);
         agentToggle = root.findViewById(R.id.agentToggle);
+        minField = root.findViewById(R.id.minField);
+        secField = root.findViewById(R.id.secField);
 //        minutesEntry = root.findViewById(R.id.interval_minutes);
 //        secondsEntry = root.findViewById(R.id.interval_seconds);
 //        intervalSubmit = root.findViewById(R.id.interval_submit);
@@ -58,6 +68,8 @@ public class PredictFragment extends Fragment {
         agentToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
         predictToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
         GlobalState.app.predictPlotCycle();
+        minField.setText(String.valueOf(interval.getSeconds()/60));
+        secField.setText(String.valueOf(interval.getSeconds()%60));
     }
 
     @Override
@@ -67,9 +79,11 @@ public class PredictFragment extends Fragment {
     }
 
     private void configCycle() {
+        interval = Duration.ofMinutes(Long.parseLong(minField.getText().toString()));
+        interval.plusSeconds(Long.parseLong(secField.getText().toString()));
         if (predictToggle.isChecked()) {
             if (agentToggle.isChecked()) {
-                GlobalState.app.predictActCycle();
+                GlobalState.app.predictActCycle(interval);
             } else {
                 GlobalState.app.predictPlotCycle();
             }

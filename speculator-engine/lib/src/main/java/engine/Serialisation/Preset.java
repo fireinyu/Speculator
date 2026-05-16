@@ -3,11 +3,13 @@ package engine.Serialisation;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import engine.Util;
 import engine.control.App;
 
 public class
@@ -121,24 +123,12 @@ Preset extends UserStateMachine<Preset> {
             JSONObject selected = new JSONObject(state.get("selected"));
             return new Preset(
                     name,
-                    selected.getJSONArray("agents").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList()),
-                    selected.getJSONArray("plotters").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList()),
-                    selected.getJSONArray("executors").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList()),
-                    selected.getJSONArray("models").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList()),
-                    selected.getJSONArray("upstreams").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList()),
-                    selected.getJSONArray("tickers").toList().stream()
-                            .map(x -> (Integer)x)
-                            .collect(Collectors.toList())
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("agents"))),
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("plotters"))),
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("executors"))),
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("models"))),
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("upstreams"))),
+                    new ArrayList<>(Util.jsonToList(selected.getJSONArray("tickers")))
             );
         }
     }

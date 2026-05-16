@@ -3,7 +3,9 @@ package com.example.speculator.uiComponents;
 import static android.widget.LinearLayout.VERTICAL;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
@@ -21,6 +23,7 @@ import com.example.speculator.R;
 import com.example.speculator.dynamicUI.Field;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,7 +56,7 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
             }
             List<String> settings = new ArrayList<>();
             for (int i = 0; i < menu.getOptions().size(); i++) {
-                settings.add(((TextView)formView.getChildAt(i)).getText().toString());
+                settings.add((formView.getChildAt(i)).<EditText>findViewWithTag("field").getText().toString());
             }
             menu.add(settings);
             this.refresh();
@@ -66,9 +69,11 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
             this.refresh();
         });
         List<String> loaders = menu.loaders();
-        for (int i = 0; i < menu.size(); i++) {
+        loaderIdx = new HashMap<>();
+        for (int i = 0; i < loaders.size(); i++) {
             String label = loaders.get(i);
             RadioButton item = new RadioButton(context);
+            item.setId(generateViewId());
             loaderIdx.put(item.getId(), i);
             item.setText(label);
             item.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -79,6 +84,8 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
             if (!listening) {
                 return;
             }
+            Log.d("bugi", ""+id);
+            Log.d("bugi", ""+loaderIdx.get(id));
             menu.selectLoader(loaderIdx.get(id));
             this.refreshForm();
         });
@@ -96,22 +103,20 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
         loaderView.check(loaderView.getChildAt(menu.selectedLoaderIndex()).getId());
         formView.removeAllViews();
         menu.getOptions().forEach(option -> {
-            ConstraintLayout row = new ConstraintLayout(getContext());
-            TextView label = new TextView(getContext());
+            View row = LayoutInflater.from(getContext()).inflate(R.layout.form_row, formView, false);
+            TextView label = row.findViewWithTag("label");
             label.setText(option);
-            EditText field = new EditText(getContext());
-            row.addView(label);
-            row.addView(field);
+            EditText field = row.findViewWithTag("field");
             ConstraintSet constraints =  new ConstraintSet();
-            constraints.connect(label.getId(), ConstraintSet.LEFT, row.getId(), ConstraintSet.LEFT);
-            constraints.connect(label.getId(), ConstraintSet.TOP, row.getId(), ConstraintSet.TOP);
-            constraints.connect(label.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
-            constraints.connect(label.getId(), ConstraintSet.RIGHT, field.getId(), ConstraintSet.LEFT);
-            constraints.connect(field.getId(), ConstraintSet.TOP, row.getId(), ConstraintSet.TOP);
-            constraints.connect(field.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
-            constraints.connect(field.getId(), ConstraintSet.RIGHT, row.getId(), ConstraintSet.RIGHT);
-            constraints.applyTo(row);
-            formView.addView(row, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+//            constraints.connect(label.getId(), ConstraintSet.LEFT, row.getId(), ConstraintSet.LEFT);
+//            constraints.connect(label.getId(), ConstraintSet.TOP, row.getId(), ConstraintSet.TOP);
+//            constraints.connect(label.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
+//            constraints.connect(label.getId(), ConstraintSet.RIGHT, field.getId(), ConstraintSet.LEFT);
+//            constraints.connect(field.getId(), ConstraintSet.TOP, row.getId(), ConstraintSet.TOP);
+//            constraints.connect(field.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
+//            constraints.connect(field.getId(), ConstraintSet.RIGHT, row.getId(), ConstraintSet.RIGHT);
+//            constraints.applyTo(row);
+            formView.addView(row);
         });
         listening = true;
     }
