@@ -7,7 +7,7 @@ import java.util.Map;
 import ai.djl.training.tracker.WarmUpTracker;
 import engine.Util;
 
-public abstract class InstructedDrawer implements Serializable {
+public abstract class InstructedDrawer{
 
     public abstract void draw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label);
     public abstract void legend(DrawInstruction.DrawMapping mapping);

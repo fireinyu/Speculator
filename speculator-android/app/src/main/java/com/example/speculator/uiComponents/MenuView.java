@@ -24,11 +24,11 @@ import engine.Serialisation.Menu;
 import engine.Serialisation.StateMachine;
 
 public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implements Presettable {
-    private Menu<T> menu;
+    Menu<T> menu;
     ChipGroup listView;
     boolean listening;
     private Context context;
-    private Map<Integer, Integer> chipIdx;
+    Map<Integer, Integer> chipIdx;
     public MenuView(Context context, Menu<T> menu) {
         super(context);
         this.context = context;
@@ -50,7 +50,7 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
                 .map(this.chipIdx::get)
                 .collect(Collectors.toList());
     }
-    private void populate() {
+     void populate() {
         this.chipIdx = new HashMap<>();
         listView.removeAllViews();
         List<String> labels = menu.getLabels();
@@ -65,13 +65,14 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
                 if (!this.listening) {
                     return;
                 }
-                menu.unselectAll();
-                menu.selectAll(getSelection());
                 if (checked) {
                     menu.select(chipIdx.get(btn.getId()));
+                    Log.d("bugiiiner", menu.getSelection().get(0)+"");
+
                 } else {
                     menu.unselect(chipIdx.get(btn.getId()));
                 }
+
                 this.refresh();
             });
             item.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -85,6 +86,9 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         if (menu.size() != this.listView.getChildCount()) {
             this.populate();
         }
+        Log.d("bugiii2a", menu.size()+"");
+        Log.d("bugiii2b", menu.getSelection().size()+"");
+
         for (int i = 0;  i < menu.size(); i++) {
             ((Chip)listView.getChildAt(i)).setChecked(false);
         }

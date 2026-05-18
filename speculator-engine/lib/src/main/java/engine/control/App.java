@@ -54,6 +54,9 @@ public class App implements Serializable {
                     Tickers.list,
                     Upstreams.list);
             app.root = root;
+            app.drawer = drawer;
+            app.reporter = reporter;
+            app._init();
             return app;
         }).orElseGet(() -> new App(root, reporter, drawer));
     }
@@ -69,8 +72,8 @@ public class App implements Serializable {
     public EditMenu<ModelPredictor> models = ModelLoaders.menu;
     public EditMenu<Agent> agents = Agents.menu;
     private PresetMenu presets;
-    public Reporter reporter;
-    public InstructedDrawer drawer;
+    public transient Reporter reporter;
+    public transient InstructedDrawer drawer;
     private AuthManager AM;
     private transient PredictManager PM;
     private transient UpstreamManager UM;
@@ -95,11 +98,6 @@ public class App implements Serializable {
                 Tickers.list,
                 Upstreams.list
         );
-        this._init();
-    }
-    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        // 1. Perform default restoration for non-transient fields
-        in.defaultReadObject();
         this._init();
     }
 
@@ -300,7 +298,6 @@ public class App implements Serializable {
                 running.remove(taskLabel);
             }
         }
-
         Future<?> task = this.cycleService.scheduleWithFixedDelay(this::predictAct, 0, step.toMillis(), TimeUnit.MILLISECONDS);
         running.put("predictActCycle", task);
     }
@@ -401,6 +398,7 @@ public class App implements Serializable {
 
     public void endTasks() {
         this.running.values().forEach(task -> task.cancel(true));
+        this.running.values().forEach(task -> System.out.println(task.isDone()));
         this.running = new HashMap<>();
     }
 

@@ -5,6 +5,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import engine.PriceData.Upstream;
 import engine.components.DrawInstructor;
@@ -45,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private MenuView<Upstream> upstreamsView;
     private MenuView<Ticker> tickersView;
     private MenuView<DrawInstructor> plottersView;
+    private Button save;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
         GlobalState.init(this);
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
-
         setSupportActionBar(binding.appBarMain.tickerBar);
 
         DrawerLayout drawer = binding.drawerLayout;
@@ -82,11 +83,13 @@ public class MainActivity extends AppCompatActivity {
         ViewGroup plotterBox = findViewById(R.id.plotterBox);
         ViewGroup tickerBox = findViewById(R.id.tickerBox);
         ViewGroup upstreamBox = findViewById(R.id.upstreamBox);
+        save = (Button) navigationView.getHeaderView(0).findViewById(R.id.save);
+        save.setOnClickListener(btn -> GlobalState.app.save());
 
-        tickersView = new MenuView<>(this, Tickers.menu);
+        tickersView = new MenuView<>(this, GlobalState.app.getTickers());
         presetsView = new PresetMenuView(this, GlobalState.app.getPresets());
-        plottersView = new MenuView<>(this, DrawInstructors.menu);
-        upstreamsView = new MenuView<>(this, Upstreams.menu);
+        plottersView = new MenuView<>(this, GlobalState.app.getPlotters());
+        upstreamsView = new MenuView<>(this, GlobalState.app.getUpstreams());
 
         ViewGroup.LayoutParams menuParams = new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -124,12 +127,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        GlobalState.presettables.remove(presetsView);
-        GlobalState.presettables.remove(tickersView);
-        GlobalState.presettables.remove(upstreamsView);
-        GlobalState.presettables.remove(plottersView);
+    protected void onStop() {
+        GlobalState.app.save();
+//        GlobalState.presettables.remove(presetsView);
+//        GlobalState.presettables.remove(tickersView);
+//        GlobalState.presettables.remove(upstreamsView);
+//        GlobalState.presettables.remove(plottersView);
         binding = null;
+        super.onStop();
     }
 }

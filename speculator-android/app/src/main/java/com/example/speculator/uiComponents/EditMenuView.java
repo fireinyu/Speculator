@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Map;
 
 import engine.Serialisation.EditMenu;
+import engine.Serialisation.PresetMenu;
 import engine.Serialisation.UserStateMachine;
 
 public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
-    private EditMenu<T> menu;
     RadioGroup loaderView;
     LinearLayout formView;
     Button submitButton;
@@ -45,7 +45,6 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
 
     public EditMenuView(Context context, EditMenu<T> menu) {
         super(context, menu);
-        this.menu = menu;
         loaderView = findViewWithTag("loaders");
         formView = findViewWithTag("form");
         submitButton = findViewWithTag("create");
@@ -59,6 +58,7 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
                 settings.add((formView.getChildAt(i)).<EditText>findViewWithTag("field").getText().toString());
             }
             menu.add(settings);
+            Log.d("bugiiimake", menu.size()+"");
             this.refresh();
         });
         deleteButton.setOnClickListener(btn -> {
@@ -92,6 +92,7 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
     }
 
     private void refreshForm() {
+        EditMenu<T> menu = (EditMenu<T>) super.menu;
         listening = false;
         int selectedLoaderIdx = menu.selectedLoaderIndex();
         if (selectedLoaderIdx == -1) {

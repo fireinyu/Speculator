@@ -11,26 +11,30 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.Stack;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 public class MPDrawer extends InstructedDrawer {
-    private transient LineChart chart;
-    private ArrayList<LineDataSet> allLines;
+    private LineChart chart;
+    private CompletableFuture<Void> running;
+//    private List<LineDataSet> allLines;
     public MPDrawer () {
-        this.allLines = new ArrayList<>();
+//        allLines =  Collections.synchronizedList(new ArrayList<>());
+        running = CompletableFuture.completedFuture(null);
     }
     public void setChart(LineChart chart) {
-        if (!(this.chart == null)) {
-            this.undraw();
-        }
+        chart.clear();
         this.chart = chart;
     }
 
-    @Override
-    public void draw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
+    public void doDraw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
         Log.d("debug_plot", "start");
         int colorHex;
         switch (color) {
@@ -114,7 +118,7 @@ public class MPDrawer extends InstructedDrawer {
         this.chart.setData(lineData);
         this.chart.notifyDataSetChanged();
         this.chart.invalidate();
-        this.allLines.addAll(lines);
+//        this.allLines.addAll(lines);
     }
 
     @Override
@@ -122,15 +126,38 @@ public class MPDrawer extends InstructedDrawer {
 
     }
 
+    public void doUndraw() {
+//        chart.clear();
+//        this.allLines =  Collections.synchronizedList(new ArrayList<>());
+        System.out.println("debug_pred: start2");
+        System.out.println(chart);
+
+        Optional.ofNullable(chart)
+//                .map(LineChart::getLineData)
+                .ifPresent(chart -> {
+
+//                    this.allLines.forEach(lineData::removeDataSet);
+
+                    chart.setData(new LineData());
+
+                    chart.notifyDataSetChanged();
+
+                    chart.invalidate();
+
+//                    this.allLines =  Collections.synchronizedList(new ArrayList<>());
+                });
+    }
+
+    @Override
+    public void draw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
+        chart.post(()-> doDraw(points,color,style,label));
+    }
+
     @Override
     public void undraw() {
-        Optional.ofNullable(chart.getLineData())
-                .ifPresent(lineData -> {
-                    this.allLines.forEach(lineData::removeDataSet);
-                    chart.setData(lineData);
-                    chart.notifyDataSetChanged();
-                    chart.invalidate();
-                    this.allLines =  new ArrayList<>();
-                });
+        System.out.println("debug_pred: start2");
+        chart.post(()-> doUndraw());
+
+
     }
 }

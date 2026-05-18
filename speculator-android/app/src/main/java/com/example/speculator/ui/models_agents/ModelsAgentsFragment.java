@@ -78,9 +78,9 @@ public class ModelsAgentsFragment extends Fragment {
         this.agentsBox = this.root.findViewById(R.id.agentsBox);
         executorsBox = this.root.findViewById(R.id.executorsBox);
 
-        modelsView = new EditMenuView<>(this.getContext(), ModelLoaders.menu);
-        agentsView = new EditMenuView<>(this.getContext(), Agents.menu);
-        executorsView = new MenuView<>(this.getContext(), Executors.menu);
+        modelsView = new EditMenuView<>(this.getContext(), GlobalState.app.getModels());
+        agentsView = new EditMenuView<>(this.getContext(), GlobalState.app.getAgents());
+        executorsView = new MenuView<>(this.getContext(), GlobalState.app.getExecutors());
 
         ViewGroup.LayoutParams menuParams = new ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

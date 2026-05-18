@@ -16,7 +16,7 @@ public class TestScript1 implements StartupScript{
             "auth 1 xxx",
             "agt on",
             "tic sel 0 1",
-            "ups sel 0",
+            "ups sel 1",
             "plt sel 1",
             "exe sel 0",
             "mod base sel 0",

@@ -6,7 +6,7 @@ import java.util.Map;
 
 import engine.PriceData.Position;
 
-public abstract class Reporter implements Serializable {
+public abstract class Reporter {
     public abstract void report(Executor.ExecutionResult result);
     public abstract void report(List<Simulator.SimResult> result);
 }

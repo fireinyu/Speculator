@@ -3,6 +3,7 @@ package com.example.speculator.ui.predict;
 import static engine.Util.combine;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,7 +81,9 @@ public class PredictFragment extends Fragment {
 
     private void configCycle() {
         interval = Duration.ofMinutes(Long.parseLong(minField.getText().toString()));
-        interval.plusSeconds(Long.parseLong(secField.getText().toString()));
+        interval = interval.plusSeconds(Long.parseLong(secField.getText().toString()));
+        System.out.println(interval.getSeconds());
+
         if (predictToggle.isChecked()) {
             if (agentToggle.isChecked()) {
                 GlobalState.app.predictActCycle(interval);
@@ -88,6 +91,7 @@ public class PredictFragment extends Fragment {
                 GlobalState.app.predictPlotCycle();
             }
         } else {
+            Log.d("endTasks","endTasks");
             GlobalState.app.endTasks();
         }
     }

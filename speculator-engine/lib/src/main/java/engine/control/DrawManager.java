@@ -59,11 +59,16 @@ public class DrawManager{
         if (state.isEmpty()) {
             return;
         }
+        System.out.println("debug_pred: start");
+
         this.drawer.undraw();
+        System.out.println("debug_pred: end");
+
         DrawInstruction.DrawMapping mapping = this.getMapping(
                 results.stream().map(PredictManager.PredictResult::getTicker).collect(Collectors.toList()),
                 new ArrayList<>(results.get(0).getPrediction().keySet())
         );
+
         plotters.stream()
                 .map(plotter -> plotter.plotAllBacktest(state, targetState, results, mapping))
                 .forEach(ls -> ls.forEach(inst -> inst.drawBy(this.drawer)
