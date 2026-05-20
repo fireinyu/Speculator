@@ -31,8 +31,8 @@ public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
         for (Ticker ticker: state.getTickers()) {
             TickerState tickerState = state.getTickerState(ticker);
             TimeSeries ft = tickerState.getPriceData();
-            TimeSeries features = ft.map(dt -> dt, px -> px/ft.priceAt(anchor));
-            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), "features"));
+            TimeSeries features = ft.map(dt -> dt, px ->(float) (Math.log(px) - Math.log(ft.priceAt(anchor))));
+            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), ticker + " features"));
         }
         return res;
     }
@@ -47,14 +47,14 @@ public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
             Ticker ticker = result.getTicker();
             TickerState tickerState = state.getTickerState(ticker);
             TimeSeries ft = tickerState.getPriceData();
-            TimeSeries features = ft.map(dt -> dt, px -> px/ft.priceAt(anchor));
-            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), "features"));
+            TimeSeries features = ft.map(dt -> dt, px ->(float) (Math.log(px) - Math.log(ft.priceAt(anchor))));
+            res.add(new DrawInstruction(this.plotFeatures(features), mapping.color(ticker), mapping.style(ticker), ticker + " features"));
             for (ModelPredictor model : result.getPrediction().keySet()) {
                 res.add(new DrawInstruction(
-                        this.plotPreds(result.getPrediction().get(model).map(dt -> dt, px -> px/ft.priceAt(anchor))),
+                        this.plotPreds(result.getPrediction().get(model).map(dt -> dt, px ->(float) (Math.log(px) - Math.log(ft.priceAt(anchor))))),
                         mapping.color(ticker, model),
                         mapping.style(ticker, model),
-                        "prediction")
+                        ticker + " prediction")
                 );
             }
         }
@@ -71,8 +71,8 @@ public abstract class DrawInstructor extends CoreStateMachine<DrawInstructor> {
         for (Ticker ticker : targetState.getTickers()) {
             TickerState tickerState = targetState.getTickerState(ticker);
             TimeSeries tgt = tickerState.getPriceData();
-            TimeSeries targets = tgt.map(dt -> dt, px -> px/tgt.priceAt(anchor));
-            res.add(new DrawInstruction(this.plotTargets(targets), mapping.tColor(ticker), mapping.tStyle(ticker), "targets"));
+            TimeSeries targets = tgt.map(dt -> dt, px ->(float) (Math.log(px) - Math.log(tgt.priceAt(anchor))));
+            res.add(new DrawInstruction(this.plotTargets(targets), mapping.tColor(ticker), mapping.tStyle(ticker), ticker + " targets"));
         }
         return res;
     }

@@ -287,6 +287,7 @@ public class Main{
             }
         }
         scanner.close();
+        System.exit(0);
     }
 
     public void run(String command) {

@@ -27,16 +27,16 @@ public class DrawInstruction {
     }
 
     public static class Point {
-        private float x;
-        private float y;
-        public Point(float x, float y) {
+        private double x;
+        private double y;
+        public Point(double x, double y) {
             this.x = x;
             this.y = y;
         }
-        public float getX() {
+        public double getX() {
             return x;
         }
-        public float getY() {
+        public double getY() {
             return y;
         }
 

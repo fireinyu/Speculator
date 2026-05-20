@@ -68,7 +68,6 @@ public class PredictFragment extends Fragment {
 //        });
         agentToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
         predictToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
-        GlobalState.app.predictPlotCycle();
         minField.setText(String.valueOf(interval.getSeconds()/60));
         secField.setText(String.valueOf(interval.getSeconds()%60));
     }

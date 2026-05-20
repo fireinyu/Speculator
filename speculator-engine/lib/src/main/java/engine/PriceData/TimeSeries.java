@@ -3,6 +3,7 @@ package engine.PriceData;
 import engine.Util;
 
 import java.sql.Time;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -203,9 +204,10 @@ public class TimeSeries extends Series{
             } else {
                 float leftPrice = this.get().get(anchorIndex - 1);
                 float rightPrice = this.get().get(anchorIndex);
-                float leftMs = this.getTimes().get(anchorIndex - 1).toEpochSecond();
-                float rightMs = this.getTimes().get(anchorIndex).toEpochSecond();
-                float res = leftPrice + (rightPrice-leftPrice) * (anchor.toEpochSecond()-leftMs)/(rightMs-leftMs);
+                ZonedDateTime leftMs = this.getTimes().get(anchorIndex - 1);
+                ZonedDateTime rightMs = this.getTimes().get(anchorIndex);
+                double res = leftPrice + (rightPrice-leftPrice) * Duration.between(leftMs, anchor).toMillis()/Duration.between(leftMs, rightMs).toMillis();
+
                 anchorPrice = Util.convertNumber(res, this.get().get(0));
             }
         }

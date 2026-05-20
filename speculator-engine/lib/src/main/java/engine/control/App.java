@@ -178,7 +178,7 @@ public class App implements Serializable {
             }
         }
         this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
-            Map<Duration, Integer> ld = Map.of(interval, 100);
+            Map<Duration, Integer> ld = Map.of(interval, 20);
             State state = UM.update(ld, selUpstreams, selTickers);
             DM.draw(state, selPlotters);
         }));
@@ -206,6 +206,9 @@ public class App implements Serializable {
 
 
     public void predictPlot() {
+        if (Thread.currentThread().isInterrupted()) {
+            return;
+        }
         List<Ticker> selTickers = tickers.getSelection();
         List<Upstream> selUpstreams = upstreams.getSelection();
         List<ModelPredictor> selModels = models.getSelection();
@@ -221,7 +224,10 @@ public class App implements Serializable {
                 running.remove(taskLabel);
             }
         }
+
+//        System.out.println("endTasks: plot outer");
         this.running.put("predictPlot", CompletableFuture.runAsync(() -> {
+//            System.out.println("endTasks: plot inner");
             Map<Duration, Integer> ld = PM.getDependencies(selModels).first;
             State state = UM.update(ld, selUpstreams, selTickers);
             List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
@@ -398,7 +404,7 @@ public class App implements Serializable {
 
     public void endTasks() {
         this.running.values().forEach(task -> task.cancel(true));
-        this.running.values().forEach(task -> System.out.println(task.isDone()));
+//        this.running.values().forEach(task -> System.out.println("endTasks"+task.isDone()));
         this.running = new HashMap<>();
     }
 

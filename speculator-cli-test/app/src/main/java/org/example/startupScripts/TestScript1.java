@@ -14,8 +14,8 @@ public class TestScript1 implements StartupScript{
         Stream.of(
             "auth 0 xxx",
             "auth 1 xxx",
-            "agt on",
-            "tic sel 0 1",
+            "agt off",
+            "tic sel 0",
             "ups sel 1",
             "plt sel 1",
             "exe sel 0",
@@ -28,7 +28,11 @@ public class TestScript1 implements StartupScript{
             "agt conf 0 0",
             "agt conf 1 10",
             "agt mk",
-            "agt sel 0"
+            "agt sel 0",
+            "pred",
+            "_f",
+            "tic sel 0 1",
+            "pred"
         ).forEach(app::run); 
     }
     
