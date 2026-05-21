@@ -43,7 +43,7 @@ public class Simulator {
         @Override
         public ZonedDateTime step() {
             super.at = ZonedDateTime.now();
-            return ZonedDateTime.now();
+            return super.at;
         }
     }
     public static class SimResult {

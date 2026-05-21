@@ -83,9 +83,9 @@ public class PredictFragment extends Fragment {
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+    public void onStop() {
+        super.onStop();
+        GlobalState.app.endTasks();
     }
 
     private void configCycle() {

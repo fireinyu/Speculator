@@ -1,5 +1,7 @@
 package com.example.speculator;
 
+import android.util.Log;
+
 import com.example.speculator.uiComponents.ActionsView;
 
 import java.time.ZonedDateTime;
@@ -23,7 +25,14 @@ public class AndroidReporter extends Reporter {
 
     @Override
     public void report(List<Simulator.SimResult> result) {
+        // STUB
+        Log.d("stub_sim", "start");
         System.out.println(result);
+        result.stream()
+                        .map(Simulator.SimResult::nav)
+                        .forEach(nav -> Log.d("stub_sim", ""+nav));
+        Log.d("stub_sim", "end");
+
 
     }
 }

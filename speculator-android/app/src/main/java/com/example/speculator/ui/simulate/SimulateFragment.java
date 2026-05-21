@@ -4,34 +4,91 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.example.speculator.GlobalState;
+import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentSimulateBinding;
+import com.example.speculator.uiComponents.DateTimeSelector;
+import com.example.speculator.uiComponents.SimControls;
 
 public class SimulateFragment extends Fragment {
 
     private FragmentSimulateBinding binding;
+    private ViewGroup controlsBox;
+    private ToggleButton simNow;
+    private Button simRun;
+    private View root;
+    private SimControls.NowSimControls nowControls;
+    private SimControls.PastSimControls pastControls;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
-        SimulateViewModel slideshowViewModel =
-                new ViewModelProvider(this).get(SimulateViewModel.class);
-
         binding = FragmentSimulateBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
-
-        final TextView textView = binding.textSlideshow;
-        slideshowViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
+        root = binding.getRoot();
         return root;
     }
 
     @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        controlsBox = root.findViewById(R.id.simControlsBox);
+        simNow = root.findViewById(R.id.simNow);
+        simRun = root.findViewById(R.id.simRun);
+        simNow.setOnCheckedChangeListener((btn, checked) -> {
+            setControls();
+        });
+        simRun.setOnClickListener(btn->{
+            if (simNow.isChecked() && nowControls.ready()) {
+                GlobalState.app.simulateCycle(nowControls.getInterval());
+            } else if (pastControls.ready()){
+                GlobalState.app.simulate(pastControls.getStart(), pastControls.getEnd(), pastControls.getInterval());
+            }
+        });
+        setControls();
+
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        GlobalState.app.endTasks();
+    }
+
+    private void setControls() {
+        if (simNow.isChecked()) {
+            nowControls = new SimControls.NowSimControls(root.getContext());
+            root.post(()->{
+               controlsBox.removeAllViews();
+               controlsBox.addView(
+                       nowControls,
+                       new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+               );
+            });
+        } else {
+            pastControls = new SimControls.PastSimControls(
+                    root.getContext(),
+                    root.findViewById(R.id.simStartDatePicker),
+                    root.findViewById(R.id.simStartTimePicker),
+                    root.findViewById(R.id.simEndDatePicker),
+                    root.findViewById(R.id.simEndTimePicker)
+            );
+
+            root.post(()->{
+                controlsBox.removeAllViews();
+                controlsBox.addView(
+                        pastControls,
+                        new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                );
+            });
+        }
     }
 }

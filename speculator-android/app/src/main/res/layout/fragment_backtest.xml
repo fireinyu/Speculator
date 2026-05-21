@@ -6,30 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".ui.backtest.BacktestFragment">
 
-    <androidx.constraintlayout.widget.Guideline
-        android:id="@+id/guideline4"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        app:layout_constraintGuide_percent="0.25" />
-
-    <ToggleButton
-        android:id="@+id/dateBtn"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:ellipsize="none"
-        android:maxLines="1"
-        android:textOff="SET DATE"
-        android:textOn="CONFIRM"
-        app:autoSizeMaxTextSize="100sp"
-        app:autoSizeMinTextSize="10sp"
-        app:autoSizeStepGranularity="1sp"
-        app:autoSizeTextType="uniform"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/guideline4"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guideline" />
-
     <com.github.mikephil.charting.charts.LineChart
         android:id="@+id/backtest_chart"
         android:layout_width="0dp"
@@ -84,23 +60,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <ToggleButton
-        android:id="@+id/timeBtn"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:ellipsize="none"
-        android:maxLines="1"
-        android:textOff="SET TIME"
-        android:textOn="CONFIRM"
-        app:autoSizeMaxTextSize="100sp"
-        app:autoSizeMinTextSize="10sp"
-        app:autoSizeStepGranularity="1sp"
-        app:autoSizeTextType="uniform"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/guideline2"
-        app:layout_constraintStart_toStartOf="@+id/guideline4"
-        app:layout_constraintTop_toTopOf="@+id/guideline" />
-
     <Button
         android:id="@+id/bPredict"
         android:layout_width="wrap_content"
@@ -120,5 +79,16 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
         app:layout_constraintTop_toTopOf="@+id/guideline" />
+
+    <FrameLayout
+        android:id="@+id/backtestDTBox"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/guideline2"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/guideline">
+
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

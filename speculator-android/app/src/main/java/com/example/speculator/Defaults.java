@@ -13,5 +13,7 @@ public class Defaults {
     public static ZonedDateTime backtestAt = ZonedDateTime.now();
     public static float formRowHeight = 35;
     public static int actionListLimit = 10;
+    public static Duration simPeriod = Duration.ofHours(1);
+    public static Duration simPastInterval = Duration.ofMinutes(3);
 
 }

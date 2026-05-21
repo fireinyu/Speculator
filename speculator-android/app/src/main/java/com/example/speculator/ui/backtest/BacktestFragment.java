@@ -1,8 +1,5 @@
 package com.example.speculator.ui.backtest;
 
-import static android.view.View.GONE;
-import static android.view.View.VISIBLE;
-
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,14 +17,9 @@ import com.example.speculator.GlobalState;
 import com.example.speculator.R;
 
 import com.example.speculator.databinding.FragmentBacktestBinding;
+import com.example.speculator.uiComponents.DateTimeSelector;
 import com.github.mikephil.charting.charts.LineChart;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 
 public class BacktestFragment extends Fragment {
@@ -36,13 +28,11 @@ public class BacktestFragment extends Fragment {
     private View root;
     private LineChart chart;
 
-    private ToggleButton dateView;
-    private ToggleButton timeView;
     private Button singleBacktest;
     private ToggleButton agentToggle;
     private DatePicker datePicker;
     private TimePicker timePicker;
-    private ZonedDateTime selectedDateTime;
+    private DateTimeSelector dateTimeSelector;
 
 
     public View onCreateView( LayoutInflater inflater,
@@ -55,61 +45,27 @@ public class BacktestFragment extends Fragment {
 
     @Override
     public void onResume() {
-        this.selectedDateTime = Defaults.backtestAt.truncatedTo(ChronoUnit.SECONDS);
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
         this.chart = root.findViewById(R.id.backtest_chart);
         GlobalState.drawer.setChart(this.chart);
 //        this.chart.setData(new LineData());
-        this.dateView = root.findViewById(R.id.dateBtn);
-        this.timeView = root.findViewById(R.id.timeBtn);
-        dateView.setText(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE));
-        timeView.setText(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_TIME));
         this.datePicker = root.findViewById(R.id.calendarView);
         this.timePicker = root.findViewById(R.id.timeView);
+        dateTimeSelector = new DateTimeSelector(root.getContext(), datePicker, timePicker, Defaults.backtestAt.truncatedTo(ChronoUnit.SECONDS));
+        root.<ViewGroup>findViewById(R.id.backtestDTBox)
+                .addView(
+                        dateTimeSelector,
+                        new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                );
+
         this.singleBacktest = root.findViewById(R.id.bPredict);
         this.agentToggle = root.findViewById(R.id.bAgentToggle);
-        this.dateView.setOnCheckedChangeListener((btn, checked) -> {
-            ToggleButton button = (ToggleButton) btn;
-            if (checked) {
-                this.datePicker.setVisibility(VISIBLE);
-            } else {
-                this.datePicker.setVisibility(GONE);
-                this.selectedDateTime = ZonedDateTime.of(
-                        LocalDate.of(
-                                this.datePicker.getYear(),
-                                this.datePicker.getMonth()+1,
-                                this.datePicker.getDayOfMonth()
-                        ),
-                        this.selectedDateTime.toLocalTime(),
-                        ZoneOffset.systemDefault()
-                );
-                button.setTextOff(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_DATE));
-            }
-        });
-        this.timeView.setOnCheckedChangeListener((btn, checked) -> {
-            ToggleButton button = (ToggleButton) btn;
-            if (checked) {
-                this.timePicker.setVisibility(VISIBLE);
-            } else {
-                this.timePicker.setVisibility(GONE);
-                this.selectedDateTime = ZonedDateTime.of(
-                        this.selectedDateTime.toLocalDate(),
-                        LocalTime.of(
-                                this.timePicker.getHour(),
-                                this.timePicker.getMinute(),
-                                0
-                        ),
-                        ZoneOffset.systemDefault()
-                );
-                button.setTextOff(this.selectedDateTime.format(DateTimeFormatter.ISO_LOCAL_TIME));
-            }
-        });
         this.singleBacktest.setOnClickListener((btn) -> {
             if (agentToggle.isChecked()) {
                 // TODO
-                GlobalState.app.backtestAct(this.selectedDateTime);
+                GlobalState.app.backtestAct(this.dateTimeSelector.getDateTime());
             } else {
-                GlobalState.app.backtestPredict(this.selectedDateTime);
+                GlobalState.app.backtestPredict(this.dateTimeSelector.getDateTime());
 
             }
         });

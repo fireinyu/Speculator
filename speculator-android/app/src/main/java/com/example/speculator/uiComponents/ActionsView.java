@@ -41,6 +41,7 @@ public class ActionsView extends ConstraintLayout {
         if (rows.size() >= limit) {
             rows.pollLast();
         }
+        Log.d("debug_actionrows_add", row+"");
         rows.offerFirst(row);
     }
 
@@ -49,6 +50,7 @@ public class ActionsView extends ConstraintLayout {
         post(() -> {
             holder.removeAllViews();
             rows.stream()
+                    .peek(row -> Log.d("debug_actionrows_draw", row+""))
                     .peek(row -> row.setLayoutParams(rowParams))
                     .forEach(holder::addView);
             Log.d("debug_actions", "" + holder.getChildCount());
@@ -58,9 +60,9 @@ public class ActionsView extends ConstraintLayout {
 
     public void add(Executor.ExecutionResult action, String agent, ZonedDateTime at) {
         if (action.getStatus() == Executor.CompletionStatus.FAIL) {
-            addRow(new FailedActionRow(getContext(), agent, action.getTicker(), at));
+            post(()->addRow(new FailedActionRow(getContext(), agent, action.getTicker(), at)));
         } else {
-            addRow(new FilledActionRow(getContext(), agent, action.getFilled(), action.getTicker(), at));
+            post(()->addRow(new FilledActionRow(getContext(), agent, action.getFilled(), action.getTicker(), at)));
         }
         redraw();
     }
