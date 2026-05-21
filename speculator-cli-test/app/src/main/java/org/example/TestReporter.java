@@ -5,6 +5,9 @@ import engine.components.Simulator.SimResult;
 import engine.components.Ticker;
 import engine.components.Executor.CompletionStatus;
 import engine.components.Executor.ExecutionResult;
+
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -20,18 +23,20 @@ public class TestReporter extends Reporter{
     }
 
     @Override
-    public void report(ExecutionResult result) {
+    public void report(ExecutionResult result, String agent, ZonedDateTime at) {
         CompletionStatus status = result.getStatus();
         Ticker ticker = result.getTicker();
         NAVPosition filled = result.getFilled();
         String a = filled.getUnits() > 0 ? "buy" : "sell";
         double u = Math.abs(filled.getUnits());
         if (status == CompletionStatus.SUCCESS || status == CompletionStatus.PARTIAL) {
-            System.out.printf("%s: %s %.4g units for $%.4g\n",
+            System.out.printf("%s: %s %.4g units for $%.4g: by %s at %s\n",
                 ticker.getName(),
                 a,
                 u,
-                filled.getTotalCost() / u
+                filled.getTotalCost() / u,
+                agent,
+                at.format(DateTimeFormatter.ISO_LOCAL_TIME)
             );
         } else {
             System.out.println("%s: failed");

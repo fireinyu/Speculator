@@ -58,6 +58,11 @@ public class SimpleExpect extends Agent {
     }
 
     @Override
+    public String toString() {
+        return "simple expect";
+    }
+
+    @Override
     public UserStateLoader<? extends StateMachine<Agent>> getLoader() {
         return new SELoader();
     }

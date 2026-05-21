@@ -1,5 +1,7 @@
 package com.example.speculator.ui.predict;
 
+import static android.view.View.GONE;
+import static android.view.View.VISIBLE;
 import static engine.Util.combine;
 
 import android.os.Bundle;
@@ -13,6 +15,7 @@ import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 
 import com.example.speculator.Defaults;
@@ -21,6 +24,7 @@ import com.example.speculator.GlobalState;
 import com.example.speculator.R;
 
 import com.example.speculator.databinding.FragmentPredictBinding;
+import com.example.speculator.uiComponents.ActionsView;
 import com.github.mikephil.charting.charts.LineChart;
 
 import java.time.Duration;
@@ -35,6 +39,8 @@ public class PredictFragment extends Fragment {
     private EditText secField;
     private Duration interval = Defaults.appCycleInterval;
     private LineChart chart;
+    private ActionsView actionsView;
+    private ViewGroup actionsBox;
 //    private EditText minutesEntry;
 //    private EditText secondsEntry;
 //    private Button intervalSubmit;
@@ -70,6 +76,10 @@ public class PredictFragment extends Fragment {
         predictToggle.setOnCheckedChangeListener((btn, checked) -> this.configCycle());
         minField.setText(String.valueOf(interval.getSeconds()/60));
         secField.setText(String.valueOf(interval.getSeconds()%60));
+        actionsBox = root.findViewById(R.id.actionsBox);
+        actionsView = new ActionsView(getContext(), Defaults.actionListLimit);
+        GlobalState.reporter.setActionsView(actionsView);
+        actionsBox.addView(actionsView, new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
     @Override
@@ -82,7 +92,11 @@ public class PredictFragment extends Fragment {
         interval = Duration.ofMinutes(Long.parseLong(minField.getText().toString()));
         interval = interval.plusSeconds(Long.parseLong(secField.getText().toString()));
         System.out.println(interval.getSeconds());
-
+        if (agentToggle.isChecked()) {
+            actionsBox.setVisibility(VISIBLE);
+        } else {
+            actionsBox.setVisibility(GONE);
+        }
         if (predictToggle.isChecked()) {
             if (agentToggle.isChecked()) {
                 GlobalState.app.predictActCycle(interval);

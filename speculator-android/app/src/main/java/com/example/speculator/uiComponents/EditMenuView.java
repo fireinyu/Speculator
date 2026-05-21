@@ -19,6 +19,7 @@ import android.widget.TextView;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 
+import com.example.speculator.Defaults;
 import com.example.speculator.R;
 import com.example.speculator.dynamicUI.Field;
 
@@ -107,8 +108,6 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
             View row = LayoutInflater.from(getContext()).inflate(R.layout.form_row, formView, false);
             TextView label = row.findViewWithTag("label");
             label.setText(option);
-            EditText field = row.findViewWithTag("field");
-            ConstraintSet constraints =  new ConstraintSet();
 //            constraints.connect(label.getId(), ConstraintSet.LEFT, row.getId(), ConstraintSet.LEFT);
 //            constraints.connect(label.getId(), ConstraintSet.TOP, row.getId(), ConstraintSet.TOP);
 //            constraints.connect(label.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
@@ -117,7 +116,7 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
 //            constraints.connect(field.getId(), ConstraintSet.BOTTOM, row.getId(), ConstraintSet.BOTTOM);
 //            constraints.connect(field.getId(), ConstraintSet.RIGHT, row.getId(), ConstraintSet.RIGHT);
 //            constraints.applyTo(row);
-            formView.addView(row);
+            formView.addView(row, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)Defaults.formRowHeight));
         });
         listening = true;
     }

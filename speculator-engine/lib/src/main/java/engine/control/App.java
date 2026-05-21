@@ -167,6 +167,7 @@ public class App implements Serializable {
         List<Upstream> selUpstreams = upstreams.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
+                "pullPlot"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -189,6 +190,9 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
+                "predictActCycle",
+                "predictPlotCycle",
+                "simulateCycle"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -214,6 +218,7 @@ public class App implements Serializable {
         List<ModelPredictor> selModels = models.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
+                "predictPlot"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -240,6 +245,9 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
+                "predictActCycle",
+                "predictPlotCycle",
+                "simulateCycle"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -263,6 +271,7 @@ public class App implements Serializable {
         List<Agent> selAgents = agents.getSelection();
         Set<Executor> selExecutors = new HashSet<>(executors.getSelection());
         for (String taskLabel : new String[]{
+                "predictAct"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -278,15 +287,18 @@ public class App implements Serializable {
             State state = UM.update(ld, selUpstreams, selTickers);
             List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);
             DM.drawPredict(state, predictions, selPlotters);
-            selAgents.stream()
-                    .map(agent -> agent.suggest(state, predictions))
-                    .forEach(actions -> actions.forEach((ticker, action) -> {
-                        ticker.preferredExecutors(ZonedDateTime.now()).stream()
-                                .filter(selExecutors::contains)
-                                .findFirst()
-                                .map(exe -> exe.executeMarketOrder(ticker, action))
-                                .ifPresent(result -> reporter.report(result));
-                    }));
+            ZonedDateTime at = ZonedDateTime.now();
+            selAgents
+                    .forEach(agent -> {
+                        Map<Ticker, Position> actions = agent.suggest(state, predictions);
+                        actions.forEach((ticker, action) -> {
+                            ticker.preferredExecutors(at).stream()
+                                    .filter(selExecutors::contains)
+                                    .findFirst()
+                                    .map(exe -> exe.executeMarketOrder(ticker, action))
+                                    .ifPresent(result -> reporter.report(result, agent.toString(), at));
+                        });
+                    });
         }));
     }
     public void predictActCycle(Duration step) {
@@ -294,6 +306,9 @@ public class App implements Serializable {
 //            return;
 //        }
         for (String taskLabel : new String[]{
+                "predictActCycle",
+                "predictPlotCycle",
+                "simulateCycle"
 //                "predictPlot",
 //                "predictAct",
 //                "predictPlotCycle",
@@ -316,6 +331,7 @@ public class App implements Serializable {
         List<ModelPredictor> selModels = models.getSelection();
         List<DrawInstructor> selPlotters = plotters.getSelection();
         for (String taskLabel : new String[]{
+                "backtestPredict"
 //                "backtestPredict",
 //                "backtestAct"
         }) {
@@ -342,6 +358,7 @@ public class App implements Serializable {
         List<DrawInstructor> selPlotters = plotters.getSelection();
         List<Agent> selAgents = agents.getSelection();
         for (String taskLabel : new String[]{
+                "simulate"
 //                "backtestPredict",
 //                "backtestAct"
         }) {
@@ -370,12 +387,11 @@ public class App implements Serializable {
         }));
     }
     public void simulateCycle(Duration step) {
-        List<Ticker> selTickers = tickers.getSelection();
-        List<Upstream> selUpstreams = upstreams.getSelection();
-        List<ModelPredictor> selModels = models.getSelection();
-        List<DrawInstructor> selPlotters = plotters.getSelection();
         List<Agent> selAgents = agents.getSelection();
         for (String taskLabel : new String[]{
+                "predictActCycle",
+                "predictPlotCycle",
+                "simulateCycle"
 //                "backtestPredict",
 //                "backtestAct"
         }) {
@@ -387,6 +403,10 @@ public class App implements Serializable {
         Simulator sim = new Simulator.nowSimulator();
         List<Simulator.SimResult> results = new ArrayList<>();
         running.put("simulateCycle", cycleService.scheduleWithFixedDelay(() -> {
+            List<Ticker> selTickers = tickers.getSelection();
+            List<Upstream> selUpstreams = upstreams.getSelection();
+            List<ModelPredictor> selModels = models.getSelection();
+            List<DrawInstructor> selPlotters = plotters.getSelection();
             Util.Pair<Map<Duration,Integer>,Map<Duration,Integer>> deps = PM.getDependencies(selModels);
             State state = UM.snapshot(deps.first,Map.of(),sim.step(), selUpstreams, selTickers).first;
             List<PredictManager.PredictResult> predictions = PM.predict(state, state.getTickers(), selModels);

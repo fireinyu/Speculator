@@ -16,6 +16,7 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 
+import com.example.speculator.Defaults;
 import com.example.speculator.dynamicUI.Builder;
 import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
@@ -54,7 +55,8 @@ public class ApiFragment extends Fragment {
             ViewGroup row = (ViewGroup)getLayoutInflater().inflate(R.layout.form_row, form, false);
             row.<TextView>findViewWithTag("label").setText(field);
             form.addView(
-                    row
+                    row,
+                    new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int)Defaults.formRowHeight)
             );
         });
         submit.setOnClickListener(btn -> {

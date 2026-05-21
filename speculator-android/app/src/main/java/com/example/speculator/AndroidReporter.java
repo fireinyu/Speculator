@@ -1,18 +1,24 @@
 package com.example.speculator;
 
-import java.util.List;
-import java.util.Map;
+import com.example.speculator.uiComponents.ActionsView;
 
-import engine.PriceData.Position;
+import java.time.ZonedDateTime;
+import java.util.List;
+
 import engine.components.Reporter;
 import engine.components.Executor;
 import engine.components.Simulator;
-import engine.components.Ticker;
 
 public class AndroidReporter extends Reporter {
+    private ActionsView actionsView;
+
+    public void setActionsView(ActionsView actionsView) {
+        this.actionsView = actionsView;
+    }
+
     @Override
-    public void report(Executor.ExecutionResult result) {
-        System.out.println(result);
+    public void report(Executor.ExecutionResult result, String agent, ZonedDateTime at) {
+        actionsView.add(result, agent, at);
     }
 
     @Override

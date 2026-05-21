@@ -1,6 +1,9 @@
 package com.example.speculator;
 
+import static android.util.TypedValue.COMPLEX_UNIT_DIP;
+
 import android.content.Context;
+import android.util.TypedValue;
 
 import engine.control.App;
 
@@ -23,6 +26,7 @@ public class GlobalState {
     static Path appStorageRoot;
     public static App app;
     public static MPDrawer drawer;
+    public static AndroidReporter reporter;
     public static List<Presettable> presettables;
 
 //    static List<Ticker> tickers = List.of(
@@ -35,8 +39,10 @@ public class GlobalState {
     public static void init (Context context) {
         appStorageRoot = context.getFilesDir().toPath();
         drawer = new MPDrawer();
-        app = App.start(GlobalState.appStorageRoot, new AndroidReporter(), drawer);
+        reporter = new AndroidReporter();
+        app = App.start(GlobalState.appStorageRoot, reporter, drawer);
         presettables = new ArrayList<>();
+        Defaults.formRowHeight = TypedValue.applyDimension(COMPLEX_UNIT_DIP,Defaults.formRowHeight, context.getResources().getDisplayMetrics());
 
 //        Authentication.init(context);
 //        Predict.init(context);
