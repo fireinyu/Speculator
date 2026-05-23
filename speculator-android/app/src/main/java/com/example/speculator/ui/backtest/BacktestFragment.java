@@ -26,7 +26,6 @@ public class BacktestFragment extends Fragment {
 
     private FragmentBacktestBinding binding;
     private View root;
-    private LineChart chart;
 
     private Button singleBacktest;
     private ToggleButton agentToggle;
@@ -46,8 +45,7 @@ public class BacktestFragment extends Fragment {
     @Override
     public void onResume() {
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
-        this.chart = root.findViewById(R.id.backtest_chart);
-        GlobalState.drawer.setChart(this.chart);
+        GlobalState.drawer.setViews(root.findViewById(R.id.backtestChartBox));
 //        this.chart.setData(new LineData());
         this.datePicker = root.findViewById(R.id.calendarView);
         this.timePicker = root.findViewById(R.id.timeView);

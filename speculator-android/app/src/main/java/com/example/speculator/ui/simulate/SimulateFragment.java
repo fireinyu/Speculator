@@ -5,19 +5,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.TextView;
 import android.widget.ToggleButton;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
 
 import com.example.speculator.GlobalState;
 import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentSimulateBinding;
-import com.example.speculator.uiComponents.DateTimeSelector;
 import com.example.speculator.uiComponents.SimControls;
 
 public class SimulateFragment extends Fragment {
@@ -38,8 +34,14 @@ public class SimulateFragment extends Fragment {
     }
 
     @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
+    public void onResume() {
+        super.onResume();
+        GlobalState.reporter.setSimViews(
+                root.findViewById(R.id.simNAVChartBox),
+                root.findViewById(R.id.simPriceChartBox),
+                root.findViewById(R.id.simTickerMenuBox),
+                root.findViewById(R.id.simTickerToggle)
+        );
         controlsBox = root.findViewById(R.id.simControlsBox);
         simNow = root.findViewById(R.id.simNow);
         simRun = root.findViewById(R.id.simRun);
@@ -54,7 +56,6 @@ public class SimulateFragment extends Fragment {
             }
         });
         setControls();
-
     }
 
     @Override

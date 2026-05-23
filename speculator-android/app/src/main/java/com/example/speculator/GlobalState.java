@@ -43,6 +43,7 @@ public class GlobalState {
         app = App.start(GlobalState.appStorageRoot, reporter, drawer);
         presettables = new ArrayList<>();
         Defaults.formRowHeight = TypedValue.applyDimension(COMPLEX_UNIT_DIP,Defaults.formRowHeight, context.getResources().getDisplayMetrics());
+        Defaults.chartHeight = TypedValue.applyDimension(COMPLEX_UNIT_DIP,Defaults.chartHeight, context.getResources().getDisplayMetrics());
 
 //        Authentication.init(context);
 //        Predict.init(context);

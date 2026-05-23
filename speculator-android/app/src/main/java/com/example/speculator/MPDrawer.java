@@ -2,15 +2,20 @@ package com.example.speculator;
 
 import android.graphics.Color;
 import android.util.Log;
+import android.view.ViewGroup;
 
+import engine.Util;
 import engine.components.DrawInstruction;
 import engine.components.InstructedDrawer;
+
+import com.example.speculator.uiComponents.DateTimeChart;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.IValueFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -29,22 +34,18 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.Collectors;
 
 public class MPDrawer extends InstructedDrawer {
-    private LineChart chart;
-    private DTFormatter formatter;
-    private double leftMost= Double.MAX_VALUE;
+    private DateTimeChart chart;
 //    private List<LineDataSet> allLines;
     public MPDrawer () {
 //        allLines =  Collections.synchronizedList(new ArrayList<>());
     }
-    public void setChart(LineChart chart) {
-        chart.clear();
-        formatter = new DTFormatter();
-        chart.getXAxis().setValueFormatter(formatter);
-        this.chart = chart;
+    public void setViews(ViewGroup box) {
+        box.removeAllViews();
+        chart = new DateTimeChart(box.getContext());
+        box.addView(chart, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
-    public void doDraw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
-        Log.d("debug_plot", "start");
+    private LineDataSet makeEmpty(DrawInstruction.Color color, DrawInstruction.Style style, String label) {
         int colorHex;
         switch (color) {
             case RED:
@@ -56,34 +57,54 @@ public class MPDrawer extends InstructedDrawer {
             default:
                 throw new UnsupportedOperationException();
         };
+        LineDataSet ds = new LineDataSet(List.of(), label);
+        ds.setColor(colorHex);
+        switch (style) {
+            case SOLID:
+                ds.disableDashedLine(); break;
+            case DASHED:
+                ds.enableDashedLine(20, 6, 0); break;
+            case DOTTED:
+                ds.enableDashedLine(3, 8, 0); break;
+            case NONE:
+            default:
+                throw new UnsupportedOperationException();
+        };
+
+        ds.setDrawCircleHole(false);
+        ds.setDrawCircles(false);
+        ds.setDrawValues(false);
+        return ds;
+    }
+    public void doDraw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
+        Log.d("debug_plot", "start");
+
         Stack<DrawInstruction.Point> descending = new Stack<>();
         LinkedList<DrawInstruction.Point> ascending = new LinkedList<>();
-        ArrayList<LineDataSet> lines = new ArrayList<>();
         DrawInstruction.Point prevPoint = points.get(0);
         ascending.add(prevPoint);
-        leftMost = Math.min(leftMost, points.stream().min(Comparator.comparing(DrawInstruction.Point::getX)).get().getX());
-        formatter.setLeftMost(leftMost);
+
         for (int i = 1; i < points.size(); i++) {
             DrawInstruction.Point point = points.get(i);
             if (point.getX() >= prevPoint.getX()) { // sorted correctly
                 if (!descending.isEmpty()) {
-                    LineDataSet line = new LineDataSet(new ArrayList<>(),label);
+                    List<Util.Pair<Double, Double>> line = new ArrayList<>();
                     while (!descending.isEmpty()) {
                         DrawInstruction.Point p = descending.pop();
-                        line.addEntry(new Entry((float)(p.getX()-leftMost),(float) p.getY()));
+                        line.add(Util.Pair.create(p.getX(), p.getY()));
                     }
-                    lines.add(line);
+                    chart.addLine(line, makeEmpty(color, style, label));
                     ascending.add(prevPoint);
                 }
                 ascending.add(point);
             } else { // sorted reverse
                 if (!ascending.isEmpty()) {
-                    LineDataSet line = new LineDataSet(new ArrayList<>(),label);
+                    List<Util.Pair<Double, Double>> line = new ArrayList<>();
                     while (!ascending.isEmpty()) {
                         DrawInstruction.Point p = ascending.poll();
-                        line.addEntry(new Entry((float)(p.getX()-leftMost),(float) p.getY()));
+                        line.add(Util.Pair.create(p.getX(), p.getY()));
                     }
-                    lines.add(line);
+                    chart.addLine(line, makeEmpty(color, style, label));
                     descending.add(prevPoint);
                 }
                 descending.add(point);
@@ -91,44 +112,27 @@ public class MPDrawer extends InstructedDrawer {
             prevPoint = point;
         }
         if (!descending.isEmpty()) {
-            LineDataSet line = new LineDataSet(new ArrayList<>(),label);
+            List<Util.Pair<Double, Double>> line = new ArrayList<>();
             while (!descending.isEmpty()) {
                 DrawInstruction.Point p = descending.pop();
-                line.addEntry(new Entry((float)(p.getX()-leftMost),(float) p.getY()));
+                line.add(Util.Pair.create(p.getX(), p.getY()));
             }
-            lines.add(line);
+            chart.addLine(line, makeEmpty(color, style, label));
         }
         if (!ascending.isEmpty()) {
-            LineDataSet line = new LineDataSet(new ArrayList<>(),label);
+            List<Util.Pair<Double, Double>> line = new ArrayList<>();
             while (!ascending.isEmpty()) {
                 DrawInstruction.Point p = ascending.poll();
-                line.addEntry(new Entry((float)(p.getX()-leftMost),(float) p.getY()));
+                line.add(Util.Pair.create(p.getX(), p.getY()));
             }
-            lines.add(line);
+            chart.addLine(line, makeEmpty(color, style, label));
         }
-        LineData lineData = Optional.ofNullable(chart.getLineData()).orElseGet(()->{chart.setData(new LineData()); return chart.getLineData();});
-        lines.forEach(ds -> ds.setColor(colorHex));
-        switch (style) {
-            case SOLID:
-                lines.forEach(ds -> ds.disableDashedLine()); break;
-            case DASHED:
-                lines.forEach(ds -> ds.enableDashedLine(20, 6, 0)); break;
-            case DOTTED:
-                lines.forEach(ds -> ds.enableDashedLine(3, 8, 0)); break;
-            case NONE:
-            default:
-                throw new UnsupportedOperationException();
-        };
-        lines.forEach(ds -> ds.setDrawCircleHole(false));
-        lines.forEach(ds -> ds.setDrawCircles(false));
-        lines.forEach(ds -> ds.setDrawValues(false));
-        lines.forEach(lineData::addDataSet);
+
+//        lines.forEach(lineData::addDataSet);
         Log.d("debug_draw", "" + points.size());
-        Log.d("debug_draw", "" + lines.get(0).getEntryCount());
-        lineData.notifyDataChanged();
-//        this.chart.setData(lineData);
-        this.chart.notifyDataSetChanged();
-        this.chart.invalidate();
+        chart.getLineData().notifyDataChanged();
+        chart.notifyDataSetChanged();
+        chart.invalidate();
 //        this.allLines.addAll(lines);
     }
 
@@ -140,19 +144,13 @@ public class MPDrawer extends InstructedDrawer {
     public void doUndraw() {
 //        chart.clear();
 //        this.allLines =  Collections.synchronizedList(new ArrayList<>());
-        leftMost = Double.MAX_VALUE;
 
         Optional.ofNullable(chart)
 //                .map(LineChart::getLineData)
                 .ifPresent(chart -> {
 
 //                    this.allLines.forEach(lineData::removeDataSet);
-
-                    chart.setData(new LineData());
-
-                    chart.notifyDataSetChanged();
-
-                    chart.invalidate();
+                    chart.clearValues();
 
 //                    this.allLines =  Collections.synchronizedList(new ArrayList<>());
                 });
@@ -170,16 +168,5 @@ public class MPDrawer extends InstructedDrawer {
 
 
     }
-    private static class DTFormatter extends ValueFormatter {
-        private double leftMost;
-        public void setLeftMost(double leftMost) {
-            this.leftMost = leftMost;
-        }
-        @Override
-        public String getFormattedValue(float offset) {
-            return ZonedDateTime
-                    .ofInstant(Instant.ofEpochSecond((long)(leftMost+offset)), ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        }
-    }
+
 }

@@ -51,22 +51,34 @@ public class Simulator {
         private double nav;
         private Map<Ticker, Double> navMap;
         private Map<Ticker, NAVPosition> positions;
+        private Map<Ticker, Float> prices;
         public SimResult(ZonedDateTime at, Map<Ticker, NAVPosition> positions, State state) {
             this.at = at;
             this.positions = new HashMap<>(positions);
+            prices = positions.keySet().stream()
+                    .collect(Collectors.toMap(
+                            ticker -> ticker,
+                            ticker -> state.getTickerState(ticker).getAbsoluteLatest().get()
+                    ));
             navMap = positions.keySet().stream()
                     .collect(Collectors.toMap(
                             ticker -> ticker,
-                            ticker -> positions.get(ticker).getNetValue(state.getTickerState(ticker).getAbsoluteLatest().get())
+                            ticker -> positions.get(ticker).getNetValue(prices.get(ticker))
                     ));
             nav = navMap.values().stream().parallel().reduce(0.0, Double::sum, Double::sum);
+
         }
 
         public double nav() {
             return nav;
+
         }
         public double nav(Ticker ticker) {
             return navMap.get(ticker);
+        }
+
+        public double price(Ticker ticker) {
+            return prices.get(ticker);
         }
 
         public ZonedDateTime when() {

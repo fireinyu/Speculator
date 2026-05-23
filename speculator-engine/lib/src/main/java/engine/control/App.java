@@ -382,8 +382,8 @@ public class App implements Serializable {
                                 (m1, m2) -> {m1.putAll(m2); return m1;}
                         );
                 results.add(sim.act(state, action));
+                reporter.report(results);
             }
-            reporter.report(results);
         }));
     }
     public void simulateCycle(Duration step) {

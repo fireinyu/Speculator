@@ -16,6 +16,8 @@ import com.example.speculator.R;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 
+import engine.components.Ticker;
+
 public class SimControls{
     public static class NowSimControls extends ConstraintLayout {
         private EditText mmField;
@@ -58,8 +60,8 @@ public class SimControls{
             super(context);
             LayoutInflater.from(context).inflate(R.layout.sim_controls_past, this, true);
             ZonedDateTime at = ZonedDateTime.now();
-            startDTSelector = new DateTimeSelector(context ,startDatePicker, startTimePicker, at);
-            endDTSelector = new DateTimeSelector(context ,endDatePicker, endTimePicker, at.minus(Defaults.simPeriod));
+            endDTSelector = new DateTimeSelector(context ,startDatePicker, startTimePicker, at);
+            startDTSelector = new DateTimeSelector(context ,endDatePicker, endTimePicker, at.minus(Defaults.simPeriod));
             this.<ViewGroup>findViewById(R.id.simStartDTBox)
                     .addView(
                             startDTSelector,

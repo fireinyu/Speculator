@@ -38,7 +38,6 @@ public class PredictFragment extends Fragment {
     private EditText minField;
     private EditText secField;
     private Duration interval = Defaults.appCycleInterval;
-    private LineChart chart;
     private ActionsView actionsView;
     private ViewGroup actionsBox;
 //    private EditText minutesEntry;
@@ -55,8 +54,7 @@ public class PredictFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        this.chart = root.findViewById(R.id.predict_chart);
-        GlobalState.drawer.setChart(this.chart);
+        GlobalState.drawer.setViews(root.findViewById(R.id.predictChartBox));
         predictToggle = root.findViewById(R.id.predictToggle);
         agentToggle = root.findViewById(R.id.agentToggle);
         minField = root.findViewById(R.id.minField);
@@ -78,7 +76,7 @@ public class PredictFragment extends Fragment {
         secField.setText(String.valueOf(interval.getSeconds()%60));
         actionsBox = root.findViewById(R.id.actionsBox);
         actionsView = new ActionsView(getContext(), Defaults.actionListLimit);
-        GlobalState.reporter.setActionsView(actionsView);
+        GlobalState.reporter.setExecViews(actionsView);
         actionsBox.addView(actionsView, new ConstraintLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     }
 
