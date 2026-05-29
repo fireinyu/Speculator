@@ -10,6 +10,7 @@ import engine.Serialisation.StateLoader;
 import engine.Serialisation.UserStateMachine;
 import engine.Util;
 
+import java.sql.Time;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -30,6 +31,7 @@ import javax.rmi.ssl.SslRMIClientSocketFactory;
 import engine.Serialisation.StateMachine;
 
 public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
+    /// prediction from Predictor is offset from last feature
 
     public static  ModelPredictor identity(Duration interval, int count) {
         return new Identity(List.of(interval), List.of(count));
@@ -87,7 +89,12 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
                 .map(dep -> Util.Pair.create(dep, input.getPriceData(dep)))
                 .map(pair -> pair.second.slice(pair.second.size() - this.dependencies.first.get(pair.first), pair.second.size()))
                 .collect(Collectors.toList()),
-                input.getAbsoluteLatest()
+                dependencies.first.keySet().stream()
+                        .map(input::getPriceData)
+                        .map(TimeSeries::getLast)
+                        .max(Comparator.comparing(Candle::getTime))
+                        .get()
+
         );
     }
     public List<TimeSeries> predict (List<? extends TimeSeries> input, Candle latest) {

@@ -57,5 +57,6 @@ dependencies {
     implementation("ai.djl.android:core")
     runtimeOnly("ai.djl.android:pytorch-native")
     runtimeOnly("ai.djl.android:onnxruntime")
+    // Source: https://mvnrepository.com/artifact/com.microsoft.onnxruntime/onnxruntime
 }
 

@@ -28,11 +28,7 @@ public class TestScript1 implements StartupScript{
             "agt conf 0 0",
             "agt conf 1 10",
             "agt mk",
-            "agt sel 0",
-            "pred",
-            "_f",
-            "tic sel 0 1",
-            "pred"
+            "agt sel 0"
         ).forEach(app::run); 
     }
     

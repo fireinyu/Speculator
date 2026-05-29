@@ -1,0 +1,5 @@
+model
+    - baseline price and datetime (i.e. "now"): latest input feature
+    - features (per interval): up to and including latest available candle
+    - predictions: offset relative to latest input feature
+    - targets: offset relative to latest input feature, determined by candle interpolation

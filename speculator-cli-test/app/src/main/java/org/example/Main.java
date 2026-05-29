@@ -34,6 +34,7 @@ import org.apache.commons.codec.StringDecoder;
 import org.example.startupScripts.TestScript1;
 import org.example.startupScripts.TestScript2;
 import org.example.startupScripts.TestScript3;
+import org.example.startupScripts.TestScript4;
 
 import engine.Serialisation.EditMenu;
 import engine.Serialisation.Menu;
@@ -296,7 +297,7 @@ public class Main{
 
     public static void main(String[] args) {
         // Main app = new Main(Path.of(".live"), false, new TestScript3());
-        Main app = new Main(Path.of(".live"), true, new TestScript1());
+        Main app = new Main(Path.of(".live"), true, new TestScript4());
         if (args.length > 0) {
             try {
                 Files.readAllLines(Paths.get(args[0])).stream()

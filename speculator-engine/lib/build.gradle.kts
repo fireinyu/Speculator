@@ -35,6 +35,7 @@ dependencies {
     api("ai.djl:api")
     runtimeOnly("ai.djl.pytorch:pytorch-engine")
     implementation("org.json:json:20251224")
+    implementation("com.microsoft.onnxruntime:onnxruntime:1.26.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

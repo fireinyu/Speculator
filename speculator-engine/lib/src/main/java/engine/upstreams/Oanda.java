@@ -9,6 +9,7 @@ import engine.components.Authenticated;
 import engine.components.Ticker;
 import engine.PriceData.TimeSeries;
 
+import org.apache.commons.math3.geometry.euclidean.oned.Interval;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -50,6 +51,14 @@ public class Oanda extends Upstream implements Authenticated {
             return "S5";
         } else if (interval.equals(Duration.ofMinutes(1))) {
             return "M1";
+        } else if (interval.equals(Duration.ofMinutes(15))) {
+            return "M15";
+        } else if (interval.equals(Duration.ofHours(1))) {
+            return "H1";
+        } else if (interval.equals(Duration.ofDays(1))) {
+            return "D";
+        } else if (interval.equals(Duration.ofDays(7))) {
+            return "W";
         } else {
             throw new IllegalArgumentException("invalid duration");
         }
