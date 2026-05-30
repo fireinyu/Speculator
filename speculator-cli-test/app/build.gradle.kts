@@ -24,12 +24,12 @@ dependencies {
 
     // This dependency is used by the application.
     implementation(libs.guava)
-    implementation(platform("ai.djl:bom:0.36.0"))
     // implementation("ai.djl.android:core")
     // runtimeOnly("ai.djl.android:pytorch-native")
     // runtimeOnly("ai.djl.android:onnxruntime")
     implementation("speculator.engine:lib:1.0.0")
     implementation("org.knowm.xchart:xchart:3.8.8")
+    runtimeOnly("com.microsoft.onnxruntime:onnxruntime:1.26.0")
 
 }
 

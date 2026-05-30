@@ -53,10 +53,7 @@ dependencies {
     implementation("speculator.engine:lib:1.0.0")
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
-    implementation(platform("ai.djl:bom:0.33.0"))
-    implementation("ai.djl.android:core")
-    runtimeOnly("ai.djl.android:pytorch-native")
-    runtimeOnly("ai.djl.android:onnxruntime")
-    // Source: https://mvnrepository.com/artifact/com.microsoft.onnxruntime/onnxruntime
+    // Source: https://mvnrepository.com/artifact/com.microsoft.onnxruntime/onnxruntime-android
+    runtimeOnly("com.microsoft.onnxruntime:onnxruntime-android:1.26.0")
 }
 

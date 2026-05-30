@@ -11,20 +11,19 @@ import engine.Util;
 import engine.components.ModelPredictor;
 
 public class AttentionS extends LogNN {
+    private static LinkedHashMap<Duration, Integer> leftDep =new LinkedHashMap<>();
+    private static LinkedHashMap<Duration, Integer> rightDep =new LinkedHashMap<>();
+    static {
+        leftDep.put(Duration.ofMinutes(15), 64);
+        leftDep.put(Duration.ofHours(1), 64);
+        leftDep.put(Duration.ofDays(1), 64);
+        rightDep.put(Duration.ofHours(1), 4);
+        rightDep.put(Duration.ofDays(1), 4);
+        rightDep.put(Duration.ofDays(7), 2);
+    }
     public AttentionS(Map<String, String> settings) {
         super("attention_s", "input", "output",
-                Util.Pair.create(
-                        new LinkedHashMap<>(Map.of(
-                                Duration.ofMinutes(15), 64,
-                                Duration.ofHours(1), 64,
-                                Duration.ofDays(1), 64
-                        )),
-                        new LinkedHashMap<>(Map.of(
-                                Duration.ofHours(1), 4,
-                                Duration.ofDays(1), 4,
-                                Duration.ofDays(7), 2
-                        ))
-                )
+                Util.Pair.create(leftDep, rightDep)
                 , settings);
     }
 

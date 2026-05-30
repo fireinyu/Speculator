@@ -20,7 +20,6 @@ import com.example.speculator.dynamicUI.Builder;
 import com.example.speculator.dynamicUI.Field;
 import com.example.speculator.GlobalState;
 
-import ai.djl.repository.zoo.ModelLoader;
 import engine.Serialisation.EditMenu;
 import engine.components.Agent;
 import engine.components.Executor;
@@ -32,7 +31,6 @@ import engine.Serialisation.StateLoader;
 import engine.components.ModelPredictor;
 import com.example.speculator.R;
 import com.example.speculator.databinding.FragmentModelsAgentsBinding;
-import engine.modelPredictors.NN16842;
 
 import com.example.speculator.dynamicUI.ObjectMenu;
 import com.example.speculator.uiComponents.EditMenuView;

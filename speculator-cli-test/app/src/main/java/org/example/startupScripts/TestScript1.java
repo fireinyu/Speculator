@@ -21,7 +21,6 @@ public class TestScript1 implements StartupScript{
             "exe sel 0",
             "mod base sel 0",
             "mod conf 0 0",
-            "mod conf 1 0",
             "mod mk",
             "mod sel 0",
             "agt base sel 0",

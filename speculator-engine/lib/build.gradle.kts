@@ -31,11 +31,8 @@ dependencies {
     // This dependency is used internally, and not exposed to consumers on their own compile classpath.
     implementation(libs.guava)
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
-    implementation(platform("ai.djl:bom:0.33.0"))
-    api("ai.djl:api")
-    runtimeOnly("ai.djl.pytorch:pytorch-engine")
     implementation("org.json:json:20251224")
-    implementation("com.microsoft.onnxruntime:onnxruntime:1.26.0")
+    compileOnly("com.microsoft.onnxruntime:onnxruntime:1.26.0")
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

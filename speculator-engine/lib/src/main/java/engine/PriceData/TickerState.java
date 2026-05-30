@@ -48,6 +48,7 @@ public class TickerState {
         return this.getIntervals().stream()
                 .map(this::getPriceData)
 //                .peek(i -> System.out.println("TickerState:getAbsLate bug start"))
+                .filter(ts -> !ts.isEmpty())
                 .map(TimeSeries::getLast)
 //                .peek(i -> System.out.println("TickerState:getAbsLate bug end"))
                 .max(Comparator.comparing(Candle::getTime))
