@@ -8,6 +8,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,29 +33,41 @@ import engine.components.Predictor;
 
 public abstract class LogNN extends ModelPredictor {
 
+    private static OrtEnvironment env = null;
+    private static Map<String, OrtSession> nnModels = new HashMap<>();
+
 
     /// NOTES
     /// input shape: model:(1, features) -> ModelPredictor:(features)
     /// output shape: model:(1, targets) -> ModelPredictor:(targets)
     /// features extracted in given order of intervals
-    /// prediction returned as single sorted OffsetSeries (collected over all intervals)
+    /// prediction returned as single time-sorted OffsetSeries (collected over all intervals)
     /// prediction is offset from last feature
-    private byte[] getModelBytes(String modelName) {
-        InputStream inputStream = getClass().getResourceAsStream("/" +modelName+ ".onnx");
-        byte[] bytes;
-
-        try {
-            bytes = inputStream.readAllBytes();
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private OrtSession getModel(String modelName) {
+        if (!nnModels.containsKey(modelName)) {
+            if (env == null) {
+                env = OrtEnvironment.getEnvironment();
+            }
+            InputStream inputStream = getClass().getResourceAsStream("/" +modelName+ ".onnx") ;
+            byte[] bytes;
+            try {
+                bytes = inputStream.readAllBytes();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                LogNN.nnModels.put(modelName, env.createSession(bytes));
+            } catch (OrtException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return LogNN.nnModels.get(modelName);
+
 //        bytes.subList(bytes.size()-20, bytes.size()).stream()
 //                .limit(20)
 //                .forEach(System.out::println);
 //        System.out.println("size: " + bytes.size());
 
-        return bytes;
     }
     public LogNN(String modelName, String inputLabel, String outputLabel, Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies, Map<String, String> settings) {
         super(
@@ -67,7 +80,7 @@ public abstract class LogNN extends ModelPredictor {
                 ),
                 dependencies,
                 settings);
-        ((NNPredictor)model).init(getModelBytes(modelName));
+        ((NNPredictor)model).init(getModel(modelName));
     }
 
     private static class NNExtractor extends FeatureExtractor {
@@ -110,18 +123,11 @@ public abstract class LogNN extends ModelPredictor {
                 }
             }
             offsets.sort(Duration::compareTo);
-            env = OrtEnvironment.getEnvironment();
-
-
         }
-        private void init(byte[] onnxBytes) {
-            try {
-                onnxModel = env.createSession(onnxBytes);
-            } catch (OrtException e) {
-                throw new RuntimeException(e);
-            }
+
+        private void init(OrtSession nnModel) {
+            onnxModel = nnModel;
         }
-        private OrtEnvironment env;
         private OrtSession onnxModel;
         private String requestLabel;
         private String responseLabel;
@@ -138,7 +144,7 @@ public abstract class LogNN extends ModelPredictor {
             try {
                 onnxInputs = Map.of(
                         requestLabel,
-                        OnnxTensor.createTensor(env, inp)
+                        OnnxTensor.createTensor(LogNN.env, inp)
                 );
             } catch (OrtException e) {
                 throw new RuntimeException(e);

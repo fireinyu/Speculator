@@ -25,9 +25,11 @@ public class TestScript1 implements StartupScript{
             "agt mk",
             "agt sel 0",
             "mod base sel 1",
-            "mod conf 0 0"
-            // "mod mk",
-            // "mod sel 0"
+            "mod conf 0 0",
+            "mod mk",
+            "mod conf 0 3600",
+            "mod mk",
+            "mod sel 0 1"
         ).forEach(app::run); 
     }
     
