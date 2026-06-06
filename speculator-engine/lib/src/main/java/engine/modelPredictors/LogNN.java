@@ -41,16 +41,10 @@ public abstract class LogNN extends ModelPredictor {
     /// prediction is offset from last feature
     private byte[] getModelBytes(String modelName) {
         InputStream inputStream = getClass().getResourceAsStream("/" +modelName+ ".onnx");
-        List<Byte> bytes = new ArrayList<>();
+        byte[] bytes;
 
         try {
-            while (true) {
-                int next = inputStream.read();
-                if (next < 0) {
-                    break;
-                }
-                bytes.add((byte) next);
-            }
+            bytes = inputStream.readAllBytes();
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -59,11 +53,8 @@ public abstract class LogNN extends ModelPredictor {
 //                .limit(20)
 //                .forEach(System.out::println);
 //        System.out.println("size: " + bytes.size());
-        byte[] res = new byte[bytes.size()];
-        for (int i = 0; i < res.length; i++) {
-            res[i] = bytes.get(i);
-        }
-        return res;
+
+        return bytes;
     }
     public LogNN(String modelName, String inputLabel, String outputLabel, Util.Pair<LinkedHashMap<Duration, Integer>, LinkedHashMap<Duration, Integer>> dependencies, Map<String, String> settings) {
         super(

@@ -210,6 +210,11 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
             settings.put("offset", String.valueOf(this.offset.get(ChronoUnit.SECONDS)));
             return settings;
         }
+
+        @Override
+        public String toString() {
+            return model.toString() + " -" + offset;
+        }
     }
 
     public static class OffSetLoader extends UserStateLoader<ModelPredictor> {

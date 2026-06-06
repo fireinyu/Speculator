@@ -50,7 +50,6 @@ public class PresetMenuView extends EditMenuView<Preset>{
                 }
                 if (checked) {
                     menu.select(chipIdx.get(btn.getId()));
-                    Log.d("bugiii2", menu.getSelection().get(0).save().get("selected") +"");
                     GlobalState.presettables.forEach(Presettable::refresh);
 
                 } else {

@@ -67,7 +67,6 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
                 }
                 if (checked) {
                     menu.select(chipIdx.get(btn.getId()));
-                    Log.d("bugiiiner", menu.getSelection().get(0)+"");
 
                 } else {
                     menu.unselect(chipIdx.get(btn.getId()));
@@ -86,8 +85,6 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         if (menu.size() != this.listView.getChildCount()) {
             this.populate();
         }
-        Log.d("bugiii2a", menu.size()+"");
-        Log.d("bugiii2b", menu.getSelection().size()+"");
 
         for (int i = 0;  i < menu.size(); i++) {
             ((Chip)listView.getChildAt(i)).setChecked(false);

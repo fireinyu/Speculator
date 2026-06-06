@@ -59,7 +59,6 @@ public class ObjectMenu <T> {
     }
 
     private void onCheckChange() {
-        Log.d("debug_select", "" + selectQueue.size());
         boolean toCallback = enableCallback;
         if (this.selectQueue.size() > this.maxSelect) {
             enableCallback = false;
@@ -138,7 +137,6 @@ public class ObjectMenu <T> {
             this.btn = new Chip(context);
             this.btn.setCheckable(true);
             this.btn.setText(item.toString());
-            Log.d("debug_tickers", "" + item);
             this.btn.setOnCheckedChangeListener((v, checked) -> {
                 if (checked) {
                     menu.selectQueue.add(this);

@@ -41,7 +41,6 @@ public class ActionsView extends ConstraintLayout {
         if (rows.size() >= limit) {
             rows.pollLast();
         }
-        Log.d("debug_actionrows_add", row+"");
         rows.offerFirst(row);
     }
 
@@ -50,10 +49,8 @@ public class ActionsView extends ConstraintLayout {
         post(() -> {
             holder.removeAllViews();
             rows.stream()
-                    .peek(row -> Log.d("debug_actionrows_draw", row+""))
                     .peek(row -> row.setLayoutParams(rowParams))
                     .forEach(holder::addView);
-            Log.d("debug_actions", "" + holder.getChildCount());
         });
 
     }

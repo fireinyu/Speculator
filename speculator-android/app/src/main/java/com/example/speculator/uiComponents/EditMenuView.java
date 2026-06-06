@@ -59,7 +59,6 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
                 settings.add((formView.getChildAt(i)).<EditText>findViewWithTag("field").getText().toString());
             }
             menu.add(settings);
-            Log.d("bugiiimake", menu.size()+"");
             this.refresh();
         });
         deleteButton.setOnClickListener(btn -> {
@@ -85,8 +84,6 @@ public class EditMenuView<T extends UserStateMachine<T>> extends MenuView<T> {
             if (!listening) {
                 return;
             }
-            Log.d("bugi", ""+id);
-            Log.d("bugi", ""+loaderIdx.get(id));
             menu.selectLoader(loaderIdx.get(id));
             this.refreshForm();
         });

@@ -28,8 +28,13 @@ public class AttentionS extends LogNN {
     }
 
     @Override
+    public String toString() {
+        return "Attention_S";
+    }
+
+    @Override
     public UserStateLoader<? extends StateMachine<ModelPredictor>> getLoader() {
-        return new Loader();
+        return new AttentionS.Loader();
     }
     public static class Loader extends UserStateLoader<ModelPredictor> {
         public Loader() {
@@ -39,6 +44,11 @@ public class AttentionS extends LogNN {
         @Override
         public ModelPredictor load(Map<String, String> state) {
             return new AttentionS(state);
+        }
+
+        @Override
+        public String toString() {
+            return "Attention_S";
         }
     }
 }

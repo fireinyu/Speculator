@@ -77,7 +77,6 @@ public class MPDrawer extends InstructedDrawer {
         return ds;
     }
     public void doDraw(List<DrawInstruction.Point> points, DrawInstruction.Color color, DrawInstruction.Style style, String label) {
-        Log.d("debug_plot", "start");
 
         Stack<DrawInstruction.Point> descending = new Stack<>();
         LinkedList<DrawInstruction.Point> ascending = new LinkedList<>();
@@ -129,7 +128,6 @@ public class MPDrawer extends InstructedDrawer {
         }
 
 //        lines.forEach(lineData::addDataSet);
-        Log.d("debug_draw", "" + points.size());
         chart.getLineData().notifyDataChanged();
         chart.notifyDataSetChanged();
         chart.invalidate();
