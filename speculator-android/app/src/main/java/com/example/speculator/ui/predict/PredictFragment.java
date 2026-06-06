@@ -107,4 +107,16 @@ public class PredictFragment extends Fragment {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        binding = null;
+        root = null;
+        predictToggle = null;
+        agentToggle = null;
+        minField = null;
+        secField = null;
+        actionsBox = null;
+        actionsView = null;
+    }
 }

@@ -47,8 +47,6 @@ public class ModelsAgentsFragment extends Fragment {
     private View root;
 
     private ViewGroup modelsBox;
-    private ViewGroup agentsBox;
-    private ViewGroup executorsBox;
 
     private EditMenuView<Agent> agentsView;
     private EditMenuView<ModelPredictor> modelsView;
@@ -73,8 +71,8 @@ public class ModelsAgentsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         this.modelsBox = this.root.findViewById(R.id.modelsBox);
-        this.agentsBox = this.root.findViewById(R.id.agentsBox);
-        executorsBox = this.root.findViewById(R.id.executorsBox);
+        ViewGroup agentsBox = this.root.findViewById(R.id.agentsBox);
+        ViewGroup executorsBox = this.root.findViewById(R.id.executorsBox);
 
         modelsView = new EditMenuView<>(this.getContext(), GlobalState.app.getModels());
         agentsView = new EditMenuView<>(this.getContext(), GlobalState.app.getAgents());
@@ -102,6 +100,11 @@ public class ModelsAgentsFragment extends Fragment {
         GlobalState.presettables.remove(agentsView);
         GlobalState.presettables.remove(executorsView);
         binding = null;
+        root = null;
+        modelsBox = null;
+        agentsView = null;
+        modelsView = null;
+        executorsView = null;
     }
 
 }

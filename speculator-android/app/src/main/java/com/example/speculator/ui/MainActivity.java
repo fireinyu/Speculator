@@ -136,4 +136,17 @@ public class MainActivity extends AppCompatActivity {
         binding = null;
         super.onStop();
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mAppBarConfiguration = null;
+        binding = null;
+        popupDrawer = null;
+        presetsView = null;
+        upstreamsView = null;
+        tickersView = null;
+        plottersView = null;
+        save = null;
+    }
 }

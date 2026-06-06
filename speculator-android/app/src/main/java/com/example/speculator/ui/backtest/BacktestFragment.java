@@ -29,8 +29,6 @@ public class BacktestFragment extends Fragment {
 
     private Button singleBacktest;
     private ToggleButton agentToggle;
-    private DatePicker datePicker;
-    private TimePicker timePicker;
     private DateTimeSelector dateTimeSelector;
 
 
@@ -47,8 +45,8 @@ public class BacktestFragment extends Fragment {
 //        this.selectedDateTime = ZonedDateTime.of(LocalDateTime.of(2025, 1, 2, 0, 4), ZoneId.systemDefault());
         GlobalState.drawer.setViews(root.findViewById(R.id.backtestChartBox));
 //        this.chart.setData(new LineData());
-        this.datePicker = root.findViewById(R.id.calendarView);
-        this.timePicker = root.findViewById(R.id.timeView);
+        DatePicker datePicker = root.findViewById(R.id.calendarView);
+        TimePicker timePicker = root.findViewById(R.id.timeView);
         dateTimeSelector = new DateTimeSelector(root.getContext(), datePicker, timePicker, Defaults.backtestAt.truncatedTo(ChronoUnit.SECONDS));
         root.<ViewGroup>findViewById(R.id.backtestDTBox)
                 .addView(
@@ -74,6 +72,11 @@ public class BacktestFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        root = null;
+        singleBacktest = null;
+        agentToggle = null;
+        dateTimeSelector = null;
+
     }
 
 

@@ -94,6 +94,9 @@ public class ApiFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         binding = null;
+        root = null;
+        form = null;
+        submit = null;
     }
 
 }

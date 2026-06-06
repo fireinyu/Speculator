@@ -27,11 +27,9 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
     Menu<T> menu;
     ChipGroup listView;
     boolean listening;
-    private Context context;
     Map<Integer, Integer> chipIdx;
     public MenuView(Context context, Menu<T> menu) {
         super(context);
-        this.context = context;
         this.menu = menu;
         this.listening = true;
         this.inflate();
@@ -43,7 +41,7 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         this.refresh();
     }
     void inflate() {
-        LayoutInflater.from(context).inflate(R.layout.menu_template, this, true);
+        LayoutInflater.from(getContext()).inflate(R.layout.menu_template, this, true);
     }
     List<Integer> getSelection() {
         return listView.getCheckedChipIds().stream()
@@ -56,7 +54,7 @@ public class MenuView<T extends StateMachine<T>> extends ConstraintLayout implem
         List<String> labels = menu.getLabels();
         for (int i = 0; i < menu.size(); i++) {
             String label = labels.get(i);
-            Chip item = new Chip(context);
+            Chip item = new Chip(getContext());
             item.setCheckable(true);
             item.setId(generateViewId());
             chipIdx.put(item.getId(), i);

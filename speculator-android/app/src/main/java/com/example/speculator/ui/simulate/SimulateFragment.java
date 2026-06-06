@@ -92,4 +92,16 @@ public class SimulateFragment extends Fragment {
             });
         }
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        this.pastControls = null;
+        this.simNow = null;
+        this.simRun = null;
+        this.nowControls = null;
+        this.controlsBox = null;
+        this.root =null;
+        this.binding = null;
+    }
 }
