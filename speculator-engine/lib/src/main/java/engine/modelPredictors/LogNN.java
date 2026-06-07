@@ -91,15 +91,16 @@ public abstract class LogNN extends ModelPredictor {
 
         private List<Integer> ld;
         @Override
-        public List<Float> extract(List<? extends Series> input, float baseline) {
-            List<Float> features = new ArrayList<>();
+        public float[] extract(List<? extends Series> input, float baseline) {
+            float[] features = new float[this.ld.stream().mapToInt(Integer::intValue).sum()];
+            int featureIndex = 0;
             double logBaseline = Math.log(baseline);
             for (int i = 0; i<input.size(); i++) {
                 Series series = input.get(i);
-                series.slice(series.size()-ld.get(i), series.size()).get()
-                        .stream()
-                        .map(px -> (float)(Math.log(px) - logBaseline))
-                        .forEach(features::add);
+                float[] prices = series.slice(series.size()-ld.get(i), series.size()).get();
+                for (float px : prices) {
+                    features[featureIndex++] = (float) (Math.log(px) - logBaseline);
+                }
             }
             return features;
         }
@@ -134,13 +135,9 @@ public abstract class LogNN extends ModelPredictor {
         private List<Duration> offsets; //model return order
 
         @Override
-        public List<OffsetSeries> predict(List<Float> input, float baseline) {
+        public List<OffsetSeries> predict(float[] input, float baseline) {
             Map<String, OnnxTensor> onnxInputs = null;
-            float[] inpAx1 = new float[input.size()];
-            for (int i = 0; i < inpAx1.length; i++) {
-                inpAx1[i] = input.get(i);
-            }
-            float[][] inp = new float[][]{inpAx1};
+            float[][] inp = new float[][]{input};
             try {
                 onnxInputs = Map.of(
                         requestLabel,

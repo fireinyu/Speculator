@@ -99,7 +99,7 @@ public abstract class ModelPredictor extends UserStateMachine<ModelPredictor> {
     }
     public List<TimeSeries> predict (List<? extends TimeSeries> input, Candle latest) {
 //        System.out.println("Model:predict");
-        List<Float> features = this.extractor.extract(input, latest.get());
+        float[] features = this.extractor.extract(input, latest.get());
         List<OffsetSeries> output = this.model.predict(features, latest.get());
 //        System.out.println("Model:predict end");
         return output.stream().map(ts -> ts.at(latest.getTime())).collect(Collectors.toList());

@@ -4,10 +4,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import engine.PriceData.Position;
 import engine.PriceData.State;
+import engine.PriceData.TimeSeries;
 import engine.Serialisation.StateMachine;
 import engine.Util;
 import engine.components.Agent;
@@ -34,12 +34,16 @@ public class SimpleExpect extends Agent {
         for (PredictManager.PredictResult result : predictions) {
             Ticker ticker = result.getTicker();
             float base = state.getTickerState(ticker).getAbsoluteLatest().get();
-            List<Float> pts = result.getPrediction().values().stream()
-                    .parallel()
-                    .map(ts -> ts.extract((dt, px) -> px/base))
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
-            float exp = pts.stream().parallel().reduce(0f, Float::sum, Float::sum) / pts.size();
+            float total = 0f;
+            int count = 0;
+            for (TimeSeries ts : result.getPrediction().values()) {
+                float[] pts = ts.extractFloats((dt, px) -> px / base);
+                for (float pt : pts) {
+                    total += pt;
+                    count++;
+                }
+            }
+            float exp = count == 0 ? 0f : total / count;
             if (exp < minSoFar.second) {
                 minSoFar = Util.Pair.create(ticker, exp);
             }

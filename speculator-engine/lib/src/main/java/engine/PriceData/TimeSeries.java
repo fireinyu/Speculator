@@ -2,7 +2,6 @@ package engine.PriceData;
 
 import engine.Util;
 
-import java.sql.Time;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -29,12 +28,8 @@ public class TimeSeries extends Series{
     }
     private List<ZonedDateTime> times;
 
-    public TimeSeries (List<ZonedDateTime> times, List<Float> prices) {
-//        this(List.of());
-//        Log.d("debug_merge", "" + times.size() + ", " + prices.size());
-        this(IntStream.range(0, times.size()).mapToObj(i -> new Candle(times.get(i), prices.get(i))).collect(Collectors.toList()));
-
-
+    public TimeSeries (List<ZonedDateTime> times, float[] prices) {
+        this(IntStream.range(0, times.size()).mapToObj(i -> new Candle(times.get(i), prices[i])).collect(Collectors.toList()));
     }
 
     public <D extends Datapoint & Timed> TimeSeries (List<D> datapoints) {
@@ -60,12 +55,8 @@ public class TimeSeries extends Series{
         if (from >= to) {
             return new EmptyTimeSeries();
         }
-        List<ZonedDateTime> slicedTimes = this.times.subList(from, to);
-        if ((this.size()+super.excess)/(float)(from-to) > super.loadRatio) {
-            slicedTimes = new ArrayList<>(slicedTimes);
-        }
+        List<ZonedDateTime> slicedTimes = new ArrayList<>(this.times.subList(from, to));
         Series res = super.slice(from, to);
-        // System.out.println("slice result: " + from + to + res.size() );
         return new TimeSeries(res, slicedTimes);
     }
 
@@ -76,9 +67,9 @@ public class TimeSeries extends Series{
         }
         ArrayList<Candle> resultCandles = new ArrayList<>();
         List<ZonedDateTime> times = this.getTimes();
-        List<Float> prices = this.get();
+        float[] prices = this.get();
         List<ZonedDateTime> newTimes = src.getTimes();
-        List<Float> newPrices = src.get();
+        float[] newPrices = src.get();
         int thisIndex = 0;
         int srcIndex = 0;
         int thisSize = this.size();
@@ -89,26 +80,26 @@ public class TimeSeries extends Series{
             int compareResult = thisTime.compareTo(srcTime);
             Candle newCandle = null;
             if (compareResult < 0) {
-                newCandle = new Candle(thisTime, prices.get(thisIndex));
+                newCandle = new Candle(thisTime, prices[thisIndex]);
                 thisIndex++;
             } else if (compareResult == 0){
-                newCandle = new Candle(srcTime, newPrices.get(srcIndex));
+                newCandle = new Candle(srcTime, newPrices[srcIndex]);
                 thisIndex++;
                 srcIndex++;
 
             } else {
-                newCandle = new Candle(srcTime, newPrices.get(srcIndex));
+                newCandle = new Candle(srcTime, newPrices[srcIndex]);
                 srcIndex++;
             }
             resultCandles.add(newCandle);
         }
         if (thisIndex < thisSize) {
             IntStream.range(thisIndex, thisSize)
-                    .mapToObj(i -> new Candle(times.get(i), prices.get(i)))
+                    .mapToObj(i -> new Candle(times.get(i), prices[i]))
                     .forEach(resultCandles::add);
         } else if (srcIndex < srcSize) {
             IntStream.range(srcIndex, srcSize)
-                    .mapToObj(i -> new Candle(newTimes.get(i), newPrices.get(i)))
+                    .mapToObj(i -> new Candle(newTimes.get(i), newPrices[i]))
                     .forEach(resultCandles::add);
         }
         return new TimeSeries(resultCandles);
@@ -119,24 +110,16 @@ public class TimeSeries extends Series{
     }
 
     public TimeSeries extendRight (TimeSeries src){
-        // System.out.println("TSeries::extendRight");
-        // System.out.println("TSeries::extendRight bug start");
         if (src instanceof EmptyTimeSeries) {
             return this;
         }
         assert src.from().isAfter(this.until());
-        // System.out.println("TSeries::extendRight bug end");
-        if (!super.original) {
-            this.times =  new ArrayList<>(this.times);
-        }
-        int size = this.size();
-        this.times.addAll(src.times);
+        List<ZonedDateTime> combinedTimes = new ArrayList<>(this.times);
+        combinedTimes.addAll(src.times);
         TimeSeries res = new TimeSeries(
                 super.extendRight(src),
-                this.times
+                combinedTimes
         );
-        this.times = this.times.subList(0, size);
-        // System.out.println("TSeries::extendRight end");
         return res;
     }
 
@@ -153,19 +136,28 @@ public class TimeSeries extends Series{
     }
 
     public TimeSeries map(Function<? super ZonedDateTime, ? extends ZonedDateTime> timeMapper, Function<Float, Float> priceMapper) {
-        List<Float> prices = super.get();
+        float[] prices = super.get();
         return new TimeSeries(IntStream.range(0, this.times.size()).boxed()
-                .map(i -> new Candle(timeMapper.apply(this.times.get(i)), priceMapper.apply(prices.get(i))))
+                .map(i -> new Candle(timeMapper.apply(this.times.get(i)), priceMapper.apply(prices[i])))
                 .collect(Collectors.toList())
         );
 
     }
 
+    public float[] extractFloats (BiFunction<ZonedDateTime, Float, Float> extractor) {
+        float[] prices = super.get();
+        float[] extracted = new float[this.times.size()];
+        for (int i = 0; i < this.times.size(); i++) {
+            extracted[i] = extractor.apply(this.times.get(i), prices[i]);
+        }
+        return extracted;
+    }
+
     public <R> List<R> extract (BiFunction<ZonedDateTime, Float, R> extractor) {
 
-        List<Float> prices = super.get();
+        float[] prices = super.get();
         return IntStream.range(0, this.times.size()).boxed()
-                .map(i -> extractor.apply(this.times.get(i), prices.get(i)))
+                .map(i -> extractor.apply(this.times.get(i), prices[i]))
                 .collect(Collectors.toList());
 
     }
@@ -193,22 +185,23 @@ public class TimeSeries extends Series{
     public float priceAt (ZonedDateTime anchor) {
         int anchorIndex = Collections.binarySearch(this.times, anchor);
         float anchorPrice;
+        float[] prices = this.get();
         if (anchorIndex >= 0) {
-            anchorPrice = this.get().get(anchorIndex);
+            anchorPrice = prices[anchorIndex];
         } else {
             anchorIndex = -(anchorIndex + 1);
             if (anchorIndex == 0) {
-                anchorPrice = this.get().get(0);
+                anchorPrice = prices[0];
             } else if (anchorIndex == this.size()) {
-                anchorPrice = this.get().get(this.size()-1);
+                anchorPrice = prices[this.size()-1];
             } else {
-                float leftPrice = this.get().get(anchorIndex - 1);
-                float rightPrice = this.get().get(anchorIndex);
+                float leftPrice = prices[anchorIndex - 1];
+                float rightPrice = prices[anchorIndex];
                 ZonedDateTime leftMs = this.getTimes().get(anchorIndex - 1);
                 ZonedDateTime rightMs = this.getTimes().get(anchorIndex);
                 double res = leftPrice + (rightPrice-leftPrice) * Duration.between(leftMs, anchor).toMillis()/Duration.between(leftMs, rightMs).toMillis();
 
-                anchorPrice = Util.convertNumber(res, this.get().get(0));
+                anchorPrice = Util.convertNumber(res, prices[0]);
             }
         }
         return anchorPrice;
@@ -225,7 +218,7 @@ public class TimeSeries extends Series{
     }
 
     boolean isEmpty() {
-        return this.data.isEmpty();
+        return this.data.length == 0;
     }
 
     public static class EmptyTimeSeries  extends TimeSeries {

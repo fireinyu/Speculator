@@ -19,12 +19,12 @@ public abstract class FeatureExtractor{
         
     }
 
-    public abstract List<Float> extract (List<? extends Series> input, float baseline);
+    public abstract float[] extract (List<? extends Series> input, float baseline);
     //Series end at point of prediction
 
     private static class Identity  extends FeatureExtractor {
         @Override
-        public List<Float> extract(List<? extends Series> input, float baseline) {
+        public float[] extract(List<? extends Series> input, float baseline) {
             return input.get(0).get();
         }
     }

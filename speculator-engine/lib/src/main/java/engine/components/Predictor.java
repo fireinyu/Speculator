@@ -19,12 +19,12 @@ public abstract class Predictor {
 
     }
 
-    public abstract List<OffsetSeries> predict (List<Float> input, float baseline);
+    public abstract List<OffsetSeries> predict (float[] input, float baseline);
     // offset from point of prediction
 
     private static class Identity extends Predictor {
         @Override
-        public List<OffsetSeries> predict(List<Float> input, float baseline) {
+        public List<OffsetSeries> predict(float[] input, float baseline) {
             return Collections.emptyList();
         }
     }

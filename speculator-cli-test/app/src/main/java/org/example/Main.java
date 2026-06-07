@@ -255,7 +255,7 @@ public class Main{
                 "", cmd -> {
                     ZonedDateTime start = ZonedDateTime.now().minus(Duration.ofHours(Long.parseLong(cmd.get(0))));
                     ZonedDateTime end = ZonedDateTime.now().minus(Duration.ofHours(Long.parseLong(cmd.get(1))));
-                    Duration step = Duration.ofSeconds(Long.parseLong(cmd.get(0)));
+                    Duration step = Duration.ofSeconds(Long.parseLong(cmd.get(2)));
                     app.simulate(
                         start,
                         end,

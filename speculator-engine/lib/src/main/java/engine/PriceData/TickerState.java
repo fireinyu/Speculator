@@ -137,7 +137,6 @@ public class TickerState {
             if (newTs.isEmpty()) {
                 this.priceData.remove(interval);
             } else {
-                newTs.original = true; // original timeseries deemed as derelict
                 this.priceData.put(interval, newTs);
             }
         }
@@ -149,7 +148,6 @@ public class TickerState {
             if (newTs.isEmpty()) {
                 this.priceData.remove(interval);
             } else {
-                newTs.original = true; // original timeseries deemed as derelict
                 this.priceData.put(interval, newTs);
             }
         }

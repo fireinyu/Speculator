@@ -164,7 +164,6 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
         }
         TimeSeries big = this.fetchCountUntilAtLeast(ticker, interval, leftDependency, until);
         TimeSeries res = big.slice(big.size() - leftDependency, big.size());
-        res.original = true;
         return res;
     }
 
@@ -174,7 +173,6 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
         }
         TimeSeries big = this.fetchBetweenAtLeast(ticker, interval, from, to);
         TimeSeries res = big.slice(big.pointsNotAfter(from), big.pointsNotAfter(to));
-        res.original = true;
         return res;
     }
 
