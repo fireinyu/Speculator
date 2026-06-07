@@ -296,7 +296,9 @@ public class Main{
 
     public static void main(String[] args) {
         // Main app = new Main(Path.of(".live"), false, new TestScript3());
-        Main app = new Main(Path.of(".live"), true, new TestScript1());
+        // Main app = new Main(Path.of(".live"), true, new TestScript1());
+        Main app = new Main(Path.of(".live"), false);
+        
         if (args.length > 0) {
             try {
                 Files.readAllLines(Paths.get(args[0])).stream()

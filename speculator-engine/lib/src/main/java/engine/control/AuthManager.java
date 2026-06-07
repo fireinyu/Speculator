@@ -54,6 +54,10 @@ public class AuthManager implements Serializable {
                 .flatMap(Collection::stream)
                 .filter(x -> x instanceof Authenticated)
                 .map(x -> (Authenticated)x)
+                .peek(x -> x.authenticate(fields.get(x.toString()).stream().collect(Collectors.toMap(
+                        field -> field,
+                        field -> creds.get(field)
+                ))))
                 .forEach(x -> targets.put(x.toString(), x));
     }
     public void auth(Map<String, String> creds) {
@@ -93,12 +97,17 @@ public class AuthManager implements Serializable {
         return !this.creds.get(field).isBlank();
     }
 
-/// don't need below as target is already authed whenever creds have changed
+/// need below as target is not authed after deserialised
 //    private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 //        // 1. Perform default restoration for non-transient fields
 //        in.defaultReadObject();
-//        this.targets.forEach((label,target)-> {
-//            target.authenticate(this.creds.get(label));
+//        this.fields.forEach((label,fields)-> {
+//            System.out.println(label);
+//            targets.keySet().forEach(System.out::println);
+//            targets.get(label).authenticate(fields.stream().collect(Collectors.toMap(
+//                    field -> field,
+//                    field -> creds.get(field)
+//            )));
 //        });
 //    }
 

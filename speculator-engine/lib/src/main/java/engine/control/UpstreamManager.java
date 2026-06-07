@@ -49,9 +49,9 @@ public class UpstreamManager {
             for (int i = 0; i < tickerUpstreams.size() ; i++) {
                 Upstream upstream = tickerUpstreams.get(i);
                 if (grouping.containsKey(upstream)) {
-                    grouping.put(upstream, Util.Pair.create(grouping.get(upstream).first + 1, grouping.get(upstream).second - i));
+                    grouping.put(upstream, Util.Pair.create(grouping.get(upstream).first - 1, grouping.get(upstream).second + i));
                 } else {
-                    grouping.put(upstream, Util.Pair.create(1, -i));
+                    grouping.put(upstream, Util.Pair.create(-1, i));
                 }
             }
         }

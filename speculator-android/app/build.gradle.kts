@@ -56,6 +56,6 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
     // Source: https://mvnrepository.com/artifact/com.microsoft.onnxruntime/onnxruntime-android
     runtimeOnly("com.microsoft.onnxruntime:onnxruntime-android:1.26.0")
-    debugImplementation ("com.squareup.leakcanary:leakcanary-android:2.14")
+//    debugImplementation ("com.squareup.leakcanary:leakcanary-android:2.14")
 }
 

@@ -125,7 +125,6 @@ public class Oanda extends Upstream implements Authenticated {
 
         try {
             JSONArray delta = pxObject.getJSONArray("candles");
-//            System.out.println(delta);
             for (int i = 0; i < delta.length(); i++) {
                 JSONObject candlestick = delta.getJSONObject(i);
 
