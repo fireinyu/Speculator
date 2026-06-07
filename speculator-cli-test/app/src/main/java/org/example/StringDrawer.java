@@ -3,6 +3,9 @@ package org.example;
 import java.util.List;
 
 import engine.components.InstructedDrawer;
+import engine.components.Ticker;
+import engine.Util.Pair;
+import engine.PriceData.NAVPosition;
 import engine.components.DrawInstruction.Color;
 import engine.components.DrawInstruction.DrawMapping;
 import engine.components.DrawInstruction.Point;
@@ -22,5 +25,9 @@ public class StringDrawer extends InstructedDrawer{
     @Override
     public void legend(DrawMapping mapping) {
         
+    }
+    @Override
+    public void showPositions(List<Pair<Ticker, NAVPosition>> positions) {
+        positions.forEach(pair -> System.out.println(pair.first + ": " + pair.second.getUnits() + " units at " + pair.second.getAvgCost() + ", nav: " + pair.second.getNetValue()));
     }
 }

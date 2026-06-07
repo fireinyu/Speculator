@@ -6,23 +6,32 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Set;
 
 import engine.Util;
+import engine.components.Ticker;
 
 public class TickerState {
 
     HashMap<Duration,TimeSeries> priceData;
-    NAVPosition position;
+    CostPosition position;
+    Candle latest = null;
 
     public TickerState(
             HashMap<Duration, TimeSeries> priceData,
-            NAVPosition position
+            CostPosition position
     ) {
         // constructor for delta
         this.priceData = priceData;
         this.position = position;
+        latest = this.getIntervals().stream()
+                .map(this::getPriceData)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug start"))
+                .filter(ts -> !ts.isEmpty())
+                .map(TimeSeries::getLast)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug end"))
+                .max(Comparator.comparing(Candle::getTime))
+                .orElse(null);
     }
 
     public Set<Duration> getIntervals() {
@@ -45,18 +54,12 @@ public class TickerState {
     public Candle getAbsoluteLatest() {
 //        System.out.println("TickerState:getAbsLate");
         // absolute latest across all intervals
-        return this.getIntervals().stream()
-                .map(this::getPriceData)
-//                .peek(i -> System.out.println("TickerState:getAbsLate bug start"))
-                .filter(ts -> !ts.isEmpty())
-                .map(TimeSeries::getLast)
-//                .peek(i -> System.out.println("TickerState:getAbsLate bug end"))
-                .max(Comparator.comparing(Candle::getTime))
-                .get();
+        return latest;
     }
 
     public NAVPosition getPosition() {
-        return this.position;
+        Candle latest = getAbsoluteLatest();
+        return this.position.evaluate(latest.getTime(), latest.get());
     }
 
     public TickerState save() {
@@ -76,9 +79,7 @@ public class TickerState {
     }
 
 
-    public void put(Duration interval, TimeSeries timeSeries) {
-        this.priceData.put(interval, timeSeries);
-    }
+
 
     public boolean contains(Duration interval) {
         return this.priceData.containsKey(interval);
@@ -102,13 +103,21 @@ public class TickerState {
 
         public MutableTickerState(int nonHitsBeforeClear) {
             // start out empty
-            super(new HashMap<>(), NAVPosition.makeEmpty());
+            super(new HashMap<>(), CostPosition.makeEmpty());
             this.nonHits = new Hashtable<>();
             this.hits = new HashSet<>();
             this.nonHitsBeforeClear = nonHitsBeforeClear;
         }
         public int pointsNotAfter(Duration interval, ZonedDateTime at) {
             return this.getPriceData(interval).pointsNotAfter(at);
+        }
+
+        public void put(Duration interval, TimeSeries timeSeries) {
+            this.priceData.put(interval, timeSeries);
+        }
+
+        public void updatePosition(CostPosition position) {
+            this.position = position;
         }
 
         public void extendLeft(Duration interval, TimeSeries deltaLeft) {
@@ -195,6 +204,19 @@ public class TickerState {
                     new TickerState(leftMap, this.position),
                     new TickerState(rightMap, this.position)
             );
+        }
+
+        @Override
+        public Candle getAbsoluteLatest() {
+            latest = this.getIntervals().stream()
+                    .map(this::getPriceData)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug start"))
+                    .filter(ts -> !ts.isEmpty())
+                    .map(TimeSeries::getLast)
+//                .peek(i -> System.out.println("TickerState:getAbsLate bug end"))
+                    .max(Comparator.comparing(Candle::getTime))
+                    .orElse(null);
+            return latest;
         }
     }
 

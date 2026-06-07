@@ -8,14 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import engine.PriceData.NAVPosition;
+import engine.PriceData.CostPosition;
 import engine.PriceData.Position;
 import engine.PriceData.State;
 
 public class Simulator {
     private ZonedDateTime at;
     private Duration interval;
-    HashMap<Ticker, NAVPosition> last;
+    HashMap<Ticker, CostPosition> last;
 
     public Simulator(ZonedDateTime from, Duration interval) {
         at = from.minus(interval);
@@ -30,7 +30,7 @@ public class Simulator {
         for (Ticker ticker : actions.keySet()) {
             Position position = actions.get(ticker);
             float price = state.getTickerState(ticker).getAbsoluteLatest().get();
-            last.put(ticker, last.getOrDefault(ticker, NAVPosition.makeEmpty()).apply(NAVPosition.from(position, price)));
+            last.put(ticker, last.getOrDefault(ticker, CostPosition.makeEmpty()).apply(CostPosition.from(position, price)));
         }
         return new SimResult(at, last, state);
     }
@@ -50,9 +50,9 @@ public class Simulator {
         private ZonedDateTime at;
         private double nav;
         private Map<Ticker, Double> navMap;
-        private Map<Ticker, NAVPosition> positions;
+        private Map<Ticker, CostPosition> positions;
         private Map<Ticker, Float> prices;
-        public SimResult(ZonedDateTime at, Map<Ticker, NAVPosition> positions, State state) {
+        public SimResult(ZonedDateTime at, Map<Ticker, CostPosition> positions, State state) {
             this.at = at;
             this.positions = new HashMap<>(positions);
             prices = positions.keySet().stream()
@@ -63,7 +63,7 @@ public class Simulator {
             navMap = positions.keySet().stream()
                     .collect(Collectors.toMap(
                             ticker -> ticker,
-                            ticker -> positions.get(ticker).getNetValue(prices.get(ticker))
+                            ticker -> positions.get(ticker).evaluate(at, prices.get(ticker)).getNetValue()
                     ));
             nav = navMap.values().stream().parallel().reduce(0.0, Double::sum, Double::sum);
 
@@ -87,7 +87,7 @@ public class Simulator {
         public List<Ticker> tickers() {
             return new ArrayList<>(navMap.keySet());
         }
-        public NAVPosition position(Ticker ticker) {
+        public CostPosition position(Ticker ticker) {
             return positions.get(ticker);
         }
     }

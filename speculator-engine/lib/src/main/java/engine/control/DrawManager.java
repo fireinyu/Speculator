@@ -37,6 +37,11 @@ public class DrawManager{
                 .forEach(ls -> ls.forEach(inst -> inst.drawBy(this.drawer)
                 ));
         this.drawer.legend(mapping);
+        this.drawer.showPositions(
+                state.getTickers().stream()
+                        .map(ticker -> Util.Pair.create(ticker, state.getTickerState(ticker).getPosition()))
+                        .collect(Collectors.toList())
+        );
 
     }
     public void drawPredict(State state, List<PredictManager.PredictResult> predictions, List<DrawInstructor> plotters) {
@@ -53,6 +58,11 @@ public class DrawManager{
                 .forEach(ls -> ls.forEach(inst -> inst.drawBy(this.drawer)
                 ));
         this.drawer.legend(this.cachedMapping);
+        this.drawer.showPositions(
+                state.getTickers().stream()
+                        .map(ticker -> Util.Pair.create(ticker, state.getTickerState(ticker).getPosition()))
+                        .collect(Collectors.toList())
+        );
     }
 
     public void drawBacktest(State state, State targetState, List<PredictManager.PredictResult> results, List<DrawInstructor> plotters) {

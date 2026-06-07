@@ -54,7 +54,7 @@ public class PredictFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        GlobalState.drawer.setViews(root.findViewById(R.id.predictChartBox));
+        GlobalState.drawer.setViews(root.findViewById(R.id.predictChartBox), root.findViewById(R.id.positionsBox));
         predictToggle = root.findViewById(R.id.predictToggle);
         agentToggle = root.findViewById(R.id.agentToggle);
         minField = root.findViewById(R.id.minField);

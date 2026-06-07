@@ -2,7 +2,6 @@ package com.example.speculator.uiComponents;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -20,7 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import engine.PriceData.NAVPosition;
+import engine.PriceData.CostPosition;
 import engine.components.Executor;
 import engine.components.Ticker;
 
@@ -65,7 +64,7 @@ public class ActionsView extends ConstraintLayout {
     }
 
     private static class FilledActionRow extends ConstraintLayout {
-        public FilledActionRow(@NonNull Context context, String agent, NAVPosition delta, Ticker ticker, ZonedDateTime at) {
+        public FilledActionRow(@NonNull Context context, String agent, CostPosition delta, Ticker ticker, ZonedDateTime at) {
             super(context);
             LayoutInflater.from(context).inflate(R.layout.action_row_filled, this, true);
             this.<TextView>findViewById(R.id.ticker).setText(ticker.getName());

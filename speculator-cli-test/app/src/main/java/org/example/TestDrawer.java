@@ -7,6 +7,9 @@ import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import engine.components.InstructedDrawer;
+import engine.components.Ticker;
+import engine.Util.Pair;
+import engine.PriceData.NAVPosition;
 import engine.components.DrawInstruction.Color;
 import engine.components.DrawInstruction.DrawMapping;
 import engine.components.DrawInstruction.Point;
@@ -191,4 +194,10 @@ public class TestDrawer extends InstructedDrawer{
     public void legend(DrawMapping mapping) {
         /// do nothing for now
     }
+
+    @Override
+    public void showPositions(List<Pair<Ticker, NAVPosition>> positions) {
+        positions.forEach(pair -> System.out.println(pair.first + ": " + pair.second.getUnits() + " units at " + pair.second.getAvgCost() + ", nav: " + pair.second.getNetValue()));
+    }
+    
 }

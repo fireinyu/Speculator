@@ -1,43 +1,31 @@
 package engine.PriceData;
 
-import engine.Util;
+import java.time.ZonedDateTime;
 
-public class NAVPosition extends Position{
-    public static NAVPosition makeEmpty() {
-        return new NAVPosition(0, 0);
-    }
+public class NAVPosition extends CostPosition{
 
-    public static NAVPosition from(Position position, double price) {
-        return new NAVPosition(position.getUnits(), price * position.getUnits());
-    }
-    public static NAVPosition makeLong(double units, double price){
-        return new NAVPosition(units, price*units);
-    }
-    public static NAVPosition makeShort(double units, double price) {
-        return new NAVPosition(-units, -price*units);
-    }
-    private double cost;
-
-    private NAVPosition(double units, double cost) {
-        super(units);
-        this.cost = cost;
+    private double price;
+    private ZonedDateTime at;
+    NAVPosition(double units, double cost, double price, ZonedDateTime at) {
+        super(units, cost);
+        this.price = price;
+        this.at = at;
     }
 
-    public double getTotalCost () {
-        return cost;
-    }
-
-    public double getTotalValue (double price) {
+    public double getTotalValue () {
         return price * getUnits();
 
     }
 
-    public double getNetValue (double price) {
-        return price * getUnits() - cost;
+    public double getNetValue () {
+        return price * getUnits() - getTotalCost();
     }
 
-    public NAVPosition apply(NAVPosition delta) {
-        return new NAVPosition(getUnits() + delta.getUnits(), cost + delta.cost);
+    public ZonedDateTime getDateTime() {
+        return at;
     }
 
+    public double getPrice() {
+        return price;
+    }
 }

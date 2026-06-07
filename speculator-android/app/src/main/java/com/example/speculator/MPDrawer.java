@@ -4,11 +4,14 @@ import android.graphics.Color;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import engine.PriceData.NAVPosition;
 import engine.Util;
 import engine.components.DrawInstruction;
 import engine.components.InstructedDrawer;
+import engine.components.Ticker;
 
 import com.example.speculator.uiComponents.DateTimeChart;
+import com.example.speculator.uiComponents.PositionsView;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
@@ -35,14 +38,25 @@ import java.util.stream.Collectors;
 
 public class MPDrawer extends InstructedDrawer {
     private DateTimeChart chart;
+    private PositionsView positions;
+
 //    private List<LineDataSet> allLines;
     public MPDrawer () {
 //        allLines =  Collections.synchronizedList(new ArrayList<>());
     }
-    public void setViews(ViewGroup box) {
-        box.removeAllViews();
-        chart = new DateTimeChart(box.getContext());
-        box.addView(chart, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    public void setViews(ViewGroup chartBox, ViewGroup positionsBox) {
+        chartBox.removeAllViews();
+        chart = new DateTimeChart(chartBox.getContext());
+        chartBox.addView(chart, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        positionsBox.removeAllViews();
+        positions = new PositionsView(positionsBox.getContext());
+        positionsBox.addView(positions);
+    }
+    public void setViews(ViewGroup chartBox) {
+        chartBox.removeAllViews();
+        chart = new DateTimeChart(chartBox.getContext());
+        chartBox.addView(chart, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        positions = null;
     }
 
     private LineDataSet makeEmpty(DrawInstruction.Color color, DrawInstruction.Style style, String label) {
@@ -163,8 +177,10 @@ public class MPDrawer extends InstructedDrawer {
     public void undraw() {
         System.out.println("debug_pred: start2");
         chart.post(()-> doUndraw());
-
-
     }
 
+    @Override
+    public void showPositions(List<Util.Pair<Ticker, NAVPosition>> positions) {
+        this.positions.update(positions);
+    }
 }

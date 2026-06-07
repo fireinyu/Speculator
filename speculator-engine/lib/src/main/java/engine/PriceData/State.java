@@ -9,7 +9,6 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -148,6 +147,14 @@ public class State {
             }
         }
 
+        public void put(Ticker ticker, CostPosition position) {
+            if (!this.tickerData.containsKey(ticker)) {
+                this.tickerData.put(ticker, new TickerState.MutableTickerState(nonHitsBeforeClear));
+            }
+            this.tickerData.get(ticker).asMutable().updatePosition(position);
+
+        }
+
         public void put(Ticker ticker, Duration interval, TimeSeries timeSeries) {
             if (timeSeries.isEmpty()) {
                 return;
@@ -155,7 +162,7 @@ public class State {
             if (!this.tickerData.containsKey(ticker)) {
                 this.tickerData.put(ticker, new TickerState.MutableTickerState(nonHitsBeforeClear));
             }
-            this.tickerData.get(ticker).put(interval, timeSeries);
+            this.tickerData.get(ticker).asMutable().put(interval, timeSeries);
             this.markHit(ticker, interval);
         }
 

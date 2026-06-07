@@ -9,7 +9,8 @@ import java.util.Random;
 import java.util.Set;
 
 import engine.PriceData.Candle;
-import engine.PriceData.NAVPosition;
+import engine.PriceData.CostPosition;
+import engine.PriceData.Position;
 import engine.PriceData.TimeSeries;
 import engine.PriceData.Upstream;
 import engine.components.Ticker;
@@ -21,8 +22,13 @@ public class RandomUpstream extends Upstream {
         super(index);
     }
     @Override
-    public HashMap<Ticker, NAVPosition> fetchPositionsNow(Set<Ticker> tickers) {
-        return new HashMap<>();
+    public HashMap<Ticker, CostPosition> fetchPositionsNow(Set<Ticker> tickers) {
+        HashMap<Ticker, CostPosition> positions = new HashMap<>();
+        for (Ticker ticker : tickers) {
+            CostPosition position = CostPosition.from(Position.makeLong(rng.nextDouble()*10), rng.nextFloat());
+            positions.put(ticker, position);
+        }
+        return positions;
     }
     @Override
     protected TimeSeries fetchCountUntilAtLeast(Ticker ticker, Duration interval, int leftDependency, ZonedDateTime until) {

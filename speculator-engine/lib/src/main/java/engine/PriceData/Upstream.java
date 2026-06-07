@@ -74,7 +74,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
                     cache.markHit(ticker, interval);
                     ZonedDateTime cacheFirst = cache.from(ticker, interval);
                     ZonedDateTime cacheLast = cache.until(ticker, interval);
-                    if (at.plus(rd).isAfter(cacheFirst)) { // rightmost is after cache last {2,3,7,8}
+                    if (at.plus(rd).isAfter(cacheLast)) { // rightmost is after cache last {2,3,7,8}
                         if (at.minus(minLeftDuration).isAfter(cacheLast)){// no guaranteed overlap {3}
                             // basic fetch left by count
                             TimeSeries deltaLeft = this.fetchCountUntil(ticker, interval, ld, at);
@@ -151,6 +151,9 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
+        fetchPositionsNow(Set.copyOf(tickers)).forEach(
+                cache::put
+        );
         Pair<State, State> states = cache.partition(at);
         return Pair.create(states.first.asView(tickers), states.second.asView(tickers));
     }
@@ -176,7 +179,7 @@ public abstract class Upstream extends CoreStateMachine<Upstream> {
     }
 
 
-    public abstract HashMap<Ticker, NAVPosition> fetchPositionsNow(Set<Ticker> tickers);
+    public abstract HashMap<Ticker, CostPosition> fetchPositionsNow(Set<Ticker> tickers);
     protected abstract TimeSeries fetchCountUntilAtLeast(Ticker ticker, Duration interval, int leftDependency, ZonedDateTime until);
     // include until
     // at least leftDependency

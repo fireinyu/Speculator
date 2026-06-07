@@ -1,15 +1,13 @@
 package engine.upstreams;
 
 
-import engine.PriceData.NAVPosition;
+import engine.PriceData.CostPosition;
 import engine.PriceData.Upstream;
-import engine.Serialisation.LocalObject;
 import engine.PriceData.Candle;
 import engine.components.Authenticated;
 import engine.components.Ticker;
 import engine.PriceData.TimeSeries;
 
-import org.apache.commons.math3.geometry.euclidean.oned.Interval;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -165,7 +163,7 @@ public class Oanda extends Upstream implements Authenticated {
     }
 
     @Override
-    public HashMap<Ticker, NAVPosition> fetchPositionsNow(Set<Ticker> tickers) {
+    public HashMap<Ticker, CostPosition> fetchPositionsNow(Set<Ticker> tickers) {
         Request.Builder partial = new Request.Builder()
                 .url(String.format(
                         "https://api-fxtrade.oanda.com/v3/accounts/%s/openPositions",
@@ -186,7 +184,7 @@ public class Oanda extends Upstream implements Authenticated {
 //            System.out.println(allPosObj);
         }
         JSONArray allPos = ap;
-        HashMap<Ticker, NAVPosition> positionMap = new HashMap<>();
+        HashMap<Ticker, CostPosition> positionMap = new HashMap<>();
         for (int i = 0; i < allPos.length(); i++) {
             try {
                 JSONObject posObj = allPos.getJSONObject(i);
@@ -212,14 +210,14 @@ public class Oanda extends Upstream implements Authenticated {
                     }
                     float avgPrice = netAmount / netUnits;
                     Ticker ticker = tickerMatchLs.get(0);
-                    NAVPosition position = NAVPosition.makeEmpty();
+                    CostPosition position = CostPosition.makeEmpty();
                     if (netUnits < 0) {
-                        position = NAVPosition.makeShort(
+                        position = CostPosition.makeShort(
                                 -netUnits,
                                 avgPrice
                         );
                     } else if (netUnits > 0) {
-                        position = NAVPosition.makeLong(
+                        position = CostPosition.makeLong(
                                 netUnits,
                                 avgPrice
                         );

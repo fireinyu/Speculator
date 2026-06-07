@@ -11,8 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
-import engine.PriceData.NAVPosition;
-import engine.PriceData.Position;;
+import engine.PriceData.CostPosition;
 
 public class TestReporter extends Reporter{
     
@@ -26,7 +25,7 @@ public class TestReporter extends Reporter{
     public void report(ExecutionResult result, String agent, ZonedDateTime at) {
         CompletionStatus status = result.getStatus();
         Ticker ticker = result.getTicker();
-        NAVPosition filled = result.getFilled();
+        CostPosition filled = result.getFilled();
         String a = filled.getUnits() > 0 ? "buy" : "sell";
         double u = Math.abs(filled.getUnits());
         if (status == CompletionStatus.SUCCESS || status == CompletionStatus.PARTIAL) {

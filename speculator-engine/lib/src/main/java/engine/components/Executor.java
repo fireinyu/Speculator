@@ -2,7 +2,7 @@ package engine.components;
 
 import java.util.List;
 
-import engine.PriceData.NAVPosition;
+import engine.PriceData.CostPosition;
 import engine.PriceData.Position;
 import engine.Serialisation.CoreStateMachine;
 import engine.menus.Executors;
@@ -16,10 +16,10 @@ public abstract class Executor extends CoreStateMachine<Executor> {
     }
     public static class ExecutionResult {
         private Ticker ticker;
-        private NAVPosition filled;
+        private CostPosition filled;
         private CompletionStatus status;
 
-        public NAVPosition getFilled() {
+        public CostPosition getFilled() {
             return filled;
         }
 
@@ -31,7 +31,7 @@ public abstract class Executor extends CoreStateMachine<Executor> {
             return ticker;
         }
 
-        public ExecutionResult(Ticker ticker, CompletionStatus status, NAVPosition filled) {
+        public ExecutionResult(Ticker ticker, CompletionStatus status, CostPosition filled) {
             this.ticker = ticker;
             this.status = status;
             this.filled = filled;
@@ -48,15 +48,15 @@ public abstract class Executor extends CoreStateMachine<Executor> {
     }
 
     public ExecutionResult execute(Ticker ticker, Position action) {
-        if (action instanceof NAVPosition) {
-            return executeLimitOrder(ticker, (NAVPosition) action);
+        if (action instanceof CostPosition) {
+            return executeLimitOrder(ticker, (CostPosition) action);
         } else {
             return executeMarketOrder(ticker, action);
         }
     }
 
     public abstract ExecutionResult executeMarketOrder(Ticker ticker, Position action);
-    public abstract ExecutionResult executeLimitOrder(Ticker ticker, NAVPosition action);
+    public abstract ExecutionResult executeLimitOrder(Ticker ticker, CostPosition action);
 
     private static class ExecutorLoader extends CoreStateLoader<Executor> {
         @Override
