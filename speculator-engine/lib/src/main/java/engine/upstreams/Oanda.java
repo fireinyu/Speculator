@@ -152,7 +152,6 @@ public class Oanda extends Upstream implements Authenticated {
             e.printStackTrace();
         }
 //        System.out.println("Oanda::fetchCandles end");
-
         return candles;
 
     }
@@ -249,7 +248,6 @@ public class Oanda extends Upstream implements Authenticated {
 //        System.out.println(candles.get(candles.size()-1).getTime());
 //        System.out.println("Oanda::fetchPL end");
         Collections.reverse(candles);
-        candles.stream().map(Candle::getTime).forEach(System.out::println);
         return new TimeSeries(candles);
     }
 

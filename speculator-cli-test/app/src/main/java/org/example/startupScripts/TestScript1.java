@@ -13,7 +13,7 @@ public class TestScript1 implements StartupScript{
     public void onStartUp(Main app) {
         Stream.of(
             "auth 0 001-003-12791815-001",
-            "auth 1 7a4196c6217eac0bca1876d477495e4e-12b10f2124f3327fb24cb96c5adebf00",
+            "auth 1 86bcb00fb58cf26f6637473bf951969b-3876e5f87ce10b65979ae075a7db6c8e",
             "agt off",
             "tic sel 0",
             "ups sel 0",
